@@ -1,3 +1,5 @@
+
+# --- Импортируем необходимые модули ---
 from main_menu import main_menu
 from engine.player import Player
 from name_input import name_input
@@ -8,72 +10,76 @@ from engine.items import loot, use_item
 from engine.ai import ai_turn
 from battle_gui import battle_gui
 
-print("⚔ RPG ARENA DELUXE ⚔")
+def apply_stat_bonuses(player, stats):
+    """Применяет выбранные бонусы к игроку."""
+    for s in stats:
+        if s == "Сильный":
+            player.strength += 10
+        elif s == "Выносливый":
+            player.stamina += 10
+        elif s == "Ловкий":
+            player.agility += 10
+        elif s == "Удачливый":
+            player.luck += 10
+        elif s == "Инициативный":
+            player.initiative += 10
 
-players=[]
+def apply_class_bonuses(player, cls):
+    """Применяет бонусы выбранного класса к игроку."""
+    if cls == "Воин":
+        player.damage += 5
+        player.dodge += 20
+    elif cls == "Варвар":
+        player.damage += 15
+    elif cls == "Копейщик":
+        player.initiative += 10
+        player.crit += 20
+    # Ассасин — без дополнительных бонусов
 
-count = main_menu()
-for i in range(count):
-
-    name = name_input(i+1)
-
+def create_player(index):
+    """Создаёт и настраивает игрока по номеру."""
+    name = name_input(index + 1)
     p = Player(name)
-
     from class_select import class_select
     cls = class_select(p.name)
     p.role = cls
-
-    # 👉 ВОТ ТУТ НОВЫЙ ЭКРАН
     stats = stat_select(p.name)
+    apply_stat_bonuses(p, stats)
+    p.calc()  # Пересчёт характеристик после бонусов
+    apply_class_bonuses(p, cls)
+    return p
 
-    # 👉 применяем выбранные бонусы
-    for s in stats:
-        if s == "Сильный":
-            p.strength += 10
-        elif s == "Выносливый":
-            p.stamina += 10
-        elif s == "Ловкий":
-            p.agility += 10
-        elif s == "Удачливый":
-            p.luck += 10
-        elif s == "Инициативный":
-            p.initiative += 10
-
-    # 👉 только теперь считаем характеристики
-    p.calc()
-
-    # применяем бонусы (как раньше)
-    if cls == "Воин":
-        p.damage += 5
-        p.dodge += 20
-
-    elif cls == "Варвар":
-        p.damage += 15
-
-    elif cls == "Ассасин":
-        pass
-
-    elif cls == "Копейщик":
-        p.initiative += 10
-        p.crit += 20
-
-    players.append(p)
-
-if count==1:
-
-    bot=Player("AI",True)
-
+def create_ai_player():
+    """Создаёт и настраивает AI-игрока."""
+    bot = Player("AI", True)
     build_player(bot)
     bot.calc()
     choose_class(bot)
+    return bot
 
-    players.append(bot)
+def main():
+    print("⚔ RPG ARENA DELUXE ⚔")
 
-choose_arena(players)
+    players = []
+    count = main_menu()
 
-players.sort(key=lambda x:x.initiative,reverse=True)
+    # --- Создание игроков ---
+    for i in range(count):
+        players.append(create_player(i))
 
-round_num=1
+    # --- Добавление AI, если 1 игрок ---
+    if count == 1:
+        players.append(create_ai_player())
 
-winner = battle_gui(players, attack, special, loot, use_item, ai_turn)
-print("Победил:", winner)
+    # --- Выбор арены ---
+    choose_arena(players)
+
+    # --- Сортировка по инициативе ---
+    players.sort(key=lambda x: x.initiative, reverse=True)
+
+    # --- Запуск боя ---
+    winner = battle_gui(players, attack, special, loot, use_item, ai_turn)
+    print("Победил:", winner)
+
+if __name__ == "__main__":
+    main()
