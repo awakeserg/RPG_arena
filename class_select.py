@@ -85,17 +85,15 @@ class Button:
     def __init__(self, text, x, y, w, h):
         self.text = text
         self.rect = pygame.Rect(x,y,w,h)
+        self.active = False
 
     def draw(self):
         mouse = pygame.mouse.get_pos()
-
-        if self.rect.collidepoint(mouse):
+        if self.active or self.rect.collidepoint(mouse):
             color = GREEN
         else:
             color = GRAY
-
         pygame.draw.rect(screen, color, self.rect)
-
         txt = font.render(self.text, True, WHITE)
         screen.blit(txt, (self.rect.x+10, self.rect.y+10))
 
@@ -121,41 +119,37 @@ def class_select(player_name="Игрок"):
     selected = None
 
     while True:
-
         screen.fill(DARK)
-
         # заголовок
         title = big_font.render(f"Выбор класса: {player_name}", True, WHITE)
         screen.blit(title, (200,50))
 
         # кнопки классов
         for btn in buttons:
+            btn.active = (btn.text == selected)
             btn.draw()
 
         # если выбран класс — показываем инфо
         if selected:
             data = CLASSES[selected]
-
             # 🖼️ картинка
             img = load_image(data["image"])
             if img:
                 screen.blit(img, (500, 120))
-
             # 📊 характеристики
             y_text = 250
-
             lines = [
                 selected,
                 f"Сила: {data['strength']}",
                 f"Выносливость: {data['stamina']}",
                 f"Ловкость: {data['agility']}",
                 f"Удача: {data['luck']}",
+                f"Инициатива: {data.get('initiative', 10)}",
                 "",
                 f"Способность: {data['skill']}",
                 "",
                 data["desc"]
             ]
-
             for line in lines:
                 txt = font.render(line, True, WHITE)
                 screen.blit(txt, (450, y_text))
@@ -166,18 +160,14 @@ def class_select(player_name="Игрок"):
 
         # 🎮 события
         for event in pygame.event.get():
-
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-
             # выбор класса
             for btn in buttons:
                 if btn.clicked(event):
                     selected = btn.text
-
             # подтверждение
             if confirm_btn.clicked(event) and selected:
                 return selected
-
         pygame.display.flip()

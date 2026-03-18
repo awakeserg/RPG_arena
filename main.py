@@ -74,8 +74,8 @@ def main():
     # --- Выбор арены ---
     choose_arena(players)
 
-    # --- Сортировка по инициативе ---
-    players.sort(key=lambda x: x.initiative, reverse=True)
+    # --- Сортировка по инициативе, удаче, ловкости ---
+    players.sort(key=lambda x: (x.initiative, x.luck, x.agility), reverse=True)
 
     # --- Запуск боя ---
     winner = battle_gui(players, attack, special, loot, use_item, ai_turn)
