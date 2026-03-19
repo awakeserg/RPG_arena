@@ -18,6 +18,8 @@ def attack(a,d,strong=False,cautious=False):
             parry_damage = a.damage // 2
             if getattr(a, "stone_skin_turns", 0) > 0:
                 parry_damage = max(1, parry_damage // 2)
+            elif getattr(a, "shadow_shroud_turns", 0) > 0:
+                parry_damage = max(1, int(parry_damage * 0.6))
             a.hp -= parry_damage
         else:
             messages.append(f"{d.name} уклонился")
@@ -43,6 +45,8 @@ def attack(a,d,strong=False,cautious=False):
     actual_dmg = dmg
     if getattr(d, "stone_skin_turns", 0) > 0:
         actual_dmg = max(1, dmg // 2)
+    elif getattr(d, "shadow_shroud_turns", 0) > 0:
+        actual_dmg = max(1, int(dmg * 0.6))
     d.hp -= actual_dmg
     messages.append(f"{a.name} нанёс {actual_dmg}")
     return messages

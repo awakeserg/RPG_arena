@@ -102,7 +102,7 @@ class ArenaGame:
                     pass
         if self.emoji_font is None:
             self.emoji_font = pygame.font.SysFont("Segoe UI Symbol", 20)
-        self.log_icon_chars = set("◎★⚡▲❄◆⚠✶⚔♥○⊕☠↻⚒↺•▸✨☀◼✦🪨")
+        self.log_icon_chars = set("◎★⚡▲❄◆⚠✶⚔♥○⊕☠↻⚒↺•▸✨☀◼✦🪨☽※")
 
         self.class_data = {
             "Воин": {
@@ -323,6 +323,68 @@ class ArenaGame:
                     },
                 ],
             },
+            "Тёмный путь": {
+                "desc": "Идущие Тёмным путём не поклоняются ночи — они принимают её как честную правду. Там, где другие видят ужас, они находят власть, голод бездны и обещание победы любой ценой.",
+                "normal": [
+                    {
+                        "id": "shadow_shroud",
+                        "name": "Покров мрака",
+                        "target": "self",
+                        "desc": "На 2 своих хода окутывает мага тьмой: входящий урон снижается на 40%, а уклонение возрастает на 25%.",
+                    },
+                    {
+                        "id": "soul_reap",
+                        "name": "Жатва души",
+                        "target": "enemy",
+                        "desc": "Наносит 110% от интеллекта, исцеляет мага на половину нанесённого урона. 35% шанс проклясть цель: её урон и интеллект падают на 25% на 2 хода.",
+                    },
+                ],
+                "exalted": [
+                    {
+                        "id": "black_sun",
+                        "name": "Чёрное солнце",
+                        "target": "enemy",
+                        "desc": "Главная цель получает 220% от интеллекта и с шансом 50% оглушается. Остальные бойцы с вероятностью 75% получают ещё 110% от интеллекта.",
+                    },
+                    {
+                        "id": "abyss_name",
+                        "name": "Имя Бездны",
+                        "target": "enemy",
+                        "desc": "Наносит 160% от интеллекта. Если после удара цель опускается до 35% HP или ниже, Бездна мгновенно забирает её. Иначе накладывается тяжёлое кровотечение.",
+                    },
+                ],
+            },
+            "Путь непознаваемого": {
+                "desc": "Это запредельный путь тех, кто смотрел за край реальности и вернулся не совсем прежним. Его адепты зовут силы, которым нет имени, и ломают саму логику мира ради краткого мига невозможного превосходства.",
+                "normal": [
+                    {
+                        "id": "impossible_angle",
+                        "name": "Невозможный угол",
+                        "target": "enemy",
+                        "desc": "Наносит 50% от интеллекта и всегда искажает жертву случайным эффектом: оглушение, заморозка, обезоруживание, кровотечение или возгорание.",
+                    },
+                    {
+                        "id": "outer_whisper",
+                        "name": "Шёпот извне",
+                        "target": "self",
+                        "desc": "С шансом 65% немедленно открывает возвышенную магию в этот же ход. Следующее заклинание мага усиливается в 1.5 раза.",
+                    },
+                ],
+                "exalted": [
+                    {
+                        "id": "doorless_gate",
+                        "name": "Врата без двери",
+                        "target": "enemy",
+                        "desc": "Главная цель получает 230% от интеллекта. Остальные бойцы с шансом 65% получают по 90%, а каждый такой удар с шансом 30% вешает случайный эффект.",
+                    },
+                    {
+                        "id": "unknowable_touch",
+                        "name": "Касание непознаваемого",
+                        "target": "enemy",
+                        "desc": "Наносит 160% от интеллекта плюс ещё по 100% за каждый эффект на цели, затем снимает их. Если эффектов нет, заклинание навешивает сразу два случайных искажения.",
+                    },
+                ],
+            },
         }
         self.arena_data = [
             ("Колизей", "hp"),
@@ -364,8 +426,8 @@ class ArenaGame:
         self.magic_buttons = []
         y = 220
         for name in self.magic_data:
-            self.magic_buttons.append(UIButton(name, 120, y, 280, 65))
-            y += 95
+            self.magic_buttons.append(UIButton(name, 120, y, 280, 56))
+            y += 68
         self.magic_confirm_button = UIButton("Продолжить", 120, 730, 280, 65)
         self.magic_back_button = UIButton("←", 420, 730, 65, 65)
 
@@ -449,75 +511,189 @@ class ArenaGame:
             path = os.path.join(base_dir, data["image"])
             try:
                 image = pygame.image.load(path)
-                icons[name] = pygame.transform.scale(image, (220, 220))
+                scaled = pygame.transform.scale(image, (220, 220))
+                if name == "Шаман":
+                    scaled = self._tint_surface(scaled, (255, 196, 68), 18)
+                    scaled = self._tint_surface(scaled, (64, 168, 150), 10)
+                icons[name] = scaled
             except Exception:
                 icons[name] = self._create_fallback_icon(name)
         return icons
 
+    def _tint_surface(self, surface, color, alpha=40):
+        tinted = surface.copy()
+        overlay = pygame.Surface(tinted.get_size(), pygame.SRCALPHA)
+        overlay.fill((*color, alpha))
+        tinted.blit(overlay, (0, 0))
+        return tinted
+
+    def _make_circle_portrait(self, surface, size):
+        scaled = pygame.transform.smoothscale(surface, (size, size))
+        mask = pygame.Surface((size, size), pygame.SRCALPHA)
+        pygame.draw.circle(mask, (255, 255, 255, 255), (size // 2, size // 2), size // 2)
+        result = pygame.Surface((size, size), pygame.SRCALPHA)
+        result.blit(scaled, (0, 0))
+        result.blit(mask, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
+        return result
+
     def _create_barbarian_showcase_art(self):
         surface = pygame.Surface((220, 280), pygame.SRCALPHA)
         skin = (206, 160, 122)
-        fur = (120, 84, 56)
+        fur = (126, 82, 44)
         metal = (180, 190, 200)
         axe_wood = (110, 72, 46)
-        red_cloth = (145, 38, 38)
+        red_cloth = (170, 42, 42)
 
-        pygame.draw.line(surface, axe_wood, (160, 28), (92, 248), 11)
-        pygame.draw.polygon(surface, metal, [(126, 50), (178, 18), (196, 54), (150, 88)])
-        pygame.draw.polygon(surface, metal, [(166, 64), (206, 95), (174, 121), (142, 86)])
+        pygame.draw.line(surface, axe_wood, (170, 18), (94, 252), 13)
+        pygame.draw.polygon(surface, metal, [(126, 52), (186, 14), (208, 58), (152, 94)])
+        pygame.draw.polygon(surface, metal, [(168, 70), (214, 104), (176, 134), (140, 88)])
 
-        pygame.draw.ellipse(surface, red_cloth, (62, 72, 92, 110))
-        pygame.draw.ellipse(surface, fur, (48, 78, 120, 92))
-        pygame.draw.circle(surface, skin, (104, 56), 26)
-        pygame.draw.polygon(surface, fur, [(76, 50), (90, 18), (118, 18), (133, 50), (120, 38), (88, 38)])
-        pygame.draw.line(surface, fur, (96, 66), (90, 82), 4)
-        pygame.draw.line(surface, fur, (112, 66), (118, 82), 4)
+        pygame.draw.ellipse(surface, red_cloth, (58, 68, 98, 122))
+        pygame.draw.ellipse(surface, fur, (42, 74, 132, 102))
+        pygame.draw.circle(surface, skin, (102, 54), 28)
+        pygame.draw.polygon(surface, fur, [(72, 48), (86, 10), (118, 10), (136, 48), (122, 32), (84, 32)])
+        pygame.draw.line(surface, fur, (92, 66), (84, 84), 5)
+        pygame.draw.line(surface, fur, (112, 66), (120, 84), 5)
+        pygame.draw.line(surface, red_cloth, (96, 96), (108, 128), 4)
 
-        pygame.draw.line(surface, skin, (72, 112), (50, 178), 13)
-        pygame.draw.line(surface, skin, (136, 112), (162, 172), 13)
-        pygame.draw.line(surface, fur, (70, 112), (50, 178), 6)
-        pygame.draw.line(surface, fur, (138, 112), (162, 172), 6)
-        pygame.draw.line(surface, skin, (92, 182), (76, 252), 15)
-        pygame.draw.line(surface, skin, (118, 182), (138, 252), 15)
-        pygame.draw.line(surface, fur, (88, 186), (74, 252), 6)
-        pygame.draw.line(surface, fur, (122, 186), (140, 252), 6)
-        pygame.draw.line(surface, metal, (76, 252), (58, 270), 5)
-        pygame.draw.line(surface, metal, (138, 252), (156, 270), 5)
+        pygame.draw.line(surface, skin, (68, 112), (42, 188), 15)
+        pygame.draw.line(surface, skin, (138, 110), (170, 178), 15)
+        pygame.draw.line(surface, fur, (64, 110), (40, 190), 7)
+        pygame.draw.line(surface, fur, (142, 108), (170, 178), 7)
+        pygame.draw.line(surface, skin, (88, 192), (68, 260), 17)
+        pygame.draw.line(surface, skin, (120, 192), (144, 260), 17)
+        pygame.draw.line(surface, fur, (84, 194), (66, 260), 7)
+        pygame.draw.line(surface, fur, (124, 194), (146, 260), 7)
+        pygame.draw.line(surface, metal, (68, 260), (48, 276), 5)
+        pygame.draw.line(surface, metal, (144, 260), (164, 276), 5)
+        return surface
+
+    def _create_warrior_showcase_art(self):
+        surface = pygame.Surface((220, 280), pygame.SRCALPHA)
+        skin = (212, 174, 138)
+        steel = (172, 184, 204)
+        steel_dark = (92, 108, 132)
+        tabard = (72, 118, 186)
+        leather = (106, 74, 48)
+        pygame.draw.circle(surface, skin, (102, 56), 22)
+        pygame.draw.ellipse(surface, steel_dark, (76, 20, 52, 46))
+        pygame.draw.ellipse(surface, steel, (82, 18, 40, 22))
+        pygame.draw.line(surface, steel, (102, 20), (102, 56), 2)
+        pygame.draw.polygon(surface, steel, [(68, 84), (138, 84), (150, 180), (56, 180)])
+        pygame.draw.polygon(surface, tabard, [(90, 84), (116, 84), (126, 188), (80, 188)])
+        pygame.draw.line(surface, leather, (102, 84), (102, 180), 3)
+        pygame.draw.line(surface, skin, (72, 102), (46, 170), 11)
+        pygame.draw.line(surface, skin, (132, 102), (156, 168), 11)
+        pygame.draw.line(surface, steel_dark, (44, 134), (34, 228), 10)
+        pygame.draw.ellipse(surface, steel, (10, 118, 86, 98))
+        pygame.draw.ellipse(surface, steel_dark, (10, 118, 86, 98), 5)
+        pygame.draw.line(surface, steel_dark, (24, 166), (82, 166), 4)
+        pygame.draw.line(surface, steel_dark, (52, 126), (52, 208), 4)
+        pygame.draw.line(surface, leather, (158, 98), (178, 232), 7)
+        pygame.draw.polygon(surface, steel, [(148, 92), (164, 30), (178, 30), (168, 100)])
+        pygame.draw.polygon(surface, steel, [(164, 30), (172, 12), (180, 30)])
+        pygame.draw.polygon(surface, steel_dark, [(160, 100), (176, 100), (172, 228), (164, 228)])
+        pygame.draw.polygon(surface, steel, [(156, 228), (180, 228), (168, 250)])
+        pygame.draw.line(surface, steel_dark, (154, 102), (180, 102), 2)
+        pygame.draw.line(surface, skin, (86, 182), (76, 258), 13)
+        pygame.draw.line(surface, skin, (118, 182), (128, 258), 13)
+        pygame.draw.line(surface, steel_dark, (74, 258), (58, 274), 4)
+        pygame.draw.line(surface, steel_dark, (130, 258), (146, 274), 4)
+        return surface
+
+    def _create_battle_mage_showcase_art(self):
+        surface = pygame.Surface((220, 280), pygame.SRCALPHA)
+        skin = (206, 166, 132)
+        cloth = (118, 86, 180)
+        cloth_dark = (70, 48, 118)
+        glow = (116, 212, 255)
+        steel = (184, 194, 214)
+        steel_dark = (96, 104, 138)
+        leather = (110, 74, 52)
+        pygame.draw.circle(surface, skin, (102, 54), 24)
+        pygame.draw.arc(surface, cloth_dark, (78, 32, 48, 40), 3.3, 6.1, 4)
+        pygame.draw.polygon(surface, cloth, [(68, 84), (138, 84), (154, 208), (50, 208)])
+        pygame.draw.polygon(surface, cloth_dark, [(68, 84), (102, 118), (138, 84), (154, 208), (50, 208)])
+        pygame.draw.line(surface, glow, (102, 92), (102, 190), 3)
+        pygame.draw.line(surface, skin, (74, 104), (54, 174), 11)
+        pygame.draw.line(surface, skin, (130, 104), (154, 168), 11)
+        pygame.draw.line(surface, leather, (150, 98), (172, 236), 7)
+        pygame.draw.polygon(surface, steel, [(140, 92), (156, 34), (170, 34), (162, 100)])
+        pygame.draw.polygon(surface, steel, [(156, 34), (163, 16), (170, 34)])
+        pygame.draw.polygon(surface, steel_dark, [(154, 100), (168, 100), (166, 228), (156, 228)])
+        pygame.draw.polygon(surface, steel, [(150, 228), (172, 228), (160, 248)])
+        pygame.draw.circle(surface, glow, (56, 156), 10)
+        pygame.draw.circle(surface, glow, (56, 156), 18, 2)
+        pygame.draw.circle(surface, glow, (56, 156), 26, 1)
+        pygame.draw.line(surface, glow, (56, 126), (56, 186), 2)
+        pygame.draw.line(surface, glow, (26, 156), (86, 156), 2)
+        pygame.draw.line(surface, glow, (36, 136), (76, 176), 2)
+        pygame.draw.line(surface, glow, (76, 136), (36, 176), 2)
+        pygame.draw.line(surface, skin, (86, 208), (76, 260), 13)
+        pygame.draw.line(surface, skin, (118, 208), (128, 260), 13)
+        pygame.draw.line(surface, cloth_dark, (74, 260), (58, 274), 4)
+        pygame.draw.line(surface, cloth_dark, (130, 260), (146, 274), 4)
         return surface
 
     def _create_shaman_showcase_art(self):
         surface = pygame.Surface((220, 280), pygame.SRCALPHA)
         skin = (190, 150, 118)
-        robe = (62, 118, 76)
-        robe_dark = (34, 68, 48)
+        robe = (255, 214, 64)
+        robe_dark = (164, 106, 18)
         staff = (118, 82, 54)
-        glow = (90, 210, 170)
+        glow = (82, 212, 182)
+        ember = (255, 176, 54)
         bone = (215, 215, 198)
 
-        pygame.draw.line(surface, staff, (164, 26), (170, 258), 8)
-        pygame.draw.circle(surface, glow, (164, 24), 16)
-        pygame.draw.circle(surface, bone, (164, 24), 16, 2)
-        pygame.draw.line(surface, glow, (164, 8), (164, 40), 3)
-        pygame.draw.line(surface, glow, (148, 24), (180, 24), 3)
+        pygame.draw.line(surface, staff, (164, 22), (170, 258), 8)
+        pygame.draw.line(surface, bone, (146, 34), (182, 34), 5)
+        pygame.draw.circle(surface, bone, (164, 24), 13)
+        pygame.draw.circle(surface, robe_dark, (160, 22), 2)
+        pygame.draw.circle(surface, robe_dark, (168, 22), 2)
+        pygame.draw.arc(surface, robe_dark, (156, 24, 16, 10), 0.2, 2.9, 2)
+        pygame.draw.line(surface, bone, (152, 34), (144, 48), 3)
+        pygame.draw.line(surface, bone, (176, 34), (184, 48), 3)
+        pygame.draw.polygon(surface, glow, [(144, 22), (134, 2), (148, 10)])
+        pygame.draw.polygon(surface, ember, [(152, 18), (146, -2), (160, 10)])
+        pygame.draw.polygon(surface, bone, [(176, 18), (184, -4), (190, 16)])
+        pygame.draw.line(surface, glow, (164, 46), (164, 62), 3)
 
         pygame.draw.circle(surface, skin, (102, 54), 24)
-        pygame.draw.polygon(surface, robe_dark, [(78, 54), (90, 22), (112, 18), (128, 54), (116, 40), (88, 40)])
+        pygame.draw.polygon(surface, glow, [(80, 38), (90, 8), (102, 36)])
+        pygame.draw.polygon(surface, ember, [(102, 34), (112, 4), (122, 34)])
+        pygame.draw.polygon(surface, bone, [(118, 40), (132, 12), (138, 46)])
+        pygame.draw.polygon(surface, robe_dark, [(78, 54), (90, 20), (112, 16), (128, 54), (116, 40), (88, 40)])
         pygame.draw.line(surface, robe_dark, (95, 64), (91, 78), 3)
         pygame.draw.line(surface, robe_dark, (109, 64), (113, 78), 3)
-        pygame.draw.polygon(surface, robe, [(70, 86), (136, 86), (154, 204), (50, 204)])
-        pygame.draw.polygon(surface, robe_dark, [(70, 86), (102, 120), (136, 86), (154, 204), (50, 204)])
-        pygame.draw.line(surface, glow, (102, 92), (102, 182), 3)
-        pygame.draw.line(surface, glow, (84, 120), (120, 120), 2)
-        pygame.draw.line(surface, skin, (74, 104), (54, 172), 10)
-        pygame.draw.line(surface, skin, (130, 104), (154, 166), 10)
-        pygame.draw.line(surface, skin, (86, 202), (76, 258), 12)
-        pygame.draw.line(surface, skin, (118, 202), (126, 258), 12)
-        pygame.draw.line(surface, bone, (74, 258), (58, 272), 4)
-        pygame.draw.line(surface, bone, (126, 258), (142, 272), 4)
+        pygame.draw.polygon(surface, robe_dark, [(86, 48), (102, 42), (118, 48), (114, 68), (90, 68)])
+        pygame.draw.circle(surface, ember, (96, 54), 3)
+        pygame.draw.circle(surface, ember, (108, 54), 3)
+        pygame.draw.line(surface, ember, (98, 62), (106, 62), 2)
+        pygame.draw.polygon(surface, robe, [(70, 86), (136, 86), (156, 212), (48, 212)])
+        pygame.draw.polygon(surface, robe_dark, [(70, 86), (102, 118), (136, 86), (156, 212), (48, 212)])
+        for bead_x, bead_y in ((88, 96), (96, 100), (104, 102), (112, 100), (120, 96)):
+            pygame.draw.circle(surface, bone, (bead_x, bead_y), 4)
+            pygame.draw.circle(surface, ember, (bead_x, bead_y), 2)
+        pygame.draw.polygon(surface, robe_dark, [(92, 132), (102, 118), (112, 132), (108, 152), (96, 152)])
+        pygame.draw.arc(surface, ember, (90, 128, 24, 20), 0.2, 2.9, 3)
+        pygame.draw.line(surface, ember, (102, 126), (102, 148), 3)
+        pygame.draw.line(surface, ember, (94, 138), (110, 138), 3)
+        pygame.draw.line(surface, ember, (96, 148), (88, 156), 2)
+        pygame.draw.line(surface, ember, (108, 148), (116, 156), 2)
+        pygame.draw.polygon(surface, glow, [(58, 144), (70, 132), (82, 144), (70, 156)])
+        pygame.draw.polygon(surface, ember, [(122, 156), (134, 144), (146, 156), (134, 168)])
+        pygame.draw.line(surface, skin, (74, 104), (50, 176), 11)
+        pygame.draw.line(surface, skin, (130, 104), (156, 168), 11)
+        pygame.draw.line(surface, skin, (86, 210), (76, 260), 13)
+        pygame.draw.line(surface, skin, (118, 210), (128, 260), 13)
+        pygame.draw.line(surface, bone, (74, 260), (58, 274), 4)
+        pygame.draw.line(surface, bone, (128, 260), (144, 274), 4)
         return surface
 
     def create_subclass_showcase_art(self):
         return {
+            "Воин": self._create_warrior_showcase_art(),
+            "Боевой маг": self._create_battle_mage_showcase_art(),
             "Варвар": self._create_barbarian_showcase_art(),
             "Шаман": self._create_shaman_showcase_art(),
         }
@@ -742,6 +918,11 @@ class ArenaGame:
     def get_subclass_portrait_positions(self, group_name):
         subclasses = self.class_groups.get(group_name, [])
         if len(subclasses) == 2:
+            if group_name == "Боец":
+                return [
+                    (pygame.Rect(1270, 185, 185, 185), subclasses[0]),
+                    (pygame.Rect(1518, 185, 185, 185), subclasses[1]),
+                ]
             if group_name == "Дикарь":
                 return [
                     (pygame.Rect(1270, 185, 185, 185), subclasses[0]),
@@ -915,7 +1096,7 @@ class ArenaGame:
             "Ассасин": (185, 120, 255),
             "Копейщик": (100, 220, 120),
             "Боевой маг": (180, 130, 255),
-            "Шаман": (100, 200, 140),
+            "Шаман": (255, 186, 92),
         }.get(class_name, WHITE)
 
     def get_magic_path_color(self, path_name):
@@ -924,6 +1105,8 @@ class ArenaGame:
             "Путь воды": LIGHT_BLUE,
             "Путь земли": (150, 105, 60),
             "Путь воздуха": TURQUOISE,
+            "Тёмный путь": (170, 100, 210),
+            "Путь непознаваемого": (150, 235, 165),
         }.get(path_name, WHITE)
 
     def get_magic_path_key(self, path_name):
@@ -932,6 +1115,8 @@ class ArenaGame:
             "Путь воды": "water",
             "Путь земли": "earth",
             "Путь воздуха": "air",
+            "Тёмный путь": "dark",
+            "Путь непознаваемого": "void",
         }.get(path_name, "neutral")
 
     def get_magic_tier_colors(self, path_name):
@@ -940,6 +1125,8 @@ class ArenaGame:
             "Путь воды": (LIGHT_BLUE, LIGHT_BLUE, (70, 165, 255)),
             "Путь земли": ((150, 105, 60), (150, 105, 60), (205, 145, 80)),
             "Путь воздуха": (TURQUOISE, TURQUOISE, BRIGHT_TURQUOISE),
+            "Тёмный путь": ((170, 100, 210), (170, 100, 210), (245, 105, 170)),
+            "Путь непознаваемого": ((150, 235, 165), (150, 235, 165), (220, 255, 150)),
         }.get(path_name, (WHITE, WHITE, WHITE))
 
     def get_spell_button_colors(self, path_name, tier):
@@ -951,6 +1138,10 @@ class ArenaGame:
             return ((165, 118, 72), (205, 145, 80)) if tier == "exalted" else ((130, 90, 55), (175, 125, 80))
         if path_name == "Путь воздуха":
             return ((70, 205, 200), BRIGHT_TURQUOISE) if tier == "exalted" else (TURQUOISE, (150, 255, 240))
+        if path_name == "Тёмный путь":
+            return ((185, 95, 215), (245, 105, 170)) if tier == "exalted" else ((135, 72, 162), (195, 125, 225))
+        if path_name == "Путь непознаваемого":
+            return ((150, 220, 130), (220, 255, 150)) if tier == "exalted" else ((112, 186, 126), (174, 244, 188))
         return (GRAY, WHITE)
 
     def draw_spell_button(self, button, font, path_name, tier):
@@ -1019,6 +1210,14 @@ class ArenaGame:
             return TURQUOISE
         if category == "magic_air_exalted":
             return BRIGHT_TURQUOISE
+        if category == "magic_dark_normal":
+            return (170, 100, 210)
+        if category == "magic_dark_exalted":
+            return (245, 105, 170)
+        if category == "magic_void_normal":
+            return (150, 235, 165)
+        if category == "magic_void_exalted":
+            return (220, 255, 150)
 
         if "крит" in lowered or "фатал" in lowered:
             return (255, 220, 70)
@@ -1094,6 +1293,10 @@ class ArenaGame:
         if "magic_earth" in cat:                                   return "\u25fc "  # ◼
         if "magic_air_exalted" in cat:                             return "\u2726\u2605 "  # ✦★
         if "magic_air" in cat:                                     return "\u2726 "  # ✦
+        if "magic_dark_exalted" in cat:                            return "\u263d\u2605 "  # ☽★
+        if "magic_dark" in cat:                                    return "\u263d "  # ☽
+        if "magic_void_exalted" in cat:                            return "\u203b\u2605 "  # ※★
+        if "magic_void" in cat:                                    return "\u203b "  # ※
         if cat == "warning":                                        return "\u26a0 "  # ⚠
         if cat == "passive":                                        return "\u2736 "  # ✶
         if cat == "active":                                         return "\u26a1 "  # ⚡
@@ -1113,6 +1316,8 @@ class ArenaGame:
         if "тотем" in low:                                         return "\u2665 "  # ♥
         if "камен" in low or "земл" in low:                       return "\u25fc "  # ◼
         if "ветр" in low or "воздух" in low or "молн" in low:     return "\u2726 "  # ✦
+        if "мрак" in low or "тьм" in low or "бездна" in low:      return "\u263d "  # ☽
+        if "непозна" in low or "извне" in low or "невозмож" in low:return "\u203b "  # ※
         if "заряд" in low or "зачаров" in low:                    return "\u26a1 "  # ⚡
         return "\u2022 "  # •
 
@@ -1233,7 +1438,8 @@ class ArenaGame:
 
     def get_spell_damage(self, player, multiplier=1.0):
         wall_bonus = 1.5 if player.fire_wall_turns > 0 else 1.0
-        return max(1, int(player.intellect * multiplier * wall_bonus))
+        unknowable_bonus = 1.5 if getattr(player, "unfathomable_next", False) else 1.0
+        return max(1, int(player.intellect * multiplier * wall_bonus * unknowable_bonus))
 
     def get_spell_damage_and_crit(self, player, multiplier=1.0):
         """Возвращает (урон, is_crit). Крит доступен только Боевому магу."""
@@ -1244,6 +1450,9 @@ class ArenaGame:
 
     def has_stone_skin(self, player):
         return getattr(player, "stone_skin_turns", 0) > 0
+
+    def has_shadow_shroud(self, player):
+        return getattr(player, "shadow_shroud_turns", 0) > 0
 
     def is_secondary_effect_blocked(self, player):
         return self.has_stone_skin(player)
@@ -1257,8 +1466,19 @@ class ArenaGame:
             return 0
         if self.has_stone_skin(target):
             amount = max(1, int(amount * 0.5))
+        elif self.has_shadow_shroud(target):
+            amount = max(1, int(amount * 0.6))
         target.hp = max(0, target.hp - amount)
         return amount
+
+    def apply_soul_curse(self, target, turns=2):
+        if target.soul_curse_turns <= 0:
+            target.soul_curse_damage_base = target.damage
+            target.soul_curse_intellect_base = target.intellect
+        target.soul_curse_turns = max(target.soul_curse_turns, turns)
+        target.damage = max(1, int(target.soul_curse_damage_base * 0.75))
+        target.intellect = max(1, int(target.soul_curse_intellect_base * 0.75))
+        return True
 
     def apply_bleeding(self, target, turns, bleed_damage):
         if self.is_secondary_effect_blocked(target):
@@ -1315,6 +1535,14 @@ class ArenaGame:
                 player.fire_wall_turns -= 1
                 if player.fire_wall_turns == 0:
                     self.append_log(f"🔥 Огненная стена вокруг {player.name} гаснет.")
+        if player.shadow_shroud_turns > 0:
+            if player.shadow_shroud_fresh:
+                player.shadow_shroud_fresh = False
+            else:
+                player.shadow_shroud_turns -= 1
+                if player.shadow_shroud_turns == 0:
+                    player.dodge = max(0, player.dodge - 25)
+                    self.append_log(f"☽ Покров мрака вокруг {player.name} рассеивается.", category="magic_dark_normal")
         if player.tailwind_turns > 0:
             if player.tailwind_fresh:
                 player.tailwind_fresh = False
@@ -1343,6 +1571,12 @@ class ArenaGame:
             player.intellect = player.trance_intel_base
             player.trance_active = False
             self.append_log(f"🌀 {player.name} выходит из транса.")
+        if player.soul_curse_turns > 0:
+            player.soul_curse_turns -= 1
+            if player.soul_curse_turns == 0:
+                player.damage = player.soul_curse_damage_base
+                player.intellect = player.soul_curse_intellect_base
+                self.append_log(f"☽ Проклятие души спадает с {player.name}.", category="magic_dark_normal")
 
     def maybe_trigger_insight(self, player):
         if player.hp <= 0:
@@ -1405,6 +1639,8 @@ class ArenaGame:
 
             if current.stone_skin_turns > 0:
                 self.append_log(f"🪨 {current.name} укрыт каменной кожей. Осталось ходов: {current.stone_skin_turns}", category="magic_earth_normal")
+            if current.shadow_shroud_turns > 0:
+                self.append_log(f"☽ {current.name} скрыт покровом мрака. Осталось ходов: {current.shadow_shroud_turns}", category="magic_dark_normal")
             if current.tailwind_turns > 0:
                 self.append_log(f"✦ Ветер хранит {current.name}. Осталось ходов: {current.tailwind_turns}", category="magic_air_normal")
 
@@ -1897,6 +2133,159 @@ class ArenaGame:
                 disarm_chance = 80 if other == target else 40
                 if random.randint(1, 100) <= disarm_chance and self.apply_disarm(other, 1):
                     messages.append(self.make_log_entry(f"✦ Порыв выбивает оружие из рук {other.name}!", category="magic_air_exalted"))
+        elif spell_id == "shadow_shroud":
+            actual_target = player
+            if player.shadow_shroud_turns <= 0:
+                player.dodge += 25
+            player.shadow_shroud_turns = 2
+            player.shadow_shroud_fresh = True
+            hit_success = True
+            messages.append(self.make_log_entry(f"☽ {player.name} окутывает себя покровом мрака: урон снижен, уклонение повышено на 25%.", category="magic_dark_normal"))
+        elif spell_id == "soul_reap":
+            if self.try_spell_dodge(player, target, messages, "Жатва души"):
+                return messages, False, target
+            dmg, crit_hit = self.get_spell_damage_and_crit(player, 1.1)
+            actual_dmg = self.apply_damage(target, dmg)
+            healed = max(1, actual_dmg // 2)
+            player.hp = min(player.max_hp, player.hp + healed)
+            crit_str = " (КРИТ)" if crit_hit else ""
+            messages.append(self.make_log_entry(f"☽ {player.name} пожинает душу {target.name} и наносит {actual_dmg}{crit_str} урона, восстанавливая {healed} HP.", category="magic_dark_normal"))
+            if random.randint(1, 100) <= 35:
+                self.apply_soul_curse(target, 2)
+                messages.append(self.make_log_entry(f"☽ Душа {target.name} скована проклятием: урон и интеллект снижены на 25% на 2 хода.", category="magic_dark_normal"))
+            hit_success = True
+        elif spell_id == "black_sun":
+            if self.try_spell_dodge(player, target, messages, "Чёрное солнце"):
+                return messages, False, target
+            dmg, crit_hit = self.get_spell_damage_and_crit(player, 2.2)
+            actual_dmg = self.apply_damage(target, dmg)
+            crit_str = " (КРИТ)" if crit_hit else ""
+            hit_success = True
+            messages.append(self.make_log_entry(f"☽ {player.name} раскрывает Чёрное солнце и обрушивает {actual_dmg}{crit_str} урона на {target.name}.", category="magic_dark_exalted"))
+            if random.randint(1, 100) <= 50 and self.apply_stun(target, 1):
+                messages.append(self.make_log_entry(f"☽ {target.name} оглушён мраком Чёрного солнца!", category="magic_dark_exalted"))
+            for other in [p for p in self.players if p.hp > 0 and p not in (player, target)]:
+                if random.randint(1, 100) <= 75:
+                    if self.try_spell_dodge(player, other, messages, "теней Чёрного солнца"):
+                        continue
+                    splash = self.apply_damage(other, self.get_spell_damage(player, 1.1))
+                    messages.append(self.make_log_entry(f"☽ Тени Чёрного солнца задевают {other.name}: -{splash} HP", category="magic_dark_exalted"))
+        elif spell_id == "abyss_name":
+            if self.try_spell_dodge(player, target, messages, "Имя Бездны"):
+                return messages, False, target
+            dmg, crit_hit = self.get_spell_damage_and_crit(player, 1.6)
+            actual_dmg = self.apply_damage(target, dmg)
+            crit_str = " (КРИТ)" if crit_hit else ""
+            hit_success = True
+            messages.append(self.make_log_entry(f"☽ {player.name} произносит Имя Бездны и наносит {actual_dmg}{crit_str} урона {target.name}.", category="magic_dark_exalted"))
+            if target.hp > 0 and target.hp <= int(target.max_hp * 0.35):
+                target.hp = 0
+                messages.append(self.make_log_entry(f"☽ Бездна узнаёт {target.name} и мгновенно забирает его!", category="magic_dark_exalted"))
+            else:
+                bleed = max(1, int(actual_dmg * 0.5))
+                if self.apply_bleeding(target, 3, bleed):
+                    messages.append(self.make_log_entry(f"♥ Бездна рвёт сущность {target.name}: кровотечение на 3 хода по {bleed} урона.", category="magic_dark_exalted"))
+        elif spell_id == "impossible_angle":
+            if self.try_spell_dodge(player, target, messages, "Невозможный угол"):
+                return messages, False, target
+            dmg, crit_hit = self.get_spell_damage_and_crit(player, 0.5)
+            actual_dmg = self.apply_damage(target, dmg)
+            crit_str = " (КРИТ)" if crit_hit else ""
+            hit_success = True
+            messages.append(self.make_log_entry(f"※ {player.name} выворачивает пространство и наносит {actual_dmg}{crit_str} урона {target.name}.", category="magic_void_normal"))
+            roll = random.choice(("stun", "freeze", "disarm", "bleed", "burn"))
+            if roll == "stun" and self.apply_stun(target, 1):
+                messages.append(self.make_log_entry(f"※ Логика мира ломается: {target.name} оглушён.", category="magic_void_normal"))
+            elif roll == "freeze" and self.apply_freeze(target, 1):
+                messages.append(self.make_log_entry(f"※ Реальность застывает вокруг {target.name}.", category="magic_void_normal"))
+            elif roll == "disarm" and self.apply_disarm(target, 1):
+                messages.append(self.make_log_entry(f"※ Пространство выворачивает оружие из рук {target.name}.", category="magic_void_normal"))
+            elif roll == "burn" and self.apply_burning(target, max(1, int(max(1, actual_dmg) * 0.5))):
+                messages.append(self.make_log_entry(f"※ Искажённая геометрия поджигает саму плоть {target.name}.", category="magic_void_normal"))
+            else:
+                bleed = max(1, int(actual_dmg * 0.35))
+                if self.apply_bleeding(target, 3, bleed):
+                    messages.append(self.make_log_entry(f"♥ Искажённый разрез оставляет {target.name} истекать кровью по {bleed} урона 3 хода.", category="magic_void_normal"))
+        elif spell_id == "outer_whisper":
+            actual_target = player
+            if random.randint(1, 100) <= 65:
+                player.unfathomable_next = True
+                hit_success = True
+                messages.append(self.make_log_entry(f"※ {player.name} слышит шёпот извне. Возвышенная магия открыта прямо сейчас, а следующее заклинание усилено в 1.5 раза.", category="magic_void_normal"))
+            else:
+                messages.append(self.make_log_entry(f"※ Шёпот извне ускользает от {player.name}, и реальность не раскрывается.", category="magic_void_normal"))
+        elif spell_id == "doorless_gate":
+            if self.try_spell_dodge(player, target, messages, "Врата без двери"):
+                return messages, False, target
+            dmg, crit_hit = self.get_spell_damage_and_crit(player, 2.3)
+            actual_dmg = self.apply_damage(target, dmg)
+            crit_str = " (КРИТ)" if crit_hit else ""
+            hit_success = True
+            messages.append(self.make_log_entry(f"※ {player.name} открывает Врата без двери и наносит {actual_dmg}{crit_str} урона {target.name}.", category="magic_void_exalted"))
+            for other in [p for p in self.players if p.hp > 0 and p not in (player, target)]:
+                if random.randint(1, 100) <= 65:
+                    if self.try_spell_dodge(player, other, messages, "осколков невозможного"):
+                        continue
+                    splash = self.apply_damage(other, self.get_spell_damage(player, 0.9))
+                    messages.append(self.make_log_entry(f"※ Волна невозможного ломает {other.name}: -{splash} HP", category="magic_void_exalted"))
+                    if random.randint(1, 100) <= 30:
+                        extra = random.choice(("stun", "freeze", "burn", "disarm"))
+                        if extra == "stun" and self.apply_stun(other, 1):
+                            messages.append(self.make_log_entry(f"※ {other.name} ошеломлён невозможным ударом.", category="magic_void_exalted"))
+                        elif extra == "freeze" and self.apply_freeze(other, 1):
+                            messages.append(self.make_log_entry(f"※ {other.name} застывает в трещине реальности.", category="magic_void_exalted"))
+                        elif extra == "burn" and self.apply_burning(other, max(1, splash // 3)):
+                            messages.append(self.make_log_entry(f"※ Чужой жар охватывает {other.name}.", category="magic_void_exalted"))
+                        elif extra == "disarm" and self.apply_disarm(other, 1):
+                            messages.append(self.make_log_entry(f"※ Мир отказывается держать оружие {other.name}.", category="magic_void_exalted"))
+        elif spell_id == "unknowable_touch":
+            if self.try_spell_dodge(player, target, messages, "Касание непознаваемого"):
+                return messages, False, target
+            effect_count = sum([
+                target.bleeding > 0,
+                target.burning > 0,
+                target.frozen_turns > 0,
+                target.stunned > 0,
+                target.disarmed_turns > 0,
+                target.soul_curse_turns > 0,
+            ])
+            dmg, crit_hit = self.get_spell_damage_and_crit(player, 1.6 + 1.0 * effect_count)
+            actual_dmg = self.apply_damage(target, dmg)
+            crit_str = " (КРИТ)" if crit_hit else ""
+            hit_success = True
+            messages.append(self.make_log_entry(f"※ {player.name} касается непознаваемого и наносит {actual_dmg}{crit_str} урона {target.name}.", category="magic_void_exalted"))
+            if effect_count > 0:
+                target.bleeding = 0
+                target.bleed_damage = 0
+                target.burning = 0
+                target.burn_damage = 0
+                target.frozen_turns = 0
+                target.stunned = 0
+                target.disarmed_turns = 0
+                if target.soul_curse_turns > 0:
+                    target.soul_curse_turns = 0
+                    target.damage = target.soul_curse_damage_base
+                    target.intellect = target.soul_curse_intellect_base
+                messages.append(self.make_log_entry(f"※ Все искажения на {target.name} сорваны и поглощены непознаваемым.", category="magic_void_exalted"))
+            else:
+                extra_pool = ["stun", "freeze", "disarm", "bleed", "burn"]
+                random.shuffle(extra_pool)
+                for extra in extra_pool[:2]:
+                    if extra == "stun" and self.apply_stun(target, 1):
+                        messages.append(self.make_log_entry(f"※ {target.name} ошеломлён касанием непознаваемого.", category="magic_void_exalted"))
+                    elif extra == "freeze" and self.apply_freeze(target, 1):
+                        messages.append(self.make_log_entry(f"※ Реальность застывает вокруг {target.name}.", category="magic_void_exalted"))
+                    elif extra == "disarm" and self.apply_disarm(target, 1):
+                        messages.append(self.make_log_entry(f"※ Оружие выпадает из рук {target.name}.", category="magic_void_exalted"))
+                    elif extra == "bleed":
+                        bleed = max(1, int(actual_dmg * 0.35))
+                        if self.apply_bleeding(target, 3, bleed):
+                            messages.append(self.make_log_entry(f"♥ На теле {target.name} раскрываются невозможные раны: {bleed} урона 3 хода.", category="magic_void_exalted"))
+                    elif extra == "burn" and self.apply_burning(target, max(1, actual_dmg // 3)):
+                        messages.append(self.make_log_entry(f"※ Чужой огонь вгрызается в {target.name}.", category="magic_void_exalted"))
+
+        if player.unfathomable_next and spell_id != "outer_whisper":
+            player.unfathomable_next = False
 
         return messages, hit_success, actual_target
 
@@ -1958,6 +2347,11 @@ class ArenaGame:
         self.hit_target = result_target
         self.hit_timer = 10 if result_target else 0
         self.normalize_health()
+
+        if spell_id == "outer_whisper" and hit_success and player.hp > 0:
+            self.spell_menu_open = True
+            self.spell_tier = "exalted"
+            return True
 
         if self.spell_tier == "normal" and self.maybe_trigger_insight(player):
             return True
@@ -2322,12 +2716,19 @@ class ArenaGame:
                 is_hovered = rect.collidepoint(mouse)
 
                 # Фон
-                pygame.draw.circle(self.screen, (50, 50, 70), center, radius)
+                if sub_name == "Шаман":
+                    pygame.draw.circle(self.screen, (60, 46, 22), center, radius)
+                    pygame.draw.circle(self.screen, (34, 34, 42), center, radius - 8)
+                    pygame.draw.circle(self.screen, (56, 148, 136), (center[0] - 30, center[1] - 18), 26)
+                    pygame.draw.circle(self.screen, (176, 102, 26), (center[0] + 34, center[1] + 24), 22)
+                    pygame.draw.circle(self.screen, (34, 34, 42), center, radius - 22)
+                else:
+                    pygame.draw.circle(self.screen, (50, 50, 70), center, radius)
 
                 # Портретная картинка
                 sub_image = self.icons.get(sub_name)
                 if sub_image:
-                    scaled = pygame.transform.scale(sub_image, (rect.width, rect.height))
+                    scaled = self._make_circle_portrait(sub_image, rect.width)
                     self.screen.blit(scaled, (rect.x, rect.y))
 
                 # Кольцо выбора
@@ -2402,6 +2803,17 @@ class ArenaGame:
                         txt = self.font.render(part, True, (215, 215, 225))
                         self.screen.blit(txt, (620, y_text))
                         y_text += 40
+                elif self.selected_group == "Боец":
+                    y_text = 270
+                    group_lines = self.wrap_text(
+                        "Бойцы идут напролом и держат строй до конца. Одни побеждают сталью и щитом, другие сплавляют воинское мастерство с тайной боевой магией.",
+                        self.font,
+                        560,
+                    )
+                    for part in group_lines:
+                        txt = self.font.render(part, True, (215, 215, 225))
+                        self.screen.blit(txt, (620, y_text))
+                        y_text += 40
 
         self.class_confirm_button.draw(self.screen, self.font, enabled=bool(self.selected_class))
 
@@ -2420,7 +2832,7 @@ class ArenaGame:
         self.screen.blit(title, (520, 50))
 
         for button in self.magic_buttons:
-            button.draw(self.screen, self.font, active=(button.text == self.selected_magic_path))
+            button.draw(self.screen, self.small_font, active=(button.text == self.selected_magic_path))
 
         if self.selected_magic_path:
             data = self.magic_data[self.selected_magic_path]
@@ -2714,6 +3126,12 @@ class ArenaGame:
             status_lines.append(f"Эффект: каменная кожа активна ещё {player.stone_skin_turns} ход(а) — входящий урон x0.5, доп. эффекты блокируются, магия и активка недоступны.")
         if player.tailwind_turns > 0:
             status_lines.append(f"Эффект: попутный ветер активен ещё {player.tailwind_turns} ход(а) — уклонение повышено на 30%.")
+        if player.shadow_shroud_turns > 0:
+            status_lines.append(f"Эффект: покров мрака активен ещё {player.shadow_shroud_turns} ход(а) — урон понижен на 40%, уклонение +25%.")
+        if player.soul_curse_turns > 0:
+            status_lines.append(f"Эффект: проклятие души ещё {player.soul_curse_turns} ход(а) — урон и интеллект снижены на 25%.")
+        if player.unfathomable_next:
+            status_lines.append("Эффект: шёпот извне — следующее заклинание усилено в 1.5 раза.")
         if player.weapon_enchanted_turns > 0:
             status_lines.append(f"Эффект: оружие заряжено магией ещё {player.weapon_enchanted_turns} ход(а).")
         if player.totem_active:

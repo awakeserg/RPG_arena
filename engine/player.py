@@ -40,6 +40,12 @@ class Player:
         self.stone_skin_fresh=False
         self.tailwind_turns=0
         self.tailwind_fresh=False
+        self.shadow_shroud_turns=0
+        self.shadow_shroud_fresh=False
+        self.soul_curse_turns=0
+        self.soul_curse_damage_base=0
+        self.soul_curse_intellect_base=0
+        self.unfathomable_next=False
 
         self.weapon_enchanted_turns=0
 
