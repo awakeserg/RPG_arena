@@ -394,6 +394,7 @@ class ArenaGame:
         self.post_quit_button = UIButton("Закрыть игру", 1180, 720, 300, 75)
 
         self.icons = self.load_class_icons()
+        self.subclass_showcase_art = self.create_subclass_showcase_art()
 
         self.player_count = 0
         self.human_names = []
@@ -452,6 +453,74 @@ class ArenaGame:
             except Exception:
                 icons[name] = self._create_fallback_icon(name)
         return icons
+
+    def _create_barbarian_showcase_art(self):
+        surface = pygame.Surface((220, 280), pygame.SRCALPHA)
+        skin = (206, 160, 122)
+        fur = (120, 84, 56)
+        metal = (180, 190, 200)
+        axe_wood = (110, 72, 46)
+        red_cloth = (145, 38, 38)
+
+        pygame.draw.line(surface, axe_wood, (160, 28), (92, 248), 11)
+        pygame.draw.polygon(surface, metal, [(126, 50), (178, 18), (196, 54), (150, 88)])
+        pygame.draw.polygon(surface, metal, [(166, 64), (206, 95), (174, 121), (142, 86)])
+
+        pygame.draw.ellipse(surface, red_cloth, (62, 72, 92, 110))
+        pygame.draw.ellipse(surface, fur, (48, 78, 120, 92))
+        pygame.draw.circle(surface, skin, (104, 56), 26)
+        pygame.draw.polygon(surface, fur, [(76, 50), (90, 18), (118, 18), (133, 50), (120, 38), (88, 38)])
+        pygame.draw.line(surface, fur, (96, 66), (90, 82), 4)
+        pygame.draw.line(surface, fur, (112, 66), (118, 82), 4)
+
+        pygame.draw.line(surface, skin, (72, 112), (50, 178), 13)
+        pygame.draw.line(surface, skin, (136, 112), (162, 172), 13)
+        pygame.draw.line(surface, fur, (70, 112), (50, 178), 6)
+        pygame.draw.line(surface, fur, (138, 112), (162, 172), 6)
+        pygame.draw.line(surface, skin, (92, 182), (76, 252), 15)
+        pygame.draw.line(surface, skin, (118, 182), (138, 252), 15)
+        pygame.draw.line(surface, fur, (88, 186), (74, 252), 6)
+        pygame.draw.line(surface, fur, (122, 186), (140, 252), 6)
+        pygame.draw.line(surface, metal, (76, 252), (58, 270), 5)
+        pygame.draw.line(surface, metal, (138, 252), (156, 270), 5)
+        return surface
+
+    def _create_shaman_showcase_art(self):
+        surface = pygame.Surface((220, 280), pygame.SRCALPHA)
+        skin = (190, 150, 118)
+        robe = (62, 118, 76)
+        robe_dark = (34, 68, 48)
+        staff = (118, 82, 54)
+        glow = (90, 210, 170)
+        bone = (215, 215, 198)
+
+        pygame.draw.line(surface, staff, (164, 26), (170, 258), 8)
+        pygame.draw.circle(surface, glow, (164, 24), 16)
+        pygame.draw.circle(surface, bone, (164, 24), 16, 2)
+        pygame.draw.line(surface, glow, (164, 8), (164, 40), 3)
+        pygame.draw.line(surface, glow, (148, 24), (180, 24), 3)
+
+        pygame.draw.circle(surface, skin, (102, 54), 24)
+        pygame.draw.polygon(surface, robe_dark, [(78, 54), (90, 22), (112, 18), (128, 54), (116, 40), (88, 40)])
+        pygame.draw.line(surface, robe_dark, (95, 64), (91, 78), 3)
+        pygame.draw.line(surface, robe_dark, (109, 64), (113, 78), 3)
+        pygame.draw.polygon(surface, robe, [(70, 86), (136, 86), (154, 204), (50, 204)])
+        pygame.draw.polygon(surface, robe_dark, [(70, 86), (102, 120), (136, 86), (154, 204), (50, 204)])
+        pygame.draw.line(surface, glow, (102, 92), (102, 182), 3)
+        pygame.draw.line(surface, glow, (84, 120), (120, 120), 2)
+        pygame.draw.line(surface, skin, (74, 104), (54, 172), 10)
+        pygame.draw.line(surface, skin, (130, 104), (154, 166), 10)
+        pygame.draw.line(surface, skin, (86, 202), (76, 258), 12)
+        pygame.draw.line(surface, skin, (118, 202), (126, 258), 12)
+        pygame.draw.line(surface, bone, (74, 258), (58, 272), 4)
+        pygame.draw.line(surface, bone, (126, 258), (142, 272), 4)
+        return surface
+
+    def create_subclass_showcase_art(self):
+        return {
+            "Варвар": self._create_barbarian_showcase_art(),
+            "Шаман": self._create_shaman_showcase_art(),
+        }
 
     def set_state(self, new_state):
         self.state = new_state
@@ -673,6 +742,11 @@ class ArenaGame:
     def get_subclass_portrait_positions(self, group_name):
         subclasses = self.class_groups.get(group_name, [])
         if len(subclasses) == 2:
+            if group_name == "Дикарь":
+                return [
+                    (pygame.Rect(1270, 185, 185, 185), subclasses[0]),
+                    (pygame.Rect(1518, 185, 185, 185), subclasses[1]),
+                ]
             return [
                 (pygame.Rect(1285, 185, 185, 185), subclasses[0]),
                 (pygame.Rect(1498, 185, 185, 185), subclasses[1]),
@@ -2226,9 +2300,7 @@ class ArenaGame:
         left_panel = pygame.Rect(70, 120, 400, 690)
         right_panel = pygame.Rect(520, 120, 1210, 690)
         pygame.draw.rect(self.screen, PANEL, left_panel, border_radius=20)
-        pygame.draw.rect(self.screen, PANEL, right_panel, border_radius=20)
         pygame.draw.rect(self.screen, WHITE, left_panel, 3, border_radius=20)
-        pygame.draw.rect(self.screen, WHITE, right_panel, 3, border_radius=20)
 
         player_name = self.human_names[self.setup_index]
         title = self.big_font.render(f"Выбор класса: {player_name}", True, WHITE)
@@ -2270,6 +2342,11 @@ class ArenaGame:
                 label_color = GOLD if is_selected else (WHITE if is_hovered else GRAY)
                 label = self.font.render(sub_name, True, label_color)
                 self.screen.blit(label, (center[0] - label.get_width() // 2, rect.y + rect.height + 10))
+
+                showcase = self.subclass_showcase_art.get(sub_name)
+                if showcase:
+                    art_rect = showcase.get_rect(midtop=(center[0], rect.y + rect.height + 48))
+                    self.screen.blit(showcase, art_rect)
 
             # Описание выбранного подкласса
             display_class = self.selected_class
@@ -2314,6 +2391,17 @@ class ArenaGame:
                 self.screen.blit(group_title, (620, 125))
                 hint = self.font.render("← Выбери подкласс, нажав на портрет", True, (170, 170, 190))
                 self.screen.blit(hint, (620, 200))
+                if self.selected_group == "Дикарь":
+                    y_text = 270
+                    group_lines = self.wrap_text(
+                        "Люди диких племён живут по заветам предков. В бою они яростны и опасны: одни крушат врага грубой силой, другие шепчут духам и зовут древние обряды.",
+                        self.font,
+                        560,
+                    )
+                    for part in group_lines:
+                        txt = self.font.render(part, True, (215, 215, 225))
+                        self.screen.blit(txt, (620, y_text))
+                        y_text += 40
 
         self.class_confirm_button.draw(self.screen, self.font, enabled=bool(self.selected_class))
 
