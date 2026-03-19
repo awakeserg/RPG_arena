@@ -16,6 +16,8 @@ def attack(a,d,strong=False,cautious=False):
         if random.randint(1, 100) < 15:
             messages.append("⚡ Парирование!")
             parry_damage = a.damage // 2
+            if getattr(a, "lycan_form", "") == "bear" and random.randint(1, 100) <= 25:
+                parry_damage = 0
             if getattr(a, "stone_skin_turns", 0) > 0:
                 parry_damage = max(1, parry_damage // 2)
             elif getattr(a, "shadow_shroud_turns", 0) > 0:
@@ -35,6 +37,10 @@ def attack(a,d,strong=False,cautious=False):
     if d.hp < 15 and random.randint(1, 100) < 20:
         messages.append("💀 ФАТАЛИТИ!")
         d.hp = 0
+        return messages
+
+    if getattr(d, "lycan_form", "") == "bear" and random.randint(1, 100) <= 25:
+        messages.append("🐻 урон проигнорирован")
         return messages
 
     if random.randint(1, 100) < 10 and getattr(d, "stone_skin_turns", 0) <= 0:
@@ -81,12 +87,21 @@ def special(a,d):
             d.bleed_damage = bleed
             messages.append("кровотечение")
 
-    elif a.role == "Копейщик":
+    elif a.role == "Эльф":
         dmg = a.damage // 2
         d.hp -= dmg
         messages.append(f"{a.name} использует спец и наносит {dmg}")
         if random.randint(1, 100) < 30:
             d.stunned = 1
             messages.append("оглушение")
+
+    elif a.role == "Орк":
+        dmg = a.damage * 2
+        if random.randint(1, 100) < 30:
+            a.hp -= dmg
+            messages.append("орк ударил себя")
+        else:
+            d.hp -= dmg
+            messages.append(f"{a.name} использует спец и наносит {dmg}")
 
     return messages

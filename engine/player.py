@@ -11,7 +11,7 @@ class Player:
         self.stamina=10
         self.agility=10
         self.luck=10
-        self.initiative=10
+        self.wisdom=10
         self.intellect=10
 
         self.inventory=[]
@@ -26,6 +26,7 @@ class Player:
         self.temp_dodge=0
         self.stunned=0
         self.disarmed_turns=0
+        self.essence_locked_turns=0
         self.arm_severed=False
         self.leg_severed=False
         self.frozen_turns=0
@@ -47,6 +48,11 @@ class Player:
         self.soul_curse_intellect_base=0
         self.unfathomable_next=False
 
+        self.spell_cooldown=0
+        self.spell_cooldown_fresh=False
+        self.special_cooldown=0
+        self.special_cooldown_fresh=False
+
         self.weapon_enchanted_turns=0
 
         self.totem_next=False
@@ -57,6 +63,15 @@ class Player:
         self.trance_next=False
         self.trance_active=False
         self.trance_intel_base=0
+
+        self.lycan_form=""
+        self.lycan_turns=0
+        self.lycan_cooldown=0
+        self.lycan_cooldown_fresh=False
+        self.lycan_saved_strength=0
+        self.lycan_saved_damage=0
+        self.lycan_saved_luck=0
+        self.lycan_saved_crit=0
 
         self.magic_path=""
 
@@ -79,5 +94,6 @@ class Player:
         print("Урон:",self.damage)
         print("Уклон:",self.dodge,"%")
         print("Крит:",self.crit,"%")
+        print("Мудрость:",self.wisdom)
         print("Интеллект:",self.intellect)
         print("Инвентарь:",self.inventory)

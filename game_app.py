@@ -5,7 +5,6 @@ import sys
 import pygame
 
 from engine.combat import attack
-from engine.items import loot
 from engine.player import Player
 
 
@@ -114,20 +113,20 @@ class ArenaGame:
                 "stamina": 15,
                 "agility": 10,
                 "luck": 10,
-                "initiative": 10,
+                "wisdom": 10,
                 "intellect": 10,
                 "image": "assets/images/warrior.png",
             },
             "Варвар": {
                 "desc": "Огромный урон, но риск",
                 "skill": "Берсерк — 200% урона, но 30% шанс ранить себя тем же ударом",
-                "passive": "Пассивно: 25% шанс искалечить цель при любом успешном ударе: 10% отрубить руку (урон жертвы x0.5 до конца боя), 10% отрубить ногу (инициатива жертвы = 1), 3% отрубить голову (мгновенная смерть).",
+                "passive": "Пассивно: 25% шанс искалечить цель при любом успешном ударе: 10% отрубить руку (урон жертвы x0.5 до конца боя), 10% отрубить ногу (ловкость и уклонение жертвы резко падают), 3% отрубить голову (мгновенная смерть).",
                 "active": "Активно: Берсерк наносит 200% урона, но с шансом 30% варвар бьёт только себя на тот же урон. На самоудар пассивка тоже может сработать.",
                 "strength": 20,
                 "stamina": 12,
                 "agility": 8,
                 "luck": 8,
-                "initiative": 10,
+                "wisdom": 10,
                 "intellect": 10,
                 "image": "assets/images/barbarian.png",
             },
@@ -140,11 +139,24 @@ class ArenaGame:
                 "stamina": 10,
                 "agility": 18,
                 "luck": 14,
-                "initiative": 10,
+                "wisdom": 10,
                 "intellect": 10,
                 "image": "assets/images/assassin.png",
             },
-            "Копейщик": {
+            "Плут": {
+                "desc": "Хитрый добытчик, умеющий обращать удачу и грязные трюки себе на пользу",
+                "skill": "Ловкость рук — выбивает оружие и может наложить кровотечение",
+                "passive": "Пассивно: Счастливая находка — при удачном поиске предмета Плут находит сразу две находки и выбирает одну. Негативные предметы он обращает против врага.",
+                "active": "Активно: Ловкость рук — выбивает оружие у цели и с шансом 50% накладывает кровотечение на 3 хода по 40% от текущего урона.",
+                "strength": 11,
+                "stamina": 11,
+                "agility": 17,
+                "luck": 16,
+                "wisdom": 10,
+                "intellect": 10,
+                "image": "assets/images/assassin.png",
+            },
+            "Эльф": {
                 "desc": "Контроль дистанции и крит",
                 "skill": "Подсечка — 30% урона и 50% шанс опрокинуть врага на 1 ход",
                 "passive": "Пассивно: Точный удар — 60% шанс при любом ударе полностью игнорировать уклонение врага, словно его ловкость равна 0.",
@@ -153,7 +165,7 @@ class ArenaGame:
                 "stamina": 14,
                 "agility": 12,
                 "luck": 12,
-                "initiative": 10,
+                "wisdom": 10,
                 "intellect": 10,
                 "image": "assets/images/spearman.png",
             },
@@ -166,8 +178,47 @@ class ArenaGame:
                 "stamina": 13,
                 "agility": 10,
                 "luck": 12,
-                "initiative": 10,
+                "wisdom": 10,
                 "intellect": 16,
+                "image": "assets/images/battle_mage.png",
+            },
+            "Орк": {
+                "desc": "Дикий нелюдь, рвущий врага грубой силой и звериной ликантропией",
+                "skill": "Берсерк — 200% урона, но 30% шанс ранить себя тем же ударом",
+                "passive": "Пассивно: 25% шанс искалечить цель при любом успешном ударе: 10% отрубить руку, 10% отрубить ногу, 3% отрубить голову. В звериной форме пассивка не работает.",
+                "active": "Активно: Берсерк наносит 200% урона, но с шансом 30% орк бьёт только себя на тот же урон. В звериной форме активка не работает.",
+                "strength": 19,
+                "stamina": 13,
+                "agility": 9,
+                "luck": 8,
+                "wisdom": 8,
+                "intellect": 6,
+                "image": "assets/images/barbarian.png",
+            },
+            "Некромант": {
+                "desc": "Мрачный маг, обращающий страдания врага в собственную жизненную силу",
+                "skill": "Могильная хватка — 120% магического урона без уклонения и отражения, плюс проклятие души на 2 хода",
+                "passive": "Пассивно: Пожиратель душ — когда Некромант наносит магический урон, он исцеляется на 35% от фактически нанесённого урона.",
+                "active": "Активно: Могильная хватка наносит 120% от интеллекта магическим уроном, который нельзя отразить или уклонить. Цель получает проклятие души на 2 хода, а если уже была под любым эффектом — ещё и оглушается на 1 ход.",
+                "strength": 9,
+                "stamina": 11,
+                "agility": 10,
+                "luck": 10,
+                "wisdom": 14,
+                "intellect": 18,
+                "image": "assets/images/shaman.png",
+            },
+            "Мистик": {
+                "desc": "Проводник чистой тайны, умеющий сковывать саму суть чужих возможностей",
+                "skill": "Сковать суть — 150% магического урона без уклонения и отражения, затем запрет способностей на 1 ход",
+                "passive": "Пассивно: Мастер пути — обычная магия Мистика уходит в откат всего на 1 свой ход вместо 2.",
+                "active": "Активно: Сковать суть наносит 150% от интеллекта магическим уроном, который нельзя отразить или уклонить. После удара враг на 1 ход теряет доступ к колдовству, обращению и активным навыкам, а если они уже были на откате — их откат продлевается ещё на 1 ход.",
+                "strength": 8,
+                "stamina": 10,
+                "agility": 11,
+                "luck": 10,
+                "wisdom": 15,
+                "intellect": 19,
                 "image": "assets/images/battle_mage.png",
             },
             "\u0428\u0430\u043c\u0430\u043d": {
@@ -179,7 +230,7 @@ class ArenaGame:
                 "stamina": 12,
                 "agility": 10,
                 "luck": 10,
-                "initiative": 10,
+                "wisdom": 10,
                 "intellect": 14,
                 "image": "assets/images/shaman.png",
             },
@@ -189,14 +240,15 @@ class ArenaGame:
             "Выносливый": "Много HP",
             "Ловкий": "Высокий шанс уклонения",
             "Удачливый": "Частые криты",
-            "Инициативный": "Ходишь раньше врагов",
-            "Интеллектуальный": "Больше шанс прозрения и сильнее магия",
+            "Мудрый": "Выше шанс прозрения и отражения магии",
+            "Интеллектуальный": "Сильнее магия",
         }
         self.class_groups = {
             "Боец": ["Воин", "Боевой маг"],
             "Дикарь": ["Варвар", "Шаман"],
-            "Ассасин": ["Ассасин"],
-            "Копейщик": ["Копейщик"],
+            "Разбойник": ["Ассасин", "Плут"],
+            "Нелюди": ["Эльф", "Орк"],
+            "Маг": ["Некромант", "Мистик"],
         }
         self.magic_data = {
             "Путь огня": {
@@ -324,7 +376,7 @@ class ArenaGame:
                 ],
             },
             "Тёмный путь": {
-                "desc": "Идущие Тёмным путём не поклоняются ночи — они принимают её как честную правду. Там, где другие видят ужас, они находят власть, голод бездны и обещание победы любой ценой.",
+                "desc": "Идущие Тёмным путём принимают ночь как честную правду. Там, где другие видят ужас, они находят власть, голод бездны и обещание победы любой ценой.",
                 "normal": [
                     {
                         "id": "shadow_shroud",
@@ -350,12 +402,12 @@ class ArenaGame:
                         "id": "abyss_name",
                         "name": "Имя Бездны",
                         "target": "enemy",
-                        "desc": "Наносит 160% от интеллекта. Если после удара цель опускается до 35% HP или ниже, Бездна мгновенно забирает её. Иначе накладывается тяжёлое кровотечение.",
+                        "desc": "Наносит 160% от интеллекта. Если цель падает до 35% HP или ниже, Бездна мгновенно забирает её. Иначе накладывается тяжёлое кровотечение.",
                     },
                 ],
             },
             "Путь непознаваемого": {
-                "desc": "Это запредельный путь тех, кто смотрел за край реальности и вернулся не совсем прежним. Его адепты зовут силы, которым нет имени, и ломают саму логику мира ради краткого мига невозможного превосходства.",
+                "desc": "Это запредельный путь тех, кто смотрел за край реальности и вернулся иным. Его адепты зовут силы без имени и ломают саму логику мира ради мига невозможного превосходства.",
                 "normal": [
                     {
                         "id": "impossible_angle",
@@ -381,7 +433,7 @@ class ArenaGame:
                         "id": "unknowable_touch",
                         "name": "Касание непознаваемого",
                         "target": "enemy",
-                        "desc": "Наносит 160% от интеллекта плюс ещё по 100% за каждый эффект на цели, затем снимает их. Если эффектов нет, заклинание навешивает сразу два случайных искажения.",
+                        "desc": "Наносит 160% от интеллекта плюс по 100% за каждый эффект на цели, затем снимает их. Если эффектов нет, навешивает сразу два случайных искажения.",
                     },
                 ],
             },
@@ -450,6 +502,10 @@ class ArenaGame:
             UIButton("", 1360, 590, 330, 70),
             UIButton("", 1360, 675, 330, 70),
         ]
+        self.loot_choice_open = False
+        self.loot_choice_items = []
+        self.loot_choice_player = None
+        self.form_menu_open = False
 
         self.post_rematch_button = UIButton("Реванш", 420, 720, 260, 75)
         self.post_restart_button = UIButton("Начать заново", 770, 720, 320, 75)
@@ -484,6 +540,14 @@ class ArenaGame:
         self.info_rects = []
         self.show_info_idx = None
         self.close_popup_rect = None
+        self.help_button_rect = pygame.Rect(WIDTH - 98, HEIGHT - 98, 72, 72)
+        self.help_open = False
+        self.help_tabs = ["Правила", "Характеристики", "Эффекты", "Классы", "Магия", "Арены и лут"]
+        self.help_active_tab = self.help_tabs[0]
+        self.help_tab_rects = []
+        self.help_close_rect = None
+        self.help_scroll = 0
+        self.help_max_scroll = 0
         self.arena_name = ""
         self.ai_action_due = 0
         self.spell_menu_open = False
@@ -508,6 +572,18 @@ class ArenaGame:
         icons = {}
         base_dir = os.path.dirname(__file__)
         for name, data in self.class_data.items():
+            if name == "Плут":
+                icons[name] = self._create_plut_portrait_icon()
+                continue
+            if name == "Орк":
+                icons[name] = self._create_orc_portrait_icon()
+                continue
+            if name == "Некромант":
+                icons[name] = self._create_necromancer_portrait_icon()
+                continue
+            if name == "Мистик":
+                icons[name] = self._create_mystic_portrait_icon()
+                continue
             path = os.path.join(base_dir, data["image"])
             try:
                 image = pygame.image.load(path)
@@ -535,6 +611,137 @@ class ArenaGame:
         result.blit(scaled, (0, 0))
         result.blit(mask, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
         return result
+
+    def _create_assassin_portrait_icon(self):
+        surface = pygame.Surface((220, 220), pygame.SRCALPHA)
+        hood = (84, 50, 140)
+        hood_dark = (48, 26, 88)
+        skin = (204, 164, 136)
+        steel = (198, 202, 216)
+        leather = (96, 68, 46)
+
+        pygame.draw.circle(surface, (34, 26, 50), (110, 110), 108)
+        pygame.draw.circle(surface, (64, 48, 96), (110, 110), 100)
+        pygame.draw.ellipse(surface, hood, (44, 30, 132, 112))
+        pygame.draw.ellipse(surface, hood_dark, (62, 52, 96, 92))
+        pygame.draw.circle(surface, skin, (110, 98), 34)
+        pygame.draw.arc(surface, hood_dark, (58, 36, 104, 92), 3.0, 6.4, 6)
+        pygame.draw.line(surface, hood_dark, (98, 104), (92, 120), 4)
+        pygame.draw.line(surface, hood_dark, (122, 104), (128, 120), 4)
+        pygame.draw.line(surface, hood_dark, (100, 126), (120, 126), 3)
+        pygame.draw.line(surface, leather, (84, 118), (58, 174), 8)
+        pygame.draw.line(surface, leather, (136, 118), (162, 174), 8)
+        pygame.draw.polygon(surface, steel, [(46, 182), (68, 140), (78, 148), (58, 188)])
+        pygame.draw.polygon(surface, steel, [(174, 182), (152, 140), (142, 148), (162, 188)])
+        pygame.draw.polygon(surface, steel, [(52, 188), (64, 194), (56, 202), (40, 194)])
+        pygame.draw.polygon(surface, steel, [(168, 188), (156, 194), (164, 202), (180, 194)])
+        pygame.draw.line(surface, hood, (110, 132), (110, 182), 4)
+        return surface
+
+    def _create_plut_portrait_icon(self):
+        surface = pygame.Surface((220, 220), pygame.SRCALPHA)
+        hat = (126, 96, 34)
+        hat_dark = (78, 58, 18)
+        plume = (152, 104, 218)
+        skin = (210, 172, 138)
+        coat = (108, 82, 30)
+        coat_dark = (70, 54, 18)
+        gold = (255, 212, 90)
+        steel = (196, 198, 210)
+        leather = (106, 72, 44)
+
+        pygame.draw.circle(surface, (44, 34, 28), (110, 110), 108)
+        pygame.draw.circle(surface, (76, 60, 38), (110, 110), 100)
+        pygame.draw.ellipse(surface, hat, (44, 44, 132, 40))
+        pygame.draw.ellipse(surface, hat_dark, (56, 30, 104, 44))
+        pygame.draw.polygon(surface, plume, [(128, 38), (152, 8), (146, 54)])
+        pygame.draw.circle(surface, skin, (110, 98), 34)
+        pygame.draw.arc(surface, hat_dark, (88, 108, 36, 18), 0.2, 2.9, 3)
+        pygame.draw.line(surface, hat_dark, (98, 90), (92, 102), 3)
+        pygame.draw.line(surface, hat_dark, (122, 90), (128, 102), 3)
+        pygame.draw.polygon(surface, coat, [(58, 126), (162, 126), (148, 188), (72, 188)])
+        pygame.draw.polygon(surface, coat_dark, [(58, 126), (110, 152), (162, 126), (148, 188), (72, 188)])
+        pygame.draw.line(surface, leather, (82, 126), (66, 172), 8)
+        pygame.draw.line(surface, leather, (138, 126), (156, 170), 8)
+        pygame.draw.circle(surface, gold, (58, 164), 12)
+        pygame.draw.circle(surface, (224, 164, 58), (58, 164), 12, 2)
+        pygame.draw.line(surface, (224, 164, 58), (50, 164), (66, 164), 2)
+        pygame.draw.line(surface, leather, (154, 164), (172, 188), 6)
+        pygame.draw.polygon(surface, steel, [(168, 186), (180, 170), (186, 178), (174, 194)])
+        pygame.draw.polygon(surface, steel, [(174, 194), (184, 198), (178, 206), (166, 200)])
+        return surface
+
+    def _create_orc_portrait_icon(self):
+        surface = pygame.Surface((220, 220), pygame.SRCALPHA)
+        skin = (104, 156, 74)
+        skin_dark = (70, 112, 46)
+        tusk = (228, 220, 184)
+        fur = (88, 62, 36)
+        amber = (255, 194, 82)
+
+        pygame.draw.circle(surface, (34, 42, 26), (110, 110), 108)
+        pygame.draw.circle(surface, (58, 78, 40), (110, 110), 100)
+        pygame.draw.ellipse(surface, fur, (46, 18, 128, 82))
+        pygame.draw.circle(surface, skin, (110, 100), 44)
+        pygame.draw.ellipse(surface, skin_dark, (66, 78, 88, 74))
+        pygame.draw.polygon(surface, fur, [(64, 62), (72, 24), (88, 64)])
+        pygame.draw.polygon(surface, fur, [(156, 62), (148, 24), (132, 64)])
+        pygame.draw.circle(surface, amber, (96, 94), 5)
+        pygame.draw.circle(surface, amber, (124, 94), 5)
+        pygame.draw.line(surface, skin_dark, (94, 116), (102, 122), 4)
+        pygame.draw.line(surface, skin_dark, (126, 116), (118, 122), 4)
+        pygame.draw.polygon(surface, tusk, [(88, 128), (98, 126), (94, 146), (84, 144)])
+        pygame.draw.polygon(surface, tusk, [(132, 128), (122, 126), (126, 146), (136, 144)])
+        pygame.draw.polygon(surface, fur, [(62, 140), (110, 132), (158, 140), (144, 186), (76, 186)])
+        return surface
+
+    def _create_necromancer_portrait_icon(self):
+        surface = pygame.Surface((220, 220), pygame.SRCALPHA)
+        hood = (94, 68, 128)
+        hood_dark = (54, 34, 82)
+        bone = (226, 220, 192)
+        ghost = (126, 206, 190)
+        shadow = (34, 28, 42)
+
+        pygame.draw.circle(surface, shadow, (110, 110), 108)
+        pygame.draw.circle(surface, (62, 52, 78), (110, 110), 100)
+        pygame.draw.polygon(surface, hood, [(44, 46), (82, 18), (138, 18), (176, 46), (144, 146), (76, 146)])
+        pygame.draw.polygon(surface, hood_dark, [(66, 58), (94, 38), (126, 38), (154, 58), (132, 132), (88, 132)])
+        pygame.draw.circle(surface, bone, (110, 98), 30)
+        pygame.draw.circle(surface, shadow, (98, 94), 5)
+        pygame.draw.circle(surface, shadow, (122, 94), 5)
+        pygame.draw.line(surface, shadow, (100, 120), (120, 120), 3)
+        pygame.draw.arc(surface, ghost, (72, 70, 76, 70), 3.6, 5.8, 4)
+        pygame.draw.arc(surface, ghost, (72, 84, 76, 70), 0.4, 2.6, 4)
+        pygame.draw.circle(surface, ghost, (62, 156), 14, 2)
+        pygame.draw.circle(surface, ghost, (158, 156), 14, 2)
+        pygame.draw.line(surface, ghost, (62, 142), (62, 170), 2)
+        pygame.draw.line(surface, ghost, (48, 156), (76, 156), 2)
+        return surface
+
+    def _create_mystic_portrait_icon(self):
+        surface = pygame.Surface((220, 220), pygame.SRCALPHA)
+        hood = (84, 132, 186)
+        hood_dark = (42, 72, 112)
+        skin = (214, 180, 150)
+        glow = (150, 240, 255)
+        star = (255, 232, 156)
+        shadow = (26, 34, 46)
+
+        pygame.draw.circle(surface, shadow, (110, 110), 108)
+        pygame.draw.circle(surface, (48, 66, 88), (110, 110), 100)
+        pygame.draw.polygon(surface, hood, [(48, 42), (82, 18), (138, 18), (172, 42), (154, 162), (66, 162)])
+        pygame.draw.polygon(surface, hood_dark, [(68, 58), (94, 34), (126, 34), (152, 58), (138, 150), (82, 150)])
+        pygame.draw.circle(surface, skin, (110, 100), 31)
+        pygame.draw.circle(surface, glow, (98, 94), 5)
+        pygame.draw.circle(surface, glow, (122, 94), 5)
+        pygame.draw.arc(surface, hood_dark, (96, 112, 28, 16), 0.3, 2.8, 2)
+        pygame.draw.circle(surface, glow, (110, 42), 9)
+        pygame.draw.circle(surface, glow, (110, 42), 18, 2)
+        pygame.draw.line(surface, glow, (110, 20), (110, 64), 2)
+        pygame.draw.line(surface, glow, (88, 42), (132, 42), 2)
+        pygame.draw.polygon(surface, star, [(160, 58), (168, 42), (176, 58), (192, 66), (176, 74), (168, 90), (160, 74), (144, 66)])
+        return surface
 
     def _create_barbarian_showcase_art(self):
         surface = pygame.Surface((220, 280), pygame.SRCALPHA)
@@ -690,11 +897,191 @@ class ArenaGame:
         pygame.draw.line(surface, bone, (128, 260), (144, 274), 4)
         return surface
 
+    def _create_assassin_showcase_art(self):
+        surface = pygame.Surface((220, 280), pygame.SRCALPHA)
+        skin = (200, 162, 132)
+        hood = (68, 42, 102)
+        hood_dark = (42, 24, 70)
+        steel = (188, 194, 214)
+        leather = (96, 64, 44)
+
+        pygame.draw.circle(surface, skin, (102, 54), 22)
+        pygame.draw.polygon(surface, hood, [(68, 54), (84, 16), (120, 12), (138, 54), (120, 42), (84, 42)])
+        pygame.draw.polygon(surface, hood_dark, [(78, 54), (102, 28), (128, 54), (120, 74), (84, 74)])
+        pygame.draw.line(surface, hood_dark, (94, 62), (90, 74), 3)
+        pygame.draw.line(surface, hood_dark, (110, 62), (114, 74), 3)
+        pygame.draw.polygon(surface, hood, [(70, 86), (136, 86), (150, 204), (54, 204)])
+        pygame.draw.polygon(surface, hood_dark, [(70, 86), (102, 120), (136, 86), (150, 204), (54, 204)])
+        pygame.draw.line(surface, leather, (102, 88), (102, 196), 3)
+        pygame.draw.line(surface, skin, (76, 104), (52, 176), 11)
+        pygame.draw.line(surface, skin, (128, 104), (152, 170), 11)
+        pygame.draw.line(surface, leather, (52, 174), (34, 226), 6)
+        pygame.draw.polygon(surface, steel, [(28, 236), (42, 194), (52, 202), (38, 240)])
+        pygame.draw.polygon(surface, steel, [(34, 240), (46, 244), (38, 252), (24, 246)])
+        pygame.draw.line(surface, leather, (152, 168), (174, 222), 6)
+        pygame.draw.polygon(surface, steel, [(166, 232), (178, 190), (188, 198), (176, 236)])
+        pygame.draw.polygon(surface, steel, [(172, 236), (184, 240), (176, 248), (162, 242)])
+        pygame.draw.line(surface, skin, (88, 204), (76, 260), 13)
+        pygame.draw.line(surface, skin, (116, 204), (128, 260), 13)
+        pygame.draw.line(surface, hood_dark, (74, 260), (58, 274), 4)
+        pygame.draw.line(surface, hood_dark, (130, 260), (146, 274), 4)
+        return surface
+
+    def _create_plut_showcase_art(self):
+        surface = pygame.Surface((220, 280), pygame.SRCALPHA)
+        skin = (206, 168, 136)
+        coat = (122, 88, 38)
+        coat_dark = (80, 56, 22)
+        leather = (112, 72, 42)
+        steel = (194, 196, 204)
+        gold = (255, 212, 92)
+        violet = (164, 118, 232)
+
+        pygame.draw.circle(surface, skin, (102, 54), 23)
+        pygame.draw.polygon(surface, coat_dark, [(76, 40), (94, 18), (120, 18), (136, 44), (128, 52), (78, 52)])
+        pygame.draw.arc(surface, coat_dark, (88, 58, 28, 16), 0.2, 2.9, 2)
+        pygame.draw.polygon(surface, coat, [(68, 86), (136, 86), (154, 208), (50, 208)])
+        pygame.draw.polygon(surface, coat_dark, [(68, 86), (102, 122), (136, 86), (154, 208), (50, 208)])
+        pygame.draw.line(surface, leather, (102, 88), (102, 198), 3)
+        pygame.draw.line(surface, skin, (74, 108), (52, 176), 11)
+        pygame.draw.line(surface, skin, (130, 108), (152, 170), 11)
+        pygame.draw.circle(surface, gold, (58, 156), 11)
+        pygame.draw.circle(surface, (220, 164, 54), (58, 156), 11, 2)
+        pygame.draw.line(surface, (220, 164, 54), (50, 156), (66, 156), 2)
+        pygame.draw.line(surface, leather, (152, 106), (172, 208), 6)
+        pygame.draw.polygon(surface, steel, [(164, 206), (174, 178), (182, 186), (172, 212)])
+        pygame.draw.polygon(surface, steel, [(172, 212), (182, 216), (176, 224), (164, 218)])
+        pygame.draw.polygon(surface, violet, [(88, 128), (102, 112), (116, 128), (102, 144)])
+        pygame.draw.circle(surface, gold, (88, 170), 4)
+        pygame.draw.circle(surface, gold, (98, 176), 4)
+        pygame.draw.circle(surface, gold, (108, 170), 4)
+        pygame.draw.line(surface, skin, (88, 208), (76, 260), 13)
+        pygame.draw.line(surface, skin, (116, 208), (128, 260), 13)
+        pygame.draw.line(surface, coat_dark, (74, 260), (58, 274), 4)
+        pygame.draw.line(surface, coat_dark, (130, 260), (146, 274), 4)
+        return surface
+
+    def _create_elf_showcase_art(self):
+        surface = pygame.Surface((220, 280), pygame.SRCALPHA)
+        skin = (214, 184, 152)
+        hair = (228, 230, 186)
+        robe = (86, 132, 92)
+        robe_dark = (52, 92, 60)
+        wood = (120, 84, 50)
+        steel = (196, 204, 214)
+
+        pygame.draw.line(surface, wood, (176, 20), (150, 252), 8)
+        pygame.draw.polygon(surface, steel, [(164, 30), (184, 12), (188, 54), (170, 70)])
+        pygame.draw.polygon(surface, steel, [(154, 52), (176, 44), (168, 92), (146, 82)])
+        pygame.draw.circle(surface, skin, (102, 54), 22)
+        pygame.draw.polygon(surface, hair, [(78, 44), (90, 16), (116, 16), (132, 44), (118, 50), (86, 50)])
+        pygame.draw.polygon(surface, skin, [(74, 54), (58, 64), (74, 70)])
+        pygame.draw.polygon(surface, skin, [(130, 54), (146, 64), (130, 70)])
+        pygame.draw.line(surface, robe_dark, (94, 62), (90, 74), 3)
+        pygame.draw.line(surface, robe_dark, (110, 62), (114, 74), 3)
+        pygame.draw.polygon(surface, robe, [(70, 86), (136, 86), (152, 210), (50, 210)])
+        pygame.draw.polygon(surface, robe_dark, [(70, 86), (102, 120), (136, 86), (152, 210), (50, 210)])
+        pygame.draw.line(surface, skin, (76, 108), (52, 180), 11)
+        pygame.draw.line(surface, skin, (128, 108), (150, 170), 11)
+        pygame.draw.line(surface, skin, (88, 212), (76, 260), 13)
+        pygame.draw.line(surface, skin, (116, 212), (128, 260), 13)
+        pygame.draw.line(surface, robe_dark, (74, 260), (58, 274), 4)
+        pygame.draw.line(surface, robe_dark, (130, 260), (146, 274), 4)
+        return surface
+
+    def _create_orc_showcase_art(self):
+        surface = pygame.Surface((220, 280), pygame.SRCALPHA)
+        skin = (110, 156, 76)
+        fur = (94, 68, 42)
+        tusk = (224, 216, 186)
+        metal = (178, 188, 198)
+        leather = (108, 74, 46)
+
+        pygame.draw.line(surface, leather, (164, 18), (178, 248), 9)
+        pygame.draw.polygon(surface, metal, [(144, 46), (194, 12), (212, 62), (164, 92)])
+        pygame.draw.circle(surface, skin, (102, 54), 28)
+        pygame.draw.ellipse(surface, fur, (54, 24, 96, 46))
+        pygame.draw.polygon(surface, fur, [(70, 50), (60, 18), (84, 48)])
+        pygame.draw.polygon(surface, fur, [(134, 50), (144, 18), (120, 48)])
+        pygame.draw.circle(surface, (255, 196, 76), (92, 54), 4)
+        pygame.draw.circle(surface, (255, 196, 76), (112, 54), 4)
+        pygame.draw.polygon(surface, tusk, [(84, 70), (94, 68), (92, 90), (82, 88)])
+        pygame.draw.polygon(surface, tusk, [(120, 70), (110, 68), (112, 90), (122, 88)])
+        pygame.draw.polygon(surface, fur, [(64, 84), (140, 84), (156, 194), (48, 194)])
+        pygame.draw.line(surface, skin, (68, 108), (40, 186), 13)
+        pygame.draw.line(surface, skin, (138, 108), (166, 180), 13)
+        pygame.draw.line(surface, fur, (62, 108), (38, 186), 7)
+        pygame.draw.line(surface, fur, (144, 108), (168, 180), 7)
+        pygame.draw.line(surface, skin, (88, 194), (72, 260), 17)
+        pygame.draw.line(surface, skin, (120, 194), (142, 260), 17)
+        pygame.draw.line(surface, metal, (72, 260), (54, 276), 5)
+        pygame.draw.line(surface, metal, (142, 260), (160, 276), 5)
+        return surface
+
+    def _create_necromancer_showcase_art(self):
+        surface = pygame.Surface((220, 280), pygame.SRCALPHA)
+        hood = (98, 70, 132)
+        hood_dark = (56, 36, 86)
+        bone = (226, 220, 192)
+        staff = (94, 64, 46)
+        ghost = (116, 210, 188)
+
+        pygame.draw.line(surface, staff, (168, 18), (176, 256), 8)
+        pygame.draw.circle(surface, ghost, (168, 24), 14, 2)
+        pygame.draw.line(surface, ghost, (168, 6), (168, 42), 2)
+        pygame.draw.line(surface, ghost, (150, 24), (186, 24), 2)
+        pygame.draw.circle(surface, bone, (102, 54), 22)
+        pygame.draw.polygon(surface, hood, [(66, 52), (84, 20), (120, 20), (138, 52), (120, 42), (84, 42)])
+        pygame.draw.polygon(surface, hood_dark, [(74, 84), (102, 58), (132, 84), (148, 206), (56, 206)])
+        pygame.draw.polygon(surface, hood, [(70, 86), (136, 86), (148, 206), (56, 206)])
+        pygame.draw.line(surface, ghost, (76, 132), (52, 180), 5)
+        pygame.draw.line(surface, ghost, (128, 132), (154, 174), 5)
+        pygame.draw.circle(surface, ghost, (48, 188), 16, 2)
+        pygame.draw.circle(surface, ghost, (156, 182), 12, 2)
+        pygame.draw.line(surface, bone, (88, 206), (76, 260), 13)
+        pygame.draw.line(surface, bone, (116, 206), (128, 260), 13)
+        pygame.draw.line(surface, hood_dark, (74, 260), (58, 274), 4)
+        pygame.draw.line(surface, hood_dark, (130, 260), (146, 274), 4)
+        return surface
+
+    def _create_mystic_showcase_art(self):
+        surface = pygame.Surface((220, 280), pygame.SRCALPHA)
+        skin = (214, 182, 150)
+        robe = (78, 132, 188)
+        robe_dark = (42, 78, 120)
+        glow = (144, 238, 255)
+        gold = (255, 228, 146)
+
+        pygame.draw.circle(surface, skin, (102, 54), 23)
+        pygame.draw.polygon(surface, robe, [(68, 48), (84, 18), (120, 18), (138, 48), (120, 40), (84, 40)])
+        pygame.draw.polygon(surface, robe, [(68, 86), (136, 86), (154, 208), (50, 208)])
+        pygame.draw.polygon(surface, robe_dark, [(68, 86), (102, 120), (136, 86), (154, 208), (50, 208)])
+        pygame.draw.circle(surface, glow, (102, 126), 14)
+        pygame.draw.circle(surface, glow, (102, 126), 30, 2)
+        pygame.draw.line(surface, glow, (102, 92), (102, 160), 2)
+        pygame.draw.line(surface, glow, (68, 126), (136, 126), 2)
+        pygame.draw.line(surface, glow, (78, 102), (126, 150), 2)
+        pygame.draw.line(surface, glow, (126, 102), (78, 150), 2)
+        pygame.draw.line(surface, skin, (74, 106), (50, 180), 11)
+        pygame.draw.line(surface, skin, (130, 106), (154, 176), 11)
+        pygame.draw.polygon(surface, gold, [(154, 62), (162, 48), (176, 40), (170, 56), (180, 70), (164, 68)])
+        pygame.draw.line(surface, skin, (88, 208), (76, 260), 13)
+        pygame.draw.line(surface, skin, (116, 208), (128, 260), 13)
+        pygame.draw.line(surface, robe_dark, (74, 260), (58, 274), 4)
+        pygame.draw.line(surface, robe_dark, (130, 260), (146, 274), 4)
+        return surface
+
     def create_subclass_showcase_art(self):
         return {
             "Воин": self._create_warrior_showcase_art(),
             "Боевой маг": self._create_battle_mage_showcase_art(),
             "Варвар": self._create_barbarian_showcase_art(),
+            "Ассасин": self._create_assassin_showcase_art(),
+            "Плут": self._create_plut_showcase_art(),
+            "Эльф": self._create_elf_showcase_art(),
+            "Орк": self._create_orc_showcase_art(),
+            "Некромант": self._create_necromancer_showcase_art(),
+            "Мистик": self._create_mystic_showcase_art(),
             "Шаман": self._create_shaman_showcase_art(),
         }
 
@@ -740,7 +1127,7 @@ class ArenaGame:
             if self.hit_timer > 0:
                 self.hit_timer -= 1
 
-            if self.show_info_idx is None and self.players:
+            if self.show_info_idx is None and not self.help_open and self.players:
                 current_player = self.players[self.current_turn]
                 if current_player.is_ai and pygame.time.get_ticks() >= self.ai_action_due:
                     self.perform_ai_turn(current_player)
@@ -906,7 +1293,11 @@ class ArenaGame:
                             return
 
             if self.class_confirm_button.clicked(event, enabled=bool(self.selected_class)):
-                self.set_state(self.MAGIC_SELECT)
+                if self.selected_class == "Орк":
+                    self.selected_magic_path = None
+                    self.set_state(self.STAT_SELECT)
+                else:
+                    self.set_state(self.MAGIC_SELECT)
                 return
 
     def get_group_for_class(self, class_name):
@@ -924,6 +1315,21 @@ class ArenaGame:
                     (pygame.Rect(1518, 185, 185, 185), subclasses[1]),
                 ]
             if group_name == "Дикарь":
+                return [
+                    (pygame.Rect(1270, 185, 185, 185), subclasses[0]),
+                    (pygame.Rect(1518, 185, 185, 185), subclasses[1]),
+                ]
+            if group_name == "Разбойник":
+                return [
+                    (pygame.Rect(1270, 185, 185, 185), subclasses[0]),
+                    (pygame.Rect(1518, 185, 185, 185), subclasses[1]),
+                ]
+            if group_name == "Нелюди":
+                return [
+                    (pygame.Rect(1270, 185, 185, 185), subclasses[0]),
+                    (pygame.Rect(1518, 185, 185, 185), subclasses[1]),
+                ]
+            if group_name == "Маг":
                 return [
                     (pygame.Rect(1270, 185, 185, 185), subclasses[0]),
                     (pygame.Rect(1518, 185, 185, 185), subclasses[1]),
@@ -968,7 +1374,7 @@ class ArenaGame:
     def handle_stat_events(self, events):
         for event in events:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                self.set_state(self.MAGIC_SELECT)
+                self.set_state(self.CLASS_SELECT if self.selected_class == "Орк" else self.MAGIC_SELECT)
                 return
 
             for button in self.stat_buttons:
@@ -980,7 +1386,7 @@ class ArenaGame:
                     return
 
             if self.stat_back_button.clicked(event):
-                self.set_state(self.MAGIC_SELECT)
+                self.set_state(self.CLASS_SELECT if self.selected_class == "Орк" else self.MAGIC_SELECT)
                 return
 
             if self.stat_confirm_button.clicked(event, enabled=len(self.selected_stats) == 2):
@@ -1010,16 +1416,26 @@ class ArenaGame:
 
         self.arena_name = self.apply_random_arena(self.players)
         self.players = self.order_players_for_battle(self.players)
+        order_text = " → ".join(player.name for player in self.players)
 
         self.current_turn = 0
         self.bonus_turn_player = None
         self.selected_target = None
         self.hit_target = None
         self.hit_timer = 0
-        self.log = [self.make_log_entry(f"🏟 Арена: {self.arena_name}", category="arena")]
+        self.log = [
+            self.make_log_entry(f"🏟 Арена: {self.arena_name}", category="arena"),
+            self.make_log_entry(f"🎲 Порядок ходов: {order_text}", category="arena"),
+        ]
         self.info_rects = [None] * len(self.players)
         self.show_info_idx = None
         self.close_popup_rect = None
+        self.help_open = False
+        self.help_active_tab = self.help_tabs[0]
+        self.help_scroll = 0
+        self.help_max_scroll = 0
+        self.close_loot_choice()
+        self.close_form_menu()
         self.reset_spell_state()
         self.set_state(self.BATTLE)
         self.prepare_current_turn()
@@ -1027,7 +1443,7 @@ class ArenaGame:
     def build_human_player(self, build):
         player = Player(build["name"])
         player.role = build["class"]
-        player.magic_path = build.get("magic_path") or "Путь огня"
+        player.magic_path = "" if build["class"] == "Орк" else (build.get("magic_path") or "Путь огня")
         self.apply_class_base_stats(player, build["class"])
         self.apply_stat_bonuses(player, build["stats"])
         player.calc()
@@ -1039,7 +1455,7 @@ class ArenaGame:
         ai_stats = random.sample(list(self.stat_data.keys()), 2)
         bot = Player("AI", True)
         bot.role = ai_class
-        bot.magic_path = random.choice(list(self.magic_data.keys()))
+        bot.magic_path = "" if ai_class == "Орк" else random.choice(list(self.magic_data.keys()))
         self.apply_class_base_stats(bot, ai_class)
         self.apply_stat_bonuses(bot, ai_stats)
         bot.calc()
@@ -1052,7 +1468,7 @@ class ArenaGame:
         player.stamina = class_info.get("stamina", player.stamina)
         player.agility = class_info.get("agility", player.agility)
         player.luck = class_info.get("luck", player.luck)
-        player.initiative = class_info.get("initiative", player.initiative)
+        player.wisdom = class_info.get("wisdom", player.wisdom)
         player.intellect = class_info.get("intellect", player.intellect)
 
     def apply_stat_bonuses(self, player, stats):
@@ -1065,8 +1481,8 @@ class ArenaGame:
                 player.agility += 10
             elif stat == "Удачливый":
                 player.luck += 10
-            elif stat == "Инициативный":
-                player.initiative += 10
+            elif stat == "Мудрый":
+                player.wisdom += 10
             elif stat == "Интеллектуальный":
                 player.intellect += 10
 
@@ -1094,7 +1510,11 @@ class ArenaGame:
             "Воин": (90, 160, 255),
             "Варвар": (255, 165, 70),
             "Ассасин": (185, 120, 255),
-            "Копейщик": (100, 220, 120),
+            "Плут": (220, 170, 255),
+            "Эльф": (120, 225, 140),
+            "Орк": (150, 205, 92),
+            "Некромант": (178, 132, 214),
+            "Мистик": (120, 205, 255),
             "Боевой маг": (180, 130, 255),
             "Шаман": (255, 186, 92),
         }.get(class_name, WHITE)
@@ -1153,6 +1573,262 @@ class ArenaGame:
         txt = font.render(button.text, True, DARK)
         txt_rect = txt.get_rect(center=button.rect.center)
         self.screen.blit(txt, txt_rect)
+
+    def append_turn_separator(self, player):
+        self.log.append(self.make_log_entry(f"Конец хода — {player.name}", category="separator"))
+
+    def draw_help_button(self):
+        mouse = pygame.mouse.get_pos()
+        hovered = self.help_button_rect.collidepoint(mouse)
+        base = (110, 92, 58) if not self.help_open else (140, 118, 72)
+        color = (145, 122, 74) if hovered else base
+        pygame.draw.rect(self.screen, color, self.help_button_rect, border_radius=16)
+        pygame.draw.rect(self.screen, (240, 220, 170), self.help_button_rect, 3, border_radius=16)
+
+        left_page = pygame.Rect(self.help_button_rect.x + 15, self.help_button_rect.y + 14, 18, 42)
+        right_page = pygame.Rect(self.help_button_rect.x + 35, self.help_button_rect.y + 14, 18, 42)
+        pygame.draw.rect(self.screen, (249, 240, 215), left_page, border_radius=4)
+        pygame.draw.rect(self.screen, (249, 240, 215), right_page, border_radius=4)
+        pygame.draw.line(self.screen, (120, 88, 46), (self.help_button_rect.x + 34, self.help_button_rect.y + 12), (self.help_button_rect.x + 34, self.help_button_rect.y + 58), 3)
+        for offset in (8, 18, 28):
+            pygame.draw.line(self.screen, (190, 175, 138), (left_page.x + 4, left_page.y + offset), (left_page.right - 4, left_page.y + offset), 2)
+            pygame.draw.line(self.screen, (190, 175, 138), (right_page.x + 4, right_page.y + offset), (right_page.right - 4, right_page.y + offset), 2)
+
+    def get_help_tab_content(self, tab_name):
+        sections = {}
+
+        rules = [
+            ("title", "Основные правила боя"),
+            ("body", "Цель боя — остаться последним живым бойцом на арене. Как только в живых остаётся один персонаж, бой немедленно заканчивается."),
+            ("body", "Порядок ходов теперь определяется случайно только один раз в начале боя. Получившийся порядок записывается в боевой лог строкой с кубиком."),
+            ("subtitle", "Что можно сделать в свой ход"),
+            ("bullet", "Атака — обычный удар по выбранной цели. Даёт +10% к шансу критического удара на этот выпад."),
+            ("bullet", "Осторожно — более аккуратная атака. После неё персонаж получает +10% временного уклонения до начала своего следующего хода."),
+            ("bullet", "Активка — классовая способность. Почти у всех активок откат 2 своих хода: 2 → 1 → 0."),
+            ("bullet", "Лут — попытка найти предмет. Базовый шанс: 50% + удача. Если персонаж обезоружен, шанс ниже на 20%."),
+            ("bullet", "Колдовать — открыть обычную магию своего пути. У обычной магии откат 2 своих хода. Возвышенная магия идёт отдельно и этим откатом не блокируется."),
+            ("bullet", "Орк вместо магии использует ликантропию: форма медведя или волка на 3 своих хода, затем авто-возврат и откат 2 хода."),
+            ("subtitle", "Базовые формулы"),
+            ("bullet", "HP = выносливость × 8."),
+            ("bullet", "Физический урон = сила."),
+            ("bullet", "Уклонение = ловкость × 2%."),
+            ("bullet", "Критический шанс = удача × 2%. Крит обычно удваивает урон."),
+            ("bullet", "Прозрение = мудрость × 2%. После обычного заклинания может сразу открыться возвышенная магия."),
+            ("bullet", "Отражение магии = мудрость %. Отражается только вражеское целевое заклинание; отскок может пойти обратно несколько раз."),
+            ("subtitle", "Дополнительные боевые правила"),
+            ("bullet", "При уклонении есть 15% шанс парирования: атакующий получает ответный урон, равный половине своего урона."),
+            ("bullet", "Если у цели меньше 15 HP, у обычной физической атаки есть 20% шанс мгновенно добить цель фаталити."),
+            ("bullet", "Успешный удар может навесить особые эффекты класса, пути магии или предметов."),
+            ("note", "Подсказка: в боевом логе после конца каждого хода теперь рисуется длинная горизонтальная черта. Всё, что ниже неё, относится уже к новому ходу."),
+        ]
+        sections["Правила"] = rules
+
+        stats = [
+            ("title", "Характеристики и их влияние"),
+            ("subtitle", "Главные характеристики"),
+            ("bullet", "Сила — базовый физический урон. Чем больше сила, тем больнее обычные атаки, осторожные атаки и многие активки ближнего боя."),
+            ("bullet", "Выносливость — запас жизни. Каждый 1 пункт даёт 8 максимального HP."),
+            ("bullet", "Ловкость — шанс уклонения. Каждый 1 пункт даёт 2% уклона."),
+            ("bullet", "Удача — шанс физического крита. Каждый 1 пункт даёт 2% крита."),
+            ("bullet", "Мудрость — новая характеристика контроля магии. Даёт 2% прозрения и 1% отражения магии за каждый пункт."),
+            ("bullet", "Интеллект — сила заклинаний. Обычный магический урон в большинстве случаев равен интеллекту или его множителю."),
+            ("subtitle", "Стартовые бонусы при создании героя"),
+            ("bullet", "Сильный: +10 силы."),
+            ("bullet", "Выносливый: +10 выносливости = +80 HP."),
+            ("bullet", "Ловкий: +10 ловкости = +20% уклонения."),
+            ("bullet", "Удачливый: +10 удачи = +20% крита."),
+            ("bullet", "Мудрый: +10 мудрости = +20% прозрения и +10% отражения магии."),
+            ("bullet", "Интеллектуальный: +10 интеллекта = сильнее любое заклинание."),
+            ("subtitle", "Полезные замечания"),
+            ("body", "Каменная кожа и покров мрака уменьшают входящий урон уже после всех расчётов. Обезоруживание режет урон вдвое, а отрубленная рука уменьшает его навсегда до конца боя."),
+        ]
+        sections["Характеристики"] = stats
+
+        effects = [
+            ("title", "Эффекты и состояния"),
+            ("bullet", "Кровотечение — в начале хода жертва получает сохранённый урон за тик. Обычно длится 3 хода, от обычной атаки может появиться и на 4 хода как смертельная рана."),
+            ("bullet", "Горение — в начале хода цель получает урон от огня. Обычно длится 2 хода."),
+            ("bullet", "Оглушение — персонаж полностью пропускает ход."),
+            ("bullet", "Заморозка — персонаж полностью пропускает ход. Повторные ледяные эффекты могут усилить наказание."),
+            ("bullet", "Обезоруживание — на следующий ход нельзя использовать активку, урон режется вдвое, пассивка выключается, шанс найти лут уменьшается на 20%."),
+            ("bullet", "Отрубленная рука — постоянное ослабление: физический урон делится примерно пополам до конца боя."),
+            ("bullet", "Отрубленная нога — почти исчезают ловкость и уклонение. Цель становится гораздо легче пробить."),
+            ("bullet", "Стена огня — 2 своих хода. Врагам в ближнем бою больнее и опаснее входить в контакт, а магия огня через стену усиливается в 1.5 раза."),
+            ("bullet", "Каменная кожа — 2 своих хода. Входящий урон ×0.5, вторичные эффекты не проходят, но нельзя колдовать и жать активку."),
+            ("bullet", "Попутный ветер — действует текущий и ещё 2 следующих своих хода. Даёт +30% уклонения."),
+            ("bullet", "Покров мрака — 2 своих хода. Входящий урон уменьшается до 60%, уклонение +25%."),
+            ("bullet", "Проклятие души — 2 хода. Урон и интеллект цели падают на 25%."),
+            ("bullet", "Сковывание сути — до конца собственного хода цель не может колдовать, обращаться и использовать активную способность. Если что-то из этого уже было на откате, откат продлевается ещё на 1 ход."),
+            ("bullet", "Тотем зверя шамана — на следующий свой ход сила и ловкость шамана умножаются на 1.5."),
+            ("bullet", "Транс шамана — на следующий свой ход интеллект шамана умножается на 1.5."),
+            ("bullet", "Заряд оружия боевого мага — 2 своих хода. После успешной физической атаки есть 50% шанс на дополнительный магический удар."),
+            ("bullet", "Форма медведя орка — 3 своих хода: сила и урон ×2, плюс 25% шанс полностью проигнорировать любой входящий урон."),
+            ("bullet", "Форма волка орка — 3 своих хода: удача и крит ×2, плюс 25% шанс сразу получить ещё один ход после действия."),
+        ]
+        sections["Эффекты"] = effects
+
+        classes = [("title", "Классы и их базовые параметры")]
+        for class_name, data in self.class_data.items():
+            wisdom = data.get("wisdom", 10)
+            classes.extend([
+                ("subtitle", class_name),
+                ("bullet", f"База: сила {data.get('strength', 10)}, выносливость {data.get('stamina', 10)}, ловкость {data.get('agility', 10)}, удача {data.get('luck', 10)}, мудрость {wisdom}, интеллект {data.get('intellect', 10)}."),
+                ("body", f"Роль: {data.get('desc', 'Без описания.')}"),
+                ("body", data.get("passive", "Пассивная способность не описана.")),
+                ("body", data.get("active", "Активная способность не описана.")),
+            ])
+        sections["Классы"] = classes
+
+        magic = [("title", "Мистические пути и заклинания")]
+        for path_name, path_data in self.magic_data.items():
+            magic.extend([
+                ("subtitle", path_name),
+                ("body", path_data.get("desc", "")),
+                ("note", "Обычная магия:"),
+            ])
+            for spell in path_data.get("normal", []):
+                target = "по врагу" if spell.get("target") == "enemy" else "на себя"
+                magic.append(("bullet", f"{spell['name']} ({target}) — {spell['desc']}"))
+            magic.append(("note", "Возвышенная магия:"))
+            for spell in path_data.get("exalted", []):
+                target = "по врагу" if spell.get("target") == "enemy" else "на себя"
+                magic.append(("bullet", f"{spell['name']} ({target}) — {spell['desc']}"))
+        sections["Магия"] = magic
+
+        arenas = [
+            ("title", "Арены, предметы и дополнительные числа"),
+            ("subtitle", "Случайные арены"),
+            ("bullet", "Колизей — всем бойцам +10 максимального HP и +10 текущего HP перед стартом боя."),
+            ("bullet", "Лес — всем бойцам +10% уклонения."),
+            ("bullet", "Вулкан — всем бойцам +5 урона."),
+            ("bullet", "Ледяная пустошь — всем бойцам +10% критического шанса."),
+            ("subtitle", "Лут и находки"),
+            ("bullet", "Базовый поиск предмета: 50% + удача. При обезоруживании итоговый шанс дополнительно снижается на 20%."),
+        ]
+        for item in self.get_loot_items_catalog():
+            tag = "вредный" if item.get("negative") else "полезный"
+            arenas.append(("bullet", f"{item['name']} ({tag}) — {item['desc']}"))
+        arenas.extend([
+            ("body", "Плут при удачном поиске находит сразу две вещи и выбирает одну. Вредные предметы он умеет направлять в противника."),
+            ("subtitle", "Чтение лога"),
+            ("bullet", "Яркая горизонтальная линия во всю ширину журнала означает конец предыдущего хода."),
+            ("bullet", "Строки выше линии относятся к уже завершённому ходу, а записи ниже — к текущему развитию боя."),
+        ])
+        sections["Арены и лут"] = arenas
+
+        return sections.get(tab_name, [("title", tab_name)])
+
+    def handle_help_overlay_events(self, events):
+        for event in events:
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    self.help_open = False
+                    return
+                if event.key in (pygame.K_LEFT, pygame.K_a):
+                    current_index = self.help_tabs.index(self.help_active_tab)
+                    self.help_active_tab = self.help_tabs[(current_index - 1) % len(self.help_tabs)]
+                    self.help_scroll = 0
+                    return
+                if event.key in (pygame.K_RIGHT, pygame.K_d):
+                    current_index = self.help_tabs.index(self.help_active_tab)
+                    self.help_active_tab = self.help_tabs[(current_index + 1) % len(self.help_tabs)]
+                    self.help_scroll = 0
+                    return
+                if event.key in (pygame.K_DOWN, pygame.K_s):
+                    self.help_scroll = min(self.help_max_scroll, self.help_scroll + 45)
+                if event.key in (pygame.K_UP, pygame.K_w):
+                    self.help_scroll = max(0, self.help_scroll - 45)
+                if event.key == pygame.K_PAGEDOWN:
+                    self.help_scroll = min(self.help_max_scroll, self.help_scroll + 240)
+                if event.key == pygame.K_PAGEUP:
+                    self.help_scroll = max(0, self.help_scroll - 240)
+            elif event.type == pygame.MOUSEWHEEL:
+                self.help_scroll = max(0, min(self.help_max_scroll, self.help_scroll - event.y * 45))
+            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if self.help_close_rect and self.help_close_rect.collidepoint(event.pos):
+                    self.help_open = False
+                    return
+                for tab_name, rect in self.help_tab_rects:
+                    if rect.collidepoint(event.pos):
+                        self.help_active_tab = tab_name
+                        self.help_scroll = 0
+                        return
+
+    def render_help_overlay(self):
+        overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 205))
+        self.screen.blit(overlay, (0, 0))
+
+        panel_rect = pygame.Rect(70, 45, WIDTH - 140, HEIGHT - 90)
+        pygame.draw.rect(self.screen, (33, 33, 46), panel_rect, border_radius=24)
+        pygame.draw.rect(self.screen, (226, 216, 186), panel_rect, 3, border_radius=24)
+
+        title = self.big_font.render("Справочник арены", True, (245, 234, 206))
+        self.screen.blit(title, (panel_rect.x + 28, panel_rect.y + 18))
+        hint = self.small_font.render("ESC — закрыть, колесо мыши / PgUp / PgDn — прокрутка, ← / → — смена вкладки", True, (210, 210, 220))
+        self.screen.blit(hint, (panel_rect.x + 32, panel_rect.y + 82))
+
+        close_rect = pygame.Rect(panel_rect.right - 66, panel_rect.y + 18, 42, 42)
+        self.help_close_rect = close_rect
+        pygame.draw.rect(self.screen, (120, 58, 58), close_rect, border_radius=10)
+        pygame.draw.rect(self.screen, (240, 210, 210), close_rect, 2, border_radius=10)
+        close_txt = self.font.render("×", True, WHITE)
+        self.screen.blit(close_txt, close_txt.get_rect(center=close_rect.center))
+
+        self.help_tab_rects = []
+        tab_x = panel_rect.x + 24
+        tab_y = panel_rect.y + 126
+        for tab_name in self.help_tabs:
+            tab_w = max(150, self.small_font.size(tab_name)[0] + 34)
+            tab_rect = pygame.Rect(tab_x, tab_y, tab_w, 44)
+            active = tab_name == self.help_active_tab
+            tab_color = (104, 128, 168) if active else (62, 70, 92)
+            border_color = (220, 230, 255) if active else (150, 160, 190)
+            pygame.draw.rect(self.screen, tab_color, tab_rect, border_radius=12)
+            pygame.draw.rect(self.screen, border_color, tab_rect, 2, border_radius=12)
+            txt = self.small_font.render(tab_name, True, WHITE)
+            self.screen.blit(txt, txt.get_rect(center=tab_rect.center))
+            self.help_tab_rects.append((tab_name, tab_rect))
+            tab_x += tab_w + 12
+
+        content_rect = pygame.Rect(panel_rect.x + 26, panel_rect.y + 188, panel_rect.width - 68, panel_rect.height - 220)
+        pygame.draw.rect(self.screen, (24, 24, 34), content_rect, border_radius=18)
+        pygame.draw.rect(self.screen, (110, 120, 145), content_rect, 2, border_radius=18)
+
+        content = self.get_help_tab_content(self.help_active_tab)
+        self.screen.set_clip(content_rect)
+        y = content_rect.y + 22 - self.help_scroll
+        max_width = content_rect.width - 42
+
+        style_map = {
+            "title": (self.medium_font, (245, 228, 170), 14),
+            "subtitle": (self.font, (170, 220, 255), 10),
+            "note": (self.font, (255, 210, 140), 8),
+            "bullet": (self.small_font, (235, 235, 240), 6),
+            "body": (self.small_font, WHITE, 6),
+        }
+
+        for kind, text in content:
+            font, color, gap = style_map.get(kind, (self.small_font, WHITE, 6))
+            prefix = "• " if kind == "bullet" else ""
+            wrapped = self.wrap_text(prefix + text, font, max_width)
+            for part in wrapped:
+                surface = font.render(part, True, color)
+                self.screen.blit(surface, (content_rect.x + 18, y))
+                y += font.get_linesize() + 2
+            y += gap
+
+        self.screen.set_clip(None)
+        total_height = y - (content_rect.y + 22 - self.help_scroll)
+        self.help_max_scroll = max(0, total_height - content_rect.height + 20)
+        self.help_scroll = max(0, min(self.help_scroll, self.help_max_scroll))
+
+        if self.help_max_scroll > 0:
+            track_rect = pygame.Rect(content_rect.right - 12, content_rect.y + 14, 6, content_rect.height - 28)
+            pygame.draw.rect(self.screen, (62, 62, 78), track_rect, border_radius=4)
+            thumb_h = max(40, int(track_rect.height * (content_rect.height / max(content_rect.height, total_height))))
+            thumb_y = track_rect.y + int((track_rect.height - thumb_h) * (self.help_scroll / self.help_max_scroll)) if self.help_max_scroll else track_rect.y
+            pygame.draw.rect(self.screen, (190, 200, 225), pygame.Rect(track_rect.x, thumb_y, track_rect.width, thumb_h), border_radius=4)
 
     def get_info_line_color(self, line, class_name=None, magic_path=None):
         if line == "Пассивная способность:":
@@ -1353,6 +2029,18 @@ class ArenaGame:
         return current_y + line_height
 
     def render_log_entry(self, entry, x, y, max_width):
+        if isinstance(entry, dict) and entry.get("category") == "separator":
+            label = entry.get("text", "Конец хода")
+            center_y = y + 14
+            pygame.draw.line(self.screen, (205, 205, 220), (x, center_y), (x + max_width, center_y), 2)
+            tag_surface = self.small_font.render(f" {label} ", True, (250, 240, 200))
+            tag_rect = tag_surface.get_rect(center=(x + max_width // 2, center_y))
+            tag_bg = tag_rect.inflate(16, 8)
+            pygame.draw.rect(self.screen, (48, 48, 60), tag_bg, border_radius=10)
+            pygame.draw.rect(self.screen, (205, 205, 220), tag_bg, 1, border_radius=10)
+            self.screen.blit(tag_surface, tag_rect)
+            return y + 28
+
         if isinstance(entry, dict) and (entry.get("category") == "action" or str(entry.get("category", "")).startswith("magic_")):
             segments = []
             cat = str(entry.get("category", ""))
@@ -1390,7 +2078,7 @@ class ArenaGame:
         stamina = data["stamina"]
         agility = data["agility"]
         luck = data["luck"]
-        initiative = data.get("initiative", 10)
+        wisdom = data.get("wisdom", 10)
         intellect = data.get("intellect", 10)
 
         damage = strength
@@ -1402,13 +2090,15 @@ class ArenaGame:
             "stamina": stamina,
             "agility": agility,
             "luck": luck,
-            "initiative": initiative,
+            "wisdom": wisdom,
             "intellect": intellect,
             "damage": damage,
             "hp": stamina * 8,
             "dodge": dodge,
             "crit": crit,
-            "insight": min(100, intellect * 2),
+            "insight": min(100, wisdom * 2),
+            "reflect": min(100, wisdom),
+            "magic_damage": intellect,
         }
 
     def get_stat_selection_preview(self, cls, selected_stats):
@@ -1426,15 +2116,20 @@ class ArenaGame:
             elif stat == "Удачливый":
                 preview["luck"] += 10
                 preview["crit"] += 20
-            elif stat == "Инициативный":
-                preview["initiative"] += 10
+            elif stat == "Мудрый":
+                preview["wisdom"] += 10
+                preview["insight"] = min(100, preview["wisdom"] * 2)
+                preview["reflect"] = min(100, preview["wisdom"])
             elif stat == "Интеллектуальный":
                 preview["intellect"] += 10
-                preview["insight"] = min(100, preview["insight"] + 20)
+                preview["magic_damage"] += 10
         return preview
 
     def get_insight_chance(self, player):
-        return max(0, min(100, player.intellect * 2))
+        return max(0, min(100, player.wisdom * 2))
+
+    def get_spell_reflect_chance(self, player):
+        return max(0, min(100, player.wisdom))
 
     def get_spell_damage(self, player, multiplier=1.0):
         wall_bonus = 1.5 if player.fire_wall_turns > 0 else 1.0
@@ -1454,15 +2149,54 @@ class ArenaGame:
     def has_shadow_shroud(self, player):
         return getattr(player, "shadow_shroud_turns", 0) > 0
 
+    def has_essence_lock(self, player):
+        return getattr(player, "essence_locked_turns", 0) > 0
+
+    def has_any_negative_effect(self, player):
+        return any([
+            player.bleeding > 0,
+            player.burning > 0,
+            player.frozen_turns > 0,
+            player.stunned > 0,
+            player.disarmed_turns > 0,
+            player.soul_curse_turns > 0,
+            self.has_essence_lock(player),
+        ])
+
+    def apply_essence_lock(self, target, turns=1):
+        target.essence_locked_turns = max(target.essence_locked_turns, turns)
+        return True
+
+    def apply_necromancer_magic_leech(self, caster, total_damage, messages, source_name="магии"):
+        if caster.role != "Некромант" or total_damage <= 0 or caster.hp <= 0:
+            return 0
+        heal_amount = max(1, int(total_damage * 0.35))
+        actual_heal = min(heal_amount, max(0, caster.max_hp - caster.hp))
+        caster.hp = min(caster.max_hp, caster.hp + heal_amount)
+        if actual_heal > 0:
+            messages.append(self.make_log_entry(f"☠ {caster.name} пожирает силу {source_name} и восстанавливает {actual_heal} HP.", category="passive"))
+        return actual_heal
+
     def is_secondary_effect_blocked(self, player):
         return self.has_stone_skin(player)
 
     def is_spellcasting_blocked(self, player):
-        return self.has_stone_skin(player) and self.spell_tier != "exalted"
+        return self.has_essence_lock(player) or (self.has_stone_skin(player) and self.spell_tier != "exalted")
+
+    def tick_personal_cooldown(self, player, value_attr, fresh_attr):
+        current_value = getattr(player, value_attr, 0)
+        if current_value <= 0:
+            return
+        if getattr(player, fresh_attr, False):
+            setattr(player, fresh_attr, False)
+        else:
+            setattr(player, value_attr, max(0, current_value - 1))
 
     def apply_damage(self, target, amount):
         amount = max(0, int(amount))
         if amount <= 0:
+            return 0
+        if getattr(target, "lycan_form", "") == "bear" and random.randint(1, 100) <= 25:
             return 0
         if self.has_stone_skin(target):
             amount = max(1, int(amount * 0.5))
@@ -1506,13 +2240,268 @@ class ArenaGame:
             return True
         return False
 
+    def try_spell_reflect(self, caster, target, messages, spell_name):
+        if target is None or target.hp <= 0:
+            return False
+        if caster == target:
+            return False
+        reflect_chance = self.get_spell_reflect_chance(target)
+        if random.randint(1, 100) <= reflect_chance:
+            messages.append(self.make_log_entry(f"🔁 {target.name} отражает заклинание {spell_name} обратно в {caster.name}!", category="active"))
+            return True
+        return False
+
     def reset_spell_state(self):
         self.spell_menu_open = False
         self.spell_tier = "normal"
 
+    def close_loot_choice(self):
+        self.loot_choice_open = False
+        self.loot_choice_items = []
+        self.loot_choice_player = None
+
+    def close_form_menu(self):
+        self.form_menu_open = False
+
+    def is_orc(self, player):
+        return getattr(player, "role", "") == "Орк"
+
+    def is_beast_form_active(self, player):
+        return bool(getattr(player, "lycan_form", ""))
+
+    def get_orc_form_options(self, player):
+        if self.is_beast_form_active(player):
+            form_name = "медведя" if player.lycan_form == "bear" else "волка"
+            return [
+                {"id": "revert", "name": "Вернуть облик", "desc": "Сбросить звериную форму и начать откат на 2 своих хода."},
+                {"id": "info", "name": f"Форма {form_name}", "desc": f"Пока длится звериная форма, пассивка и активка класса не работают. Осталось своих ходов: {player.lycan_turns}."},
+            ]
+        return [
+            {"id": "bear", "name": "Форма медведя", "desc": "Сила и урон удваиваются на 3 своих хода. 25% шанс полностью игнорировать любой физический и магический урон."},
+            {"id": "wolf", "name": "Форма волка", "desc": "Удача и шанс крита удваиваются на 3 своих хода. После действия есть 25% шанс немедленно получить ещё один ход."},
+        ]
+
+    def toggle_form_menu(self):
+        if self.state != self.BATTLE or not (0 <= self.current_turn < len(self.players)):
+            return
+        current = self.players[self.current_turn]
+        if not self.is_orc(current):
+            return
+        if self.has_essence_lock(current):
+            self.append_log(f"⛓ {current.name} скован по самой сути и не может обращаться в этом ходу.", category="warning")
+            return
+        if not self.is_beast_form_active(current) and current.lycan_cooldown > 0:
+            self.append_log(f"🐾 {current.name} ещё не может обратиться. Осталось ходов отката: {current.lycan_cooldown}.", category="warning")
+            return
+        self.spell_menu_open = False
+        self.form_menu_open = not self.form_menu_open
+
+    def apply_orc_form(self, player, form_id):
+        messages = []
+        if form_id in ("bear", "wolf"):
+            player.lycan_saved_strength = player.strength
+            player.lycan_saved_damage = player.damage
+            player.lycan_saved_luck = player.luck
+            player.lycan_saved_crit = player.crit
+            player.lycan_turns = 3
+        if form_id == "bear":
+            player.lycan_form = "bear"
+            player.strength = max(1, player.strength * 2)
+            player.damage = max(1, player.damage * 2)
+            messages.append(self.make_log_entry(f"🐻 {player.name} обращается в форму медведя на 3 своих хода: сила и урон удвоены, а звериная шкура может игнорировать урон.", category="active"))
+        elif form_id == "wolf":
+            player.lycan_form = "wolf"
+            player.luck = max(1, player.luck * 2)
+            player.crit = max(1, player.crit * 2)
+            messages.append(self.make_log_entry(f"🐺 {player.name} обращается в форму волка на 3 своих хода: удача и крит удвоены, а зверь может вырвать ещё один ход.", category="active"))
+        elif form_id == "revert" and player.lycan_form:
+            player.strength = player.lycan_saved_strength or player.strength
+            player.damage = player.lycan_saved_damage or player.damage
+            player.luck = player.lycan_saved_luck or player.luck
+            player.crit = player.lycan_saved_crit or player.crit
+            player.lycan_form = ""
+            player.lycan_turns = 0
+            player.lycan_cooldown = 2
+            player.lycan_cooldown_fresh = True
+            messages.append(self.make_log_entry(f"🐾 {player.name} возвращает обычный облик. Обращение уходит на откат 2 хода.", category="active"))
+        return messages
+
+    def resolve_form_choice(self, index):
+        current = self.players[self.current_turn]
+        options = self.get_orc_form_options(current)
+        if not (0 <= index < len(options)):
+            return False
+        chosen = options[index]
+        if chosen["id"] == "info":
+            return False
+        self.append_log(
+            f"{current.name} использует ликантропию",
+            category="action",
+            actor=current.name,
+            verb="использует ликантропию",
+            target=chosen["name"],
+            indent=True,
+        )
+        messages = self.apply_orc_form(current, chosen["id"])
+        self.close_form_menu()
+        if messages:
+            self.log.extend(messages)
+        self.finish_action_turn(current)
+        return True
+
     def get_spells_for_player(self, player, tier="normal"):
         path = self.magic_data.get(player.magic_path or "", {})
         return path.get(tier, [])
+
+    def get_loot_items_catalog(self):
+        return [
+            {
+                "id": "heal_potion",
+                "name": "Зелье здоровья",
+                "desc": "+30 HP себе",
+                "negative": False,
+            },
+            {
+                "id": "rejuvenation_potion",
+                "name": "Зелье омоложения",
+                "desc": "полностью восстанавливает HP",
+                "negative": False,
+            },
+            {
+                "id": "luck_amulet",
+                "name": "Амулет удачи",
+                "desc": "+10 удачи и +20% крита навсегда",
+                "negative": False,
+            },
+            {
+                "id": "poison_potion",
+                "name": "Отравленное зелье",
+                "desc": "-20 HP цели",
+                "negative": True,
+            },
+            {
+                "id": "cursed_amulet",
+                "name": "Проклятый амулет",
+                "desc": "-7 удачи и -14% крита цели навсегда",
+                "negative": True,
+            },
+            {
+                "id": "sleep_powder",
+                "name": "Сонный порошок",
+                "desc": "оглушает цель на 1 ход",
+                "negative": True,
+            },
+        ]
+
+    def roll_loot_items(self, count=1):
+        catalog = self.get_loot_items_catalog()
+        if count >= len(catalog):
+            return random.sample(catalog, len(catalog))
+        return random.sample(catalog, count)
+
+    def get_loot_target_for_negative_item(self, player):
+        if self.selected_target and self.selected_target != player and self.selected_target.hp > 0:
+            return self.selected_target
+        enemies = [target for target in self.players if target.hp > 0 and target != player]
+        if not enemies:
+            return None
+        return min(enemies, key=lambda target: target.hp)
+
+    def score_loot_item_for_ai(self, player, item):
+        item_id = item["id"]
+        missing_hp = max(0, player.max_hp - player.hp)
+        if item_id == "rejuvenation_potion":
+            return 80 if missing_hp >= player.max_hp * 0.35 else 12
+        if item_id == "heal_potion":
+            return 60 if missing_hp >= 25 else 15
+        if item_id == "luck_amulet":
+            return 32
+        if item_id == "poison_potion":
+            return 28
+        if item_id == "cursed_amulet":
+            return 24
+        if item_id == "sleep_powder":
+            return 22
+        return 10
+
+    def choose_ai_loot_item(self, player, items):
+        return max(items, key=lambda item: self.score_loot_item_for_ai(player, item) + random.randint(0, 5))
+
+    def apply_loot_item(self, player, item, use_negative_on_enemy=False):
+        messages = []
+        actual_target = player
+        target = player
+        item_name = item["name"]
+
+        if item.get("negative") and use_negative_on_enemy:
+            target = self.get_loot_target_for_negative_item(player)
+            if target is None:
+                target = player
+            actual_target = target
+
+        item_id = item["id"]
+        if item_id == "heal_potion":
+            healed = min(30, max(0, target.max_hp - target.hp))
+            target.hp = min(target.max_hp, target.hp + 30)
+            messages.append(self.make_log_entry(f"🎒 {player.name} использует {item_name} и восстанавливает {healed} HP.", category="active"))
+        elif item_id == "rejuvenation_potion":
+            healed = max(0, target.max_hp - target.hp)
+            target.hp = target.max_hp
+            messages.append(self.make_log_entry(f"🎒 {player.name} использует {item_name} и восстанавливает {healed} HP до полного.", category="active"))
+        elif item_id == "luck_amulet":
+            target.luck += 10
+            target.crit += 20
+            messages.append(self.make_log_entry(f"🎒 {player.name} получает {item_name}: удача навсегда +10, крит +20%.", category="active"))
+        elif item_id == "poison_potion":
+            actual_dmg = self.apply_damage(target, 20)
+            if target == player:
+                messages.append(self.make_log_entry(f"🎒 {player.name} по ошибке выпивает {item_name} и теряет {actual_dmg} HP.", category="warning"))
+            else:
+                messages.append(self.make_log_entry(f"🎒 {player.name} швыряет {item_name} в {target.name}: -{actual_dmg} HP.", category="active"))
+        elif item_id == "cursed_amulet":
+            target.luck -= 7
+            target.crit = max(0, target.crit - 14)
+            if target == player:
+                messages.append(self.make_log_entry(f"🎒 {player.name} получает {item_name}: удача -7, крит -14% навсегда.", category="warning"))
+            else:
+                messages.append(self.make_log_entry(f"🎒 {player.name} подбрасывает {item_name} для {target.name}: удача -7, крит -14%.", category="active"))
+        elif item_id == "sleep_powder":
+            if self.apply_stun(target, 1):
+                if target == player:
+                    messages.append(self.make_log_entry(f"🎒 {player.name} вдыхает {item_name} и засыпает на 1 ход.", category="warning"))
+                else:
+                    messages.append(self.make_log_entry(f"🎒 {player.name} осыпает {target.name} сонным порошком. Цель оглушена на 1 ход.", category="active"))
+            else:
+                blocked_name = target.name if target != player else player.name
+                messages.append(self.make_log_entry(f"🎒 {item_name} не действует на {blocked_name}: эффект поглощён защитой.", category="warning"))
+
+        return messages, actual_target
+
+    def resolve_loot_choice(self, index):
+        player = self.loot_choice_player
+        if not self.loot_choice_open or player is None or player.hp <= 0:
+            self.close_loot_choice()
+            return False
+        if not (0 <= index < len(self.loot_choice_items)):
+            return False
+
+        item = self.loot_choice_items[index]
+        self.append_log(
+            f"{player.name} выбирает добычу: {item['name']}",
+            category="action",
+            actor=player.name,
+            verb="выбирает добычу",
+            target=item["name"],
+            indent=True,
+        )
+        messages, actual_target = self.apply_loot_item(player, item, use_negative_on_enemy=True)
+        if messages:
+            self.log.extend(messages)
+        self.hit_target = actual_target
+        self.hit_timer = 10 if actual_target else 0
+        self.close_loot_choice()
+        self.finish_action_turn(player)
+        return True
 
     def apply_burning(self, target, burn_damage, turns=2):
         if self.is_secondary_effect_blocked(target):
@@ -1528,6 +2517,8 @@ class ArenaGame:
         return True
 
     def decay_turn_effects(self, player):
+        if player.essence_locked_turns > 0:
+            player.essence_locked_turns -= 1
         if player.fire_wall_turns > 0:
             if player.fire_wall_fresh:
                 player.fire_wall_fresh = False
@@ -1589,19 +2580,8 @@ class ArenaGame:
         return False
 
     def order_players_for_battle(self, players):
-        grouped = {}
-        for player in players:
-            grouped.setdefault(player.initiative, []).append(player)
-
-        ordered_players = []
-        for initiative in sorted(grouped.keys(), reverse=True):
-            same_initiative = grouped[initiative][:]
-            while same_initiative:
-                weights = [max(1, contender.luck) for contender in same_initiative]
-                chosen = random.choices(same_initiative, weights=weights, k=1)[0]
-                ordered_players.append(chosen)
-                same_initiative.remove(chosen)
-
+        ordered_players = players[:]
+        random.shuffle(ordered_players)
         return ordered_players
 
     def apply_random_arena(self, players):
@@ -1633,6 +2613,14 @@ class ArenaGame:
             if current.hp <= 0:
                 self.current_turn = self.next_alive_index(self.current_turn)
                 continue
+
+            self.tick_personal_cooldown(current, "spell_cooldown", "spell_cooldown_fresh")
+            self.tick_personal_cooldown(current, "special_cooldown", "special_cooldown_fresh")
+            if self.is_orc(current) and current.lycan_cooldown > 0 and not self.is_beast_form_active(current):
+                self.tick_personal_cooldown(current, "lycan_cooldown", "lycan_cooldown_fresh")
+
+            if self.is_orc(current) and self.is_beast_form_active(current) and current.lycan_turns <= 0:
+                self.log.extend(self.apply_orc_form(current, "revert"))
 
             if current.temp_dodge > 0:
                 current.temp_dodge = 0
@@ -1686,6 +2674,9 @@ class ArenaGame:
             if current.disarmed_turns > 0:
                 self.append_log(f"⚔ {current.name} обезоружен: активка заблокирована, урон вдвое меньше, лут -20%")
 
+            if current.essence_locked_turns > 0:
+                self.append_log(f"⛓ {current.name} скован по сути: магия, обращение и активка заблокированы до конца хода.", category="warning")
+
             if current.fire_wall_turns > 0:
                 self.append_log(f"🔥 {current.name} окружён стеной огня. Осталось ходов: {current.fire_wall_turns}")
 
@@ -1710,6 +2701,11 @@ class ArenaGame:
             if current.weapon_enchanted_turns > 0:
                 self.append_log(f"⚡ {current.name}: оружие заряжено магией. Осталось ходов: {current.weapon_enchanted_turns}")
 
+            if self.is_orc(current) and self.is_beast_form_active(current):
+                form_name = "медведя" if current.lycan_form == "bear" else "волка"
+                self.append_log(f"🐾 {current.name} сражается в форме {form_name}. Осталось своих ходов: {current.lycan_turns}.", category="passive")
+                current.lycan_turns = max(0, current.lycan_turns - 1)
+
             self.ai_action_due = pygame.time.get_ticks() + 700
             return
 
@@ -1726,6 +2722,8 @@ class ArenaGame:
         current_player = self.players[self.current_turn]
         self.selected_target = None
         self.bonus_turn_player = None
+        self.close_loot_choice()
+        self.close_form_menu()
         self.reset_spell_state()
         if current_player.disarmed_turns > 0:
             current_player.disarmed_turns = 0
@@ -1735,8 +2733,7 @@ class ArenaGame:
         if eot_messages:
             self.log.extend(eot_messages)
         self.decay_turn_effects(current_player)
-        self.players = self.order_players_for_battle(self.players)
-        self.current_turn = self.players.index(current_player)
+        self.append_turn_separator(current_player)
         self.current_turn = self.next_alive_index(self.current_turn)
         self.prepare_current_turn()
 
@@ -1757,7 +2754,21 @@ class ArenaGame:
         return False
 
     def is_passive_blocked(self, player):
-        return player.disarmed_turns > 0
+        return player.disarmed_turns > 0 or self.is_beast_form_active(player)
+
+    def try_grant_wolf_bonus_turn(self, player):
+        if not self.is_orc(player) or getattr(player, "lycan_form", "") != "wolf":
+            return False
+        if self.bonus_turn_player is player:
+            return False
+        if random.randint(1, 100) <= 25:
+            self.bonus_turn_player = player
+            self.selected_target = None
+            self.append_log(f"🐺 {player.name} рвётся вперёд и получает ещё 1 ход!", category="passive")
+            if player.is_ai:
+                self.ai_action_due = pygame.time.get_ticks() + 700
+            return True
+        return False
 
     def get_attack_damage_scale(self, player):
         return 0.5 if player.disarmed_turns > 0 else 1.0
@@ -1781,7 +2792,7 @@ class ArenaGame:
         defender_temp_dodge_backup = defender.temp_dodge
         ignore_dodge = False
 
-        if attacker.role == "Копейщик" and not self.is_passive_blocked(attacker) and random.randint(1, 100) <= 60:
+        if attacker.role == "Эльф" and not self.is_passive_blocked(attacker) and random.randint(1, 100) <= 60:
             ignore_dodge = True
             defender.dodge = 0
             defender.temp_dodge = 0
@@ -1833,7 +2844,7 @@ class ArenaGame:
         if attacker.role == "Воин" and random.randint(1, 100) <= 40 and self.apply_disarm(defender, 1):
             messages.append(self.make_log_entry(f"🛡 {attacker.name} обезоруживает {defender.name}! Следующий ход жертвы будет ослаблен.", category="passive"))
 
-        if attacker.role == "Варвар" and random.randint(1, 100) <= 25 and not self.is_secondary_effect_blocked(defender):
+        if attacker.role in ("Варвар", "Орк") and random.randint(1, 100) <= 25 and not self.is_secondary_effect_blocked(defender):
             roll = random.randint(1, 100)
             if roll <= 10 and not defender.arm_severed:
                 defender.arm_severed = True
@@ -1841,8 +2852,9 @@ class ArenaGame:
                 messages.append(self.make_log_entry(f"🪓 {attacker.name} отрубает руку {defender.name}! Урон жертвы навсегда снижен вдвое.", category="passive"))
             elif roll <= 20 and not defender.leg_severed:
                 defender.leg_severed = True
-                defender.initiative = 1
-                messages.append(self.make_log_entry(f"🦿 {attacker.name} отрубает ногу {defender.name}! Инициатива жертвы падает до 1.", category="passive"))
+                defender.agility = min(defender.agility, 1)
+                defender.dodge = min(defender.dodge, 5)
+                messages.append(self.make_log_entry(f"🦿 {attacker.name} отрубает ногу {defender.name}! Ловкость и уклонение жертвы почти исчезают.", category="passive"))
             elif roll <= 23:
                 defender.hp = 0
                 messages.append(self.make_log_entry(f"💀 {attacker.name} отрубает голову {defender.name}! Мгновенная смерть.", category="passive"))
@@ -1864,11 +2876,21 @@ class ArenaGame:
         messages = []
         hit_success = False
 
+        if player.special_cooldown > 0:
+            messages.append(self.make_log_entry(f"⏳ {player.name} ещё не восстановил активную способность. Осталось ходов отката: {player.special_cooldown}.", category="warning"))
+            return messages, hit_success, None
+
         if player.disarmed_turns > 0:
             messages.append(self.make_log_entry(f"⚔ {player.name} обезоружен и не может использовать активную способность!", category="warning"))
             return messages, hit_success, None
+        if self.has_essence_lock(player):
+            messages.append(self.make_log_entry(f"⛓ {player.name} скован по сути и не может использовать активную способность в этом ходу!", category="warning"))
+            return messages, hit_success, None
         if self.has_stone_skin(player):
             messages.append(self.make_log_entry(f"🪨 {player.name} скован каменной кожей и не может использовать активную способность!", category="warning"))
+            return messages, hit_success, None
+        if self.is_orc(player) and self.is_beast_form_active(player):
+            messages.append(self.make_log_entry(f"🐾 {player.name} в звериной форме и не может использовать классовую активку!", category="warning"))
             return messages, hit_success, None
 
         melee_scale = 1.0
@@ -1895,6 +2917,18 @@ class ArenaGame:
             messages.append(self.make_log_entry(f"🪓 {player.name} впадает в берсерк и наносит {actual_dmg} урона.", category="active"))
             hit_success = True
             messages.extend(self.apply_on_hit_passives(player, target))
+        elif player.role == "Орк":
+            dmg = max(1, int(player.damage * 2 * melee_scale))
+            if random.randint(1, 100) <= 30:
+                actual_self_dmg = self.apply_damage(player, dmg)
+                messages.append(self.make_log_entry(f"🤯 {player.name} в ярости калечит сам себя и получает {actual_self_dmg} урона!", category="active"))
+                messages.extend(self.apply_on_hit_passives(player, player))
+                hit_success = True
+                return messages, hit_success, player
+            actual_dmg = self.apply_damage(target, dmg)
+            messages.append(self.make_log_entry(f"🪓 {player.name} врывается в берсерк и наносит {actual_dmg} урона.", category="active"))
+            hit_success = True
+            messages.extend(self.apply_on_hit_passives(player, target))
         elif player.role == "Ассасин":
             attack_messages, hit_success = self.execute_attack(player, target)
             messages.append(self.make_log_entry(f"🩸 {player.name} использует кровопускание против {target.name}.", category="active"))
@@ -1903,7 +2937,20 @@ class ArenaGame:
                 bleed = max(1, int(player.damage * 0.4))
                 if self.apply_bleeding(target, 3, bleed):
                     messages.append(self.make_log_entry(f"🩸 {target.name} истекает кровью: {bleed} урона ещё 3 хода."))
-        elif player.role == "Копейщик":
+        elif player.role == "Плут":
+            messages.append(self.make_log_entry(f"🃏 {player.name} использует ловкость рук против {target.name}.", category="active"))
+            disarmed = self.apply_disarm(target, 1)
+            if disarmed:
+                messages.append(self.make_log_entry(f"⚔ {player.name} выбивает оружие из рук {target.name}!", category="active"))
+                hit_success = True
+            else:
+                messages.append(self.make_log_entry(f"🛡 {target.name} удерживает оружие и не поддаётся трюку.", category="warning"))
+            if random.randint(1, 100) <= 50:
+                bleed = max(1, int(player.damage * 0.4))
+                if self.apply_bleeding(target, 3, bleed):
+                    messages.append(self.make_log_entry(f"🩸 Ловкий порез оставляет {target.name} истекать кровью по {bleed} урона 3 хода.", category="active"))
+                    hit_success = True
+        elif player.role == "Эльф":
             dmg = max(1, int(player.damage * 0.3 * melee_scale))
             actual_dmg = self.apply_damage(target, dmg)
             messages.append(self.make_log_entry(f"🦶 {player.name} проводит подсечку и наносит {actual_dmg} урона.", category="active"))
@@ -1920,6 +2967,28 @@ class ArenaGame:
             messages.append(self.make_log_entry(f"🌀 {player.name} входит в транс. На следующем ходу интеллект возрастёт в 1.5 раза.", category="active"))
             hit_success = False
             target = None
+        elif player.role == "Некромант":
+            effect_already = self.has_any_negative_effect(target)
+            dmg = max(1, int(player.intellect * 1.2))
+            actual_dmg = self.apply_damage(target, dmg)
+            messages.append(self.make_log_entry(f"☠ {player.name} сжимает могильную хватку и вырывает из {target.name} {actual_dmg} магического урона.", category="active"))
+            self.apply_soul_curse(target, 2)
+            messages.append(self.make_log_entry(f"☽ Душа {target.name} покрывается могильной порчей: урон и интеллект снижены на 25% на 2 хода.", category="active"))
+            if effect_already and self.apply_stun(target, 1):
+                messages.append(self.make_log_entry(f"☠ {target.name} уже был истерзан эффектами и теперь оглушён на 1 ход!", category="active"))
+            self.apply_necromancer_magic_leech(player, actual_dmg, messages, "могильной хватки")
+            hit_success = True
+        elif player.role == "Мистик":
+            dmg = max(1, int(player.intellect * 1.5))
+            actual_dmg = self.apply_damage(target, dmg)
+            messages.append(self.make_log_entry(f"✦ {player.name} сковывает суть {target.name} и наносит {actual_dmg} неотвратимого магического урона.", category="active"))
+            self.apply_essence_lock(target, 1)
+            target.special_cooldown += 1 if target.special_cooldown > 0 else 0
+            target.spell_cooldown += 1 if target.spell_cooldown > 0 else 0
+            if self.is_orc(target) and target.lycan_cooldown > 0:
+                target.lycan_cooldown += 1
+            messages.append(self.make_log_entry(f"⛓ Суть {target.name} скована: следующий ход без магии, обращений и активных способностей, а текущие откаты продлены на 1.", category="active"))
+            hit_success = True
 
         return messages, hit_success, target
 
@@ -2291,16 +3360,48 @@ class ArenaGame:
 
     def perform_loot_action(self, player):
         messages = [self.make_log_entry(f"{player.name} ищет предмет", category="action", actor=player.name, verb="ищет предмет", indent=True)]
-        luck_backup = player.luck
-        if player.disarmed_turns > 0:
-            player.luck -= 20
-        loot_result = loot(player)
-        player.luck = luck_backup
-        if isinstance(loot_result, str) and loot_result:
-            messages.append(self.make_log_entry(f"🎒 {player.name} {loot_result}"))
-        else:
+        loot_chance = 50 + player.luck - (20 if player.disarmed_turns > 0 else 0)
+        if random.randint(1, 100) > max(5, loot_chance):
             messages.append(self.make_log_entry(f"🎒 {player.name} ничего не нашёл"))
-        return messages
+            return messages, False
+
+        if player.role == "Плут":
+            found_items = self.roll_loot_items(2)
+            messages.append(self.make_log_entry(f"🎒 {player.name} находит две добычи: {found_items[0]['name']} или {found_items[1]['name']}.", category="passive"))
+            if player.is_ai:
+                chosen_item = self.choose_ai_loot_item(player, found_items)
+                messages.append(self.make_log_entry(f"🎒 {player.name} выбирает {chosen_item['name']}.", category="active"))
+                item_messages, actual_target = self.apply_loot_item(player, chosen_item, use_negative_on_enemy=True)
+                messages.extend(item_messages)
+                self.hit_target = actual_target
+                self.hit_timer = 10 if actual_target else 0
+                return messages, False
+
+            self.loot_choice_open = True
+            self.loot_choice_items = found_items
+            self.loot_choice_player = player
+            return messages, True
+
+        found_item = self.roll_loot_items(1)[0]
+        messages.append(self.make_log_entry(f"🎒 {player.name} находит {found_item['name']}.", category="active"))
+        item_messages, actual_target = self.apply_loot_item(player, found_item, use_negative_on_enemy=False)
+        messages.extend(item_messages)
+        self.hit_target = actual_target
+        self.hit_timer = 10 if actual_target else 0
+        return messages, False
+
+    def finish_action_turn(self, player):
+        self.normalize_health()
+        if self.bonus_turn_player is player:
+            self.advance_turn()
+            return
+        if self.try_grant_wolf_bonus_turn(player):
+            self.append_turn_separator(player)
+            return
+        if self.try_grant_assassin_bonus_turn(player):
+            self.append_turn_separator(player)
+            return
+        self.advance_turn()
 
     def get_spell_by_button_index(self, player, index):
         spells = self.get_spells_for_player(player, self.spell_tier)
@@ -2314,14 +3415,27 @@ class ArenaGame:
         if self.state == self.BATTLE and 0 <= self.current_turn < len(self.players):
             current = self.players[self.current_turn]
             if self.is_spellcasting_blocked(current):
-                self.append_log(f"🪨 {current.name} покрыт каменной кожей и не может колдовать.", category="warning")
+                if self.has_essence_lock(current):
+                    self.append_log(f"⛓ {current.name} скован по сути и не может колдовать в этом ходу.", category="warning")
+                else:
+                    self.append_log(f"🪨 {current.name} покрыт каменной кожей и не может колдовать.", category="warning")
+                return
+            if current.spell_cooldown > 0:
+                self.append_log(f"⏳ {current.name} ещё не восстановил обычную магию. Осталось ходов отката: {current.spell_cooldown}.", category="warning")
                 return
         self.spell_menu_open = not self.spell_menu_open
+        self.form_menu_open = False
 
     def perform_spell_cast(self, player, spell, target=None):
         spell_id = spell["id"]
         if self.is_spellcasting_blocked(player):
-            self.append_log(f"🪨 {player.name} покрыт каменной кожей и не может колдовать.", category="warning")
+            if self.has_essence_lock(player):
+                self.append_log(f"⛓ {player.name} скован по сути и не может колдовать в этом ходу.", category="warning")
+            else:
+                self.append_log(f"🪨 {player.name} покрыт каменной кожей и не может колдовать.", category="warning")
+            return False
+        if self.spell_tier == "normal" and player.spell_cooldown > 0:
+            self.append_log(f"⏳ {player.name} ещё не восстановил обычную магию. Осталось ходов отката: {player.spell_cooldown}.", category="warning")
             return False
         path_key = self.get_magic_path_key(player.magic_path)
         category = f"magic_{path_key}_{self.spell_tier}"
@@ -2331,7 +3445,22 @@ class ArenaGame:
             return False
 
         actual_target = target if requires_target else player
-        messages, hit_success, result_target = self.perform_spell_action(player, spell_id, actual_target, self.spell_tier)
+        reflection_messages = []
+        actual_caster = player
+        if requires_target:
+            bounce_count = 0
+            while bounce_count < 6 and self.try_spell_reflect(actual_caster, actual_target, reflection_messages, spell["name"]):
+                actual_caster, actual_target = actual_target, actual_caster
+                bounce_count += 1
+
+        hp_before_map = {id(unit): unit.hp for unit in self.players}
+        messages, hit_success, result_target = self.perform_spell_action(actual_caster, spell_id, actual_target, self.spell_tier)
+        total_magic_damage = 0
+        for unit in self.players:
+            before_hp = hp_before_map.get(id(unit), unit.hp)
+            if unit != actual_caster and before_hp > unit.hp:
+                total_magic_damage += before_hp - unit.hp
+        self.apply_necromancer_magic_leech(actual_caster, total_magic_damage, messages, spell["name"])
         shown_target = actual_target.name if requires_target and actual_target else None
         self.append_log(
             f"{player.name} колдует {spell['name']}",
@@ -2342,11 +3471,17 @@ class ArenaGame:
             target_hit=hit_success if requires_target else None,
             indent=True,
         )
+        if reflection_messages:
+            self.log.extend(reflection_messages)
         if messages:
             self.log.extend(messages)
         self.hit_target = result_target
         self.hit_timer = 10 if result_target else 0
         self.normalize_health()
+
+        if self.spell_tier == "normal":
+            player.spell_cooldown = 1 if player.role == "Мистик" else 2
+            player.spell_cooldown_fresh = True
 
         if spell_id == "outer_whisper" and hit_success and player.hp > 0:
             self.spell_menu_open = True
@@ -2363,6 +3498,10 @@ class ArenaGame:
         current = self.players[self.current_turn]
 
         for event in events:
+            if self.help_open:
+                self.handle_help_overlay_events(events)
+                return
+
             if self.show_info_idx is not None:
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                     self.show_info_idx = None
@@ -2373,10 +3512,19 @@ class ArenaGame:
                         return
                 continue
 
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if self.help_button_rect.collidepoint(event.pos):
+                    self.help_open = True
+                    self.help_active_tab = self.help_tabs[0]
+                    self.help_scroll = 0
+                    self.show_info_idx = None
+                    return
+
             if current.is_ai:
                 continue
 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+
                 for idx, rect in enumerate(self.info_rects):
                     if rect and rect.collidepoint(event.pos):
                         self.show_info_idx = idx
@@ -2386,6 +3534,22 @@ class ArenaGame:
                     if rect.collidepoint(event.pos) and player != current and player.hp > 0:
                         self.selected_target = player
                         return
+
+                if self.form_menu_open:
+                    options = self.get_orc_form_options(current)
+                    for index, button in enumerate(self.spell_buttons):
+                        if index < len(options) and button.clicked(event):
+                            if options[index]["id"] != "info":
+                                self.resolve_form_choice(index)
+                            return
+                    continue
+
+                if self.loot_choice_open:
+                    for index, button in enumerate(self.spell_buttons):
+                        if index < len(self.loot_choice_items) and button.clicked(event):
+                            self.resolve_loot_choice(index)
+                            return
+                    continue
 
                 if self.spell_menu_open:
                     for index, button in enumerate(self.spell_buttons):
@@ -2398,22 +3562,29 @@ class ArenaGame:
 
                 if self.battle_buttons[0].clicked(event, enabled=not spells_only):
                     self.reset_spell_state()
+                    self.close_form_menu()
                     self.perform_player_action("attack")
                     return
                 if self.battle_buttons[1].clicked(event, enabled=not spells_only):
                     self.reset_spell_state()
+                    self.close_form_menu()
                     self.perform_player_action("cautious")
                     return
                 if self.battle_buttons[2].clicked(event, enabled=not spells_only):
                     self.reset_spell_state()
+                    self.close_form_menu()
                     self.perform_player_action("special")
                     return
                 if self.battle_buttons[3].clicked(event, enabled=not spells_only):
                     self.reset_spell_state()
+                    self.close_form_menu()
                     self.perform_player_action("loot")
                     return
                 if self.battle_buttons[4].clicked(event, enabled=not spells_only or self.spell_menu_open):
-                    self.toggle_spell_menu()
+                    if self.is_orc(current):
+                        self.toggle_form_menu()
+                    else:
+                        self.toggle_spell_menu()
                     return
 
     def perform_player_action(self, action_name):
@@ -2458,6 +3629,8 @@ class ArenaGame:
                 self.log.extend(messages)
         elif action_name == "special":
             messages, hit_success, actual_target = self.perform_special_action(player, self.selected_target)
+            if player.special_cooldown > 0 and not messages:
+                return
             shown_target = self.selected_target.name if self.selected_target and self.selected_target.hp > 0 else None
             self.append_log(
                 f"{player.name} использует спец" + (f" против {shown_target}" if shown_target else ""),
@@ -2472,16 +3645,20 @@ class ArenaGame:
             self.hit_timer = 10 if actual_target else 0
             if messages:
                 self.log.extend(messages)
+            if actual_target is None and not hit_success and messages and messages[0].get("category") == "warning":
+                self.normalize_health()
+                return
+            player.special_cooldown = 2
+            player.special_cooldown_fresh = True
         elif action_name == "loot":
-            self.log.extend(self.perform_loot_action(player))
+            messages, waiting_for_choice = self.perform_loot_action(player)
+            if messages:
+                self.log.extend(messages)
+            if waiting_for_choice:
+                self.normalize_health()
+                return
 
-        self.normalize_health()
-        if self.bonus_turn_player is player:
-            self.advance_turn()
-            return
-        if self.try_grant_assassin_bonus_turn(player):
-            return
-        self.advance_turn()
+        self.finish_action_turn(player)
 
     def perform_ai_turn(self, player):
         alive_targets = [x for x in self.players if x.hp > 0 and x != player]
@@ -2491,29 +3668,74 @@ class ArenaGame:
         target = min(alive_targets, key=lambda x: x.hp)
 
         # Шаман: если HP < 50% — предпочитает транс
-        if player.role == "Шаман" and player.hp < player.max_hp * 0.5 and not player.trance_next and not player.trance_active:
+        if player.role == "Шаман" and player.special_cooldown == 0 and player.hp < player.max_hp * 0.5 and not player.trance_next and not player.trance_active:
             messages, hit_success, actual_target = self.perform_special_action(player, target)
             self.append_log(f"{player.name} уходит в транс", category="action", actor=player.name, verb="уходит в транс", indent=True)
             if messages:
                 self.log.extend(messages)
+            player.special_cooldown = 2
+            player.special_cooldown_fresh = True
             self.normalize_health()
             self.advance_turn()
             return
 
         # Боевой маг: иногда заряжает оружие
-        if player.role == "Боевой маг" and player.weapon_enchanted_turns == 0 and random.randint(1, 100) <= 35:
+        if player.role == "Боевой маг" and player.special_cooldown == 0 and player.weapon_enchanted_turns == 0 and random.randint(1, 100) <= 35:
             messages, hit_success, actual_target = self.perform_special_action(player, target)
             self.append_log(f"{player.name} заряжает оружие", category="action", actor=player.name, verb="заряжает оружие", indent=True)
             if messages:
                 self.log.extend(messages)
+            player.special_cooldown = 2
+            player.special_cooldown_fresh = True
+            self.normalize_health()
+            self.advance_turn()
+            return
+
+        if player.role == "Некромант" and player.special_cooldown == 0 and (player.hp < player.max_hp * 0.65 or self.has_any_negative_effect(target)) and random.randint(1, 100) <= 45:
+            messages, hit_success, actual_target = self.perform_special_action(player, target)
+            self.append_log(f"{player.name} тянет могильную хватку", category="action", actor=player.name, verb="тянет могильную хватку", target=target.name, target_hit=hit_success, indent=True)
+            if messages:
+                self.log.extend(messages)
+            player.special_cooldown = 2
+            player.special_cooldown_fresh = True
+            self.hit_target = actual_target
+            self.hit_timer = 10 if actual_target else 0
+            self.normalize_health()
+            self.advance_turn()
+            return
+
+        if player.role == "Мистик" and player.special_cooldown == 0 and not self.has_essence_lock(target) and random.randint(1, 100) <= 45:
+            messages, hit_success, actual_target = self.perform_special_action(player, target)
+            self.append_log(f"{player.name} сковывает суть", category="action", actor=player.name, verb="сковывает суть", target=target.name, target_hit=hit_success, indent=True)
+            if messages:
+                self.log.extend(messages)
+            player.special_cooldown = 2
+            player.special_cooldown_fresh = True
+            self.hit_target = actual_target
+            self.hit_timer = 10 if actual_target else 0
+            self.normalize_health()
+            self.advance_turn()
+            return
+
+        if player.role == "Орк" and not self.has_essence_lock(player) and not self.is_beast_form_active(player) and player.lycan_cooldown == 0 and random.randint(1, 100) <= 35:
+            choice = "bear" if player.hp < player.max_hp * 0.55 else "wolf"
+            self.append_log(
+                f"{player.name} использует ликантропию",
+                category="action",
+                actor=player.name,
+                verb="использует ликантропию",
+                target="Форма медведя" if choice == "bear" else "Форма волка",
+                indent=True,
+            )
+            self.log.extend(self.apply_orc_form(player, choice))
             self.normalize_health()
             self.advance_turn()
             return
 
         roll = random.randint(1, 100)
 
-        spell_blocked = self.is_spellcasting_blocked(player)
-        special_blocked = self.has_stone_skin(player)
+        spell_blocked = self.is_spellcasting_blocked(player) or player.spell_cooldown > 0
+        special_blocked = self.has_stone_skin(player) or self.has_essence_lock(player) or player.special_cooldown > 0 or (player.role == "Орк" and self.is_beast_form_active(player))
 
         if player.magic_path == "Путь земли" and not self.has_stone_skin(player) and player.hp < player.max_hp * 0.6:
             stone_skin_spell = next((s for s in self.get_spells_for_player(player, "normal") if s["id"] == "stone_skin"), None)
@@ -2530,7 +3752,9 @@ class ArenaGame:
                 return
 
         if roll <= 20:
-            self.log.extend(self.perform_loot_action(player))
+            messages, _ = self.perform_loot_action(player)
+            if messages:
+                self.log.extend(messages)
         elif roll <= 40 and not spell_blocked:
             normal_spells = self.get_spells_for_player(player, "normal")
             if normal_spells:
@@ -2546,8 +3770,10 @@ class ArenaGame:
                         chosen_target = target if exalted_spell.get("target") == "enemy" and target.hp > 0 else player
                         self.perform_spell_cast(player, exalted_spell, chosen_target)
                 return
-            self.log.extend(self.perform_loot_action(player))
-        elif roll <= 45 and not special_blocked:
+            messages, _ = self.perform_loot_action(player)
+            if messages:
+                self.log.extend(messages)
+        elif roll <= 60 and not special_blocked:
             messages, hit_success, actual_target = self.perform_special_action(player, target)
             self.append_log(
                 f"{player.name} использует спец против {target.name}",
@@ -2558,6 +3784,8 @@ class ArenaGame:
                 target_hit=hit_success,
                 indent=True,
             )
+            player.special_cooldown = 2
+            player.special_cooldown_fresh = True
             self.hit_target = actual_target
             self.hit_timer = 10 if actual_target else 0
             if messages:
@@ -2593,13 +3821,7 @@ class ArenaGame:
             if messages:
                 self.log.extend(messages)
 
-        self.normalize_health()
-        if self.bonus_turn_player is player:
-            self.advance_turn()
-            return
-        if self.try_grant_assassin_bonus_turn(player):
-            return
-        self.advance_turn()
+        self.finish_action_turn(player)
 
     def normalize_health(self):
         for player in self.players:
@@ -2642,6 +3864,8 @@ class ArenaGame:
         self.show_info_idx = None
         self.winner_name = ""
         self.champion = False
+        self.close_loot_choice()
+        self.close_form_menu()
         self.reset_spell_state()
         self.set_state(self.MENU)
 
@@ -2765,8 +3989,8 @@ class ArenaGame:
                     f"Выносливость: {preview['stamina']} ({preview['hp']} HP)",
                     f"Ловкость: {preview['agility']} ({preview['dodge']}% уклон)",
                     f"Удача: {preview['luck']} ({preview['crit']}% крит)",
-                    f"Инициатива: {preview['initiative']} (ходит раньше)",
-                    f"Интеллект: {preview['intellect']} ({preview['insight']}% прозрения)",
+                    f"Мудрость: {preview['wisdom']} ({preview['insight']}% прозрения, {preview['reflect']}% отражения)",
+                    f"Интеллект: {preview['intellect']} ({preview['magic_damage']} маг. урона)",
                     "",
                     "Пассивная способность:",
                     data["passive"],
@@ -2807,6 +4031,39 @@ class ArenaGame:
                     y_text = 270
                     group_lines = self.wrap_text(
                         "Бойцы идут напролом и держат строй до конца. Одни побеждают сталью и щитом, другие сплавляют воинское мастерство с тайной боевой магией.",
+                        self.font,
+                        560,
+                    )
+                    for part in group_lines:
+                        txt = self.font.render(part, True, (215, 215, 225))
+                        self.screen.blit(txt, (620, y_text))
+                        y_text += 40
+                elif self.selected_group == "Разбойник":
+                    y_text = 270
+                    group_lines = self.wrap_text(
+                        "Разбойники побеждают не честной силой, а скоростью, хитростью и грязными уловками. Один режет из тени, другой выворачивает удачу врага и крадёт лучший шанс себе.",
+                        self.font,
+                        560,
+                    )
+                    for part in group_lines:
+                        txt = self.font.render(part, True, (215, 215, 225))
+                        self.screen.blit(txt, (620, y_text))
+                        y_text += 40
+                elif self.selected_group == "Нелюди":
+                    y_text = 270
+                    group_lines = self.wrap_text(
+                        "Нелюди сражаются иначе, чем люди. Эльф полагается на точность и дистанцию, а орк — на ярость и звериную ликантропию, жертвуя доступом к мистическим путям.",
+                        self.font,
+                        560,
+                    )
+                    for part in group_lines:
+                        txt = self.font.render(part, True, (215, 215, 225))
+                        self.screen.blit(txt, (620, y_text))
+                        y_text += 40
+                elif self.selected_group == "Маг":
+                    y_text = 270
+                    group_lines = self.wrap_text(
+                        "Маги властвуют не сталью, а знанием. Некромант вытягивает жизнь из чужой боли, а Мистик ломает саму возможность врага колдовать и пользоваться силами вовремя.",
                         self.font,
                         560,
                     )
@@ -2898,10 +4155,16 @@ class ArenaGame:
 
         y_text = 245
         for name, desc in self.stat_data.items():
-            if name == "Интеллектуальный":
-                txt = self.font.render(f"{name} — шанс прозрения", True, WHITE)
+            if name == "Мудрый":
+                txt = self.font.render(f"{name} — прозрение", True, WHITE)
                 self.screen.blit(txt, (610, y_text))
-                txt2 = self.font.render("                 и сила магии", True, WHITE)
+                txt2 = self.font.render("                 и отражение магии", True, WHITE)
+                self.screen.blit(txt2, (610, y_text + 30))
+                y_text += 64
+            elif name == "Интеллектуальный":
+                txt = self.font.render(f"{name} — сила магии", True, WHITE)
+                self.screen.blit(txt, (610, y_text))
+                txt2 = self.font.render("                 и урон заклинаний", True, WHITE)
                 self.screen.blit(txt2, (610, y_text + 30))
                 y_text += 64
             else:
@@ -2922,8 +4185,8 @@ class ArenaGame:
                 f"Выносливость: {preview['stamina']} ({preview['hp']} HP)",
                 f"Ловкость: {preview['agility']} ({preview['dodge']}% уклон)",
                 f"Удача: {preview['luck']} ({preview['crit']}% крит)",
-                f"Инициатива: {preview['initiative']}",
-                f"Интеллект: {preview['intellect']} ({preview['insight']}% прозрения)",
+                f"Мудрость: {preview['wisdom']} ({preview['insight']}% прозрения, {preview['reflect']}% отражения)",
+                f"Интеллект: {preview['intellect']} ({preview['magic_damage']} маг. урона)",
             ]
             preview_y = 300
             for line in preview_lines:
@@ -3005,17 +4268,103 @@ class ArenaGame:
         if not self.players[self.current_turn].is_ai:
             spells_only = self.spell_menu_open and self.spell_tier == "exalted"
             current_player = self.players[self.current_turn]
-            special_locked = self.has_stone_skin(current_player)
+            special_locked = self.has_stone_skin(current_player) or self.has_essence_lock(current_player) or current_player.special_cooldown > 0
             spell_locked = self.is_spellcasting_blocked(current_player)
+            self.battle_buttons[4].text = "Колдовать"
+            self.battle_buttons[2].text = "Активка"
+            if self.has_essence_lock(current_player):
+                self.battle_buttons[2].text = "Скован"
+                self.battle_buttons[4].text = "Скован"
+            if self.is_orc(current_player):
+                if self.has_essence_lock(current_player):
+                    self.battle_buttons[4].text = "Скован"
+                elif current_player.lycan_cooldown > 0 and not self.is_beast_form_active(current_player):
+                    self.battle_buttons[4].text = f"Откат {current_player.lycan_cooldown}"
+                else:
+                    self.battle_buttons[4].text = "Обратиться"
+            elif current_player.spell_cooldown > 0 and not self.spell_menu_open and not self.has_essence_lock(current_player):
+                self.battle_buttons[4].text = f"Откат {current_player.spell_cooldown}"
+            if current_player.special_cooldown > 0 and not self.has_essence_lock(current_player):
+                self.battle_buttons[2].text = f"Откат {current_player.special_cooldown}"
             for index, button in enumerate(self.battle_buttons):
-                enabled = not spells_only or index == 4
-                if index == 2 and special_locked:
+                enabled = (not spells_only or index == 4) and not self.loot_choice_open and not self.form_menu_open if index != 4 else (not self.loot_choice_open)
+                if index == 2 and (special_locked or (self.is_orc(current_player) and self.is_beast_form_active(current_player))):
                     enabled = False
                 if index == 4 and spell_locked and not self.spell_menu_open:
                     enabled = False
-                button.draw(self.screen, self.medium_font, enabled=enabled, active=(index == 4 and self.spell_menu_open))
+                if index == 4 and not self.is_orc(current_player) and current_player.spell_cooldown > 0 and not self.spell_menu_open:
+                    enabled = False
+                if index == 4 and self.is_orc(current_player) and (self.has_essence_lock(current_player) or (current_player.lycan_cooldown > 0 and not self.is_beast_form_active(current_player))):
+                    enabled = False
+                button.draw(self.screen, self.medium_font, enabled=enabled, active=(index == 4 and (self.spell_menu_open or self.form_menu_open)))
 
-            if self.spell_menu_open:
+            if self.form_menu_open:
+                title_surface = self.font.render("Ликантропия", True, (170, 225, 110))
+                self.screen.blit(title_surface, (1408, 545))
+                hovered_form = None
+                options = self.get_orc_form_options(current_player)
+                for index, button in enumerate(self.spell_buttons):
+                    if index < len(options):
+                        option = options[index]
+                        button.text = option["name"]
+                        mouse = pygame.mouse.get_pos()
+                        is_disabled = option["id"] == "info"
+                        base_color = (78, 118, 56) if not is_disabled else (82, 82, 82)
+                        hover_color = (110, 160, 82) if not is_disabled else (92, 92, 92)
+                        color = hover_color if button.rect.collidepoint(mouse) and not is_disabled else base_color
+                        pygame.draw.rect(self.screen, color, button.rect, border_radius=14)
+                        pygame.draw.rect(self.screen, (210, 230, 170), button.rect, 2, border_radius=14)
+                        txt = self.font.render(button.text, True, WHITE)
+                        self.screen.blit(txt, txt.get_rect(center=button.rect.center))
+                        if button.rect.collidepoint(mouse):
+                            hovered_form = option
+                if hovered_form:
+                    wrapped = self.wrap_text(hovered_form["desc"], self.small_font, 340)
+                    box_h = min(len(wrapped), 5) * 22 + 18
+                    box_rect = pygame.Rect(1338, 758, 360, box_h)
+                    tooltip_surf = pygame.Surface((box_rect.width, box_rect.height), pygame.SRCALPHA)
+                    tooltip_surf.fill((25, 25, 45, 210))
+                    self.screen.blit(tooltip_surf, (box_rect.x, box_rect.y))
+                    pygame.draw.rect(self.screen, (140, 140, 180), box_rect, 1, border_radius=6)
+                    for row, part in enumerate(wrapped[:5]):
+                        txt = self.small_font.render(part, True, WHITE)
+                        self.screen.blit(txt, (box_rect.x + 10, box_rect.y + 9 + row * 22))
+            elif self.loot_choice_open:
+                title_surface = self.font.render("Выбор добычи", True, GOLD)
+                self.screen.blit(title_surface, (1400, 545))
+                hovered_item = None
+                for index, button in enumerate(self.spell_buttons):
+                    if index < len(self.loot_choice_items):
+                        item = self.loot_choice_items[index]
+                        button.text = item["name"]
+                        mouse = pygame.mouse.get_pos()
+                        base_color = (115, 82, 42) if item.get("negative") else (78, 126, 64)
+                        hover_color = (155, 112, 60) if item.get("negative") else (102, 162, 82)
+                        color = hover_color if button.rect.collidepoint(mouse) else base_color
+                        pygame.draw.rect(self.screen, color, button.rect, border_radius=14)
+                        pygame.draw.rect(self.screen, (230, 220, 170), button.rect, 2, border_radius=14)
+                        txt = self.font.render(button.text, True, WHITE)
+                        self.screen.blit(txt, txt.get_rect(center=button.rect.center))
+                        if button.rect.collidepoint(mouse):
+                            hovered_item = item
+                negative_target = self.get_loot_target_for_negative_item(current_player)
+                note_text = "Негативные находки полетят в выбранную цель"
+                if negative_target:
+                    note_text = f"Негативные находки полетят в {negative_target.name}"
+                note_surface = self.small_font.render(note_text, True, (220, 220, 220))
+                self.screen.blit(note_surface, (1338, 730))
+                if hovered_item:
+                    wrapped = self.wrap_text(hovered_item["desc"], self.small_font, 340)
+                    box_h = min(len(wrapped), 5) * 22 + 18
+                    box_rect = pygame.Rect(1338, 758, 360, box_h)
+                    tooltip_surf = pygame.Surface((box_rect.width, box_rect.height), pygame.SRCALPHA)
+                    tooltip_surf.fill((25, 25, 45, 210))
+                    self.screen.blit(tooltip_surf, (box_rect.x, box_rect.y))
+                    pygame.draw.rect(self.screen, (140, 140, 180), box_rect, 1, border_radius=6)
+                    for row, part in enumerate(wrapped[:5]):
+                        txt = self.small_font.render(part, True, WHITE)
+                        self.screen.blit(txt, (box_rect.x + 10, box_rect.y + 9 + row * 22))
+            elif self.spell_menu_open:
                 spell_title = "Возвышенная магия" if self.spell_tier == "exalted" else "Обычная магия"
                 _, normal_color, exalted_color = self.get_magic_tier_colors(current_player.magic_path)
                 title_surface = self.font.render(spell_title, True, exalted_color if self.spell_tier == "exalted" else normal_color)
@@ -3043,10 +4392,15 @@ class ArenaGame:
             thinking = self.medium_font.render("AI обдумывает ход...", True, WHITE)
             self.screen.blit(thinking, (120, 620))
 
+        self.draw_help_button()
+
         if self.show_info_idx is not None:
             self.close_popup_rect = self.draw_info_popup(self.players[self.show_info_idx])
         else:
             self.close_popup_rect = None
+
+        if self.help_open:
+            self.render_help_overlay()
 
     def render_log(self):
         y_log = 30
@@ -3062,12 +4416,13 @@ class ArenaGame:
                 break
 
     def render_battle_descriptions(self):
+        current = self.players[self.current_turn]
         descriptions = [
             "Обычная атака по выбранной цели.",
             "Атака с меньшим уроном, но с шансом уклониться.",
-            self.class_data.get(self.players[self.current_turn].role, {}).get("skill", "Спец-удар персонажа."),
+            ("Суть скована: активные способности временно недоступны." if self.has_essence_lock(current) else (f"Активная способность на откате: {current.special_cooldown} ход." if current.special_cooldown > 0 else ("В звериной форме классовая активка недоступна." if self.is_orc(current) and self.is_beast_form_active(current) else self.class_data.get(current.role, {}).get("skill", "Спец-удар персонажа.")))),
             "Попытаться найти предмет.",
-            "Открыть выбор заклинаний мистического пути.",
+            ("Суть скована: магия и обращения временно недоступны." if self.has_essence_lock(current) else ("Выбрать звериную форму ликантропии." if self.is_orc(current) and current.lycan_cooldown == 0 and not self.is_beast_form_active(current) else ("Вернуть обычный облик." if self.is_orc(current) and self.is_beast_form_active(current) else (f"Ликантропия на откате: {current.lycan_cooldown} ход." if self.is_orc(current) else (f"Обычная магия на откате: {current.spell_cooldown} ход." if current.spell_cooldown > 0 else "Открыть выбор заклинаний мистического пути."))))),
         ]
         desc_y = 710
         for i, text in enumerate(descriptions):
@@ -3108,10 +4463,12 @@ class ArenaGame:
         status_lines = []
         if player.disarmed_turns > 0:
             status_lines.append("Эффект: обезоружен — активка заблокирована, урон x0.5, пассивка выкл, лут -20%.")
+        if player.essence_locked_turns > 0:
+            status_lines.append("Эффект: суть скована — в этом ходу нельзя колдовать, обращаться и использовать активку.")
         if player.arm_severed:
             status_lines.append("Эффект: отрублена рука — урон снижен вдвое до конца боя.")
         if player.leg_severed:
-            status_lines.append("Эффект: отрублена нога — инициатива снижена до 1.")
+            status_lines.append("Эффект: отрублена нога — ловкость и уклонение почти исчезли.")
         if player.bleeding > 0:
             status_lines.append(f"Эффект: кровотечение ещё {player.bleeding} ход(а), {player.bleed_damage} урона за тик.")
         if player.burning > 0:
@@ -3130,6 +4487,15 @@ class ArenaGame:
             status_lines.append(f"Эффект: покров мрака активен ещё {player.shadow_shroud_turns} ход(а) — урон понижен на 40%, уклонение +25%.")
         if player.soul_curse_turns > 0:
             status_lines.append(f"Эффект: проклятие души ещё {player.soul_curse_turns} ход(а) — урон и интеллект снижены на 25%.")
+        if self.is_orc(player) and self.is_beast_form_active(player):
+            form_name = "медведя" if player.lycan_form == "bear" else "волка"
+            status_lines.append(f"Эффект: форма {form_name} активна ещё {player.lycan_turns} своих ход(а) — классовые пассивка и активка отключены.")
+        if self.is_orc(player) and player.lycan_cooldown > 0 and not self.is_beast_form_active(player):
+            status_lines.append(f"Эффект: ликантропия на откате ещё {player.lycan_cooldown} ход(а).")
+        if player.spell_cooldown > 0:
+            status_lines.append(f"Эффект: обычная магия на откате ещё {player.spell_cooldown} ход(а).")
+        if player.special_cooldown > 0:
+            status_lines.append(f"Эффект: активная способность на откате ещё {player.special_cooldown} ход(а).")
         if player.unfathomable_next:
             status_lines.append("Эффект: шёпот извне — следующее заклинание усилено в 1.5 раза.")
         if player.weapon_enchanted_turns > 0:
@@ -3149,8 +4515,8 @@ class ArenaGame:
             f"Выносливость: {player.stamina} ({player.max_hp} HP)",
             f"Ловкость: {player.agility} ({player.dodge}% уклон)",
             f"Удача: {player.luck} ({player.crit}% крит)",
-            f"Инициатива: {player.initiative}",
-            f"Интеллект: {player.intellect} ({self.get_insight_chance(player)}% прозрения)",
+            f"Мудрость: {player.wisdom} ({self.get_insight_chance(player)}% прозрения, {self.get_spell_reflect_chance(player)}% отражения)",
+            f"Интеллект: {player.intellect} ({self.get_spell_damage(player)} маг. урона)",
             "Инвентарь: пусто",
             "",
             "Пассивная способность:",
