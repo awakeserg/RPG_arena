@@ -36,6 +36,21 @@ class Player:
         self.burn_damage=0
         self.fire_wall_turns=0
         self.fire_wall_fresh=False
+        self.stone_skin_turns=0
+        self.stone_skin_fresh=False
+        self.tailwind_turns=0
+        self.tailwind_fresh=False
+
+        self.weapon_enchanted_turns=0
+
+        self.totem_next=False
+        self.totem_active=False
+        self.totem_dmg_base=0
+        self.totem_dodge_base=0
+
+        self.trance_next=False
+        self.trance_active=False
+        self.trance_intel_base=0
 
         self.magic_path=""
 

@@ -60,6 +60,47 @@ def draw_spearman():
 	return image
 
 
+def draw_battle_mage():
+	image, draw = make_canvas((55, 45, 120, 255), (195, 180, 255, 255))
+	# Броня
+	draw.polygon([(128, 38), (74, 72), (90, 172), (166, 172), (182, 72)], fill=(125, 115, 168, 255))
+	draw.polygon([(128, 56), (96, 78), (106, 158), (150, 158), (160, 78)], fill=(75, 65, 118, 255))
+	# Посох
+	draw.rounded_rectangle((123, 64, 133, 196), radius=5, fill=(95, 72, 40, 255))
+	# Магический кристалл на верху
+	draw.polygon([(128, 28), (116, 50), (128, 62), (140, 50)], fill=(200, 170, 255, 255))
+	draw.polygon([(128, 34), (120, 50), (128, 58), (136, 50)], fill=(230, 215, 255, 255))
+	# Магический щит-круг
+	draw.ellipse((90, 98, 166, 174), outline=(165, 140, 255, 200), width=3)
+	# Руна на груди
+	draw.line((118, 112, 138, 132), fill=(175, 155, 255, 255), width=2)
+	draw.line((138, 112, 118, 132), fill=(175, 155, 255, 255), width=2)
+	draw.line((118, 122, 138, 122), fill=(175, 155, 255, 255), width=2)
+	return image
+
+
+def draw_shaman():
+	image, draw = make_canvas((62, 92, 55, 255), (185, 230, 170, 255))
+	# Халат
+	draw.polygon([(128, 44), (64, 82), (52, 212), (204, 212), (192, 82)], fill=(88, 72, 48, 255))
+	draw.polygon([(128, 60), (82, 88), (74, 200), (182, 200), (174, 88)], fill=(62, 58, 40, 255))
+	# Тотемный посох
+	draw.rounded_rectangle((123, 40, 133, 202), radius=4, fill=(125, 85, 38, 255))
+	# Верхний тотем (огонь)
+	draw.ellipse((116, 28, 140, 52), fill=(195, 158, 95, 255))
+	draw.ellipse((120, 32, 136, 48), fill=(255, 135, 55, 255))
+	# Средний тотем (природа)
+	draw.ellipse((116, 68, 140, 92), fill=(145, 195, 135, 255))
+	draw.ellipse((120, 72, 136, 88), fill=(95, 215, 75, 255))
+	# Пояс из бусин
+	draw.line((78, 142, 178, 142), fill=(205, 170, 85, 255), width=3)
+	for bx in range(84, 178, 12):
+		draw.ellipse((bx - 4, 138, bx + 4, 146), fill=(238, 198, 78, 255))
+	# Узор на халате
+	draw.line((100, 160, 156, 160), fill=(155, 195, 145, 100), width=2)
+	return image
+
+
 def save_icon(filename, image):
 	image.save(os.path.join(OUTPUT_DIR, filename))
 
@@ -70,6 +111,8 @@ def main():
 		"barbarian.png": draw_barbarian(),
 		"assassin.png": draw_assassin(),
 		"spearman.png": draw_spearman(),
+		"battle_mage.png": draw_battle_mage(),
+		"shaman.png": draw_shaman(),
 	}
 
 	for filename, surface in icons.items():

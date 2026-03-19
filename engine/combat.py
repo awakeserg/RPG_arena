@@ -15,7 +15,10 @@ def attack(a,d,strong=False,cautious=False):
     if random.randint(1, 100) <= dodge:
         if random.randint(1, 100) < 15:
             messages.append("⚡ Парирование!")
-            a.hp -= a.damage // 2
+            parry_damage = a.damage // 2
+            if getattr(a, "stone_skin_turns", 0) > 0:
+                parry_damage = max(1, parry_damage // 2)
+            a.hp -= parry_damage
         else:
             messages.append(f"{d.name} уклонился")
         return messages
@@ -32,13 +35,16 @@ def attack(a,d,strong=False,cautious=False):
         d.hp = 0
         return messages
 
-    if random.randint(1, 100) < 10:
+    if random.randint(1, 100) < 10 and getattr(d, "stone_skin_turns", 0) <= 0:
         messages.append("🩸 смертельная рана")
         d.bleeding = 4
         d.bleed_damage = dmg // 2
 
-    d.hp -= dmg
-    messages.append(f"{a.name} нанёс {dmg}")
+    actual_dmg = dmg
+    if getattr(d, "stone_skin_turns", 0) > 0:
+        actual_dmg = max(1, dmg // 2)
+    d.hp -= actual_dmg
+    messages.append(f"{a.name} нанёс {actual_dmg}")
     return messages
 
 

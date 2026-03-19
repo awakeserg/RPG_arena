@@ -23,6 +23,8 @@ BRONZE = (205, 140, 90)
 SKY = (80, 180, 255)
 LIGHT_BLUE = (170, 225, 255)
 LIGHT_PINK = (255, 190, 220)
+TURQUOISE = (80, 220, 215)
+BRIGHT_TURQUOISE = (120, 255, 245)
 
 
 class UIButton:
@@ -80,6 +82,28 @@ class ArenaGame:
         self.log_font = pygame.font.SysFont("arial", 22)
         self.class_name_font = pygame.font.SysFont("arial", 38, bold=True)
 
+        # Шрифт для emoji/Unicode-символов (Segoe UI Emoji на Win11, Segoe UI Symbol на Win10)
+        _emoji_candidates = [
+            os.path.join(os.environ.get("WINDIR", "C:/Windows"), "Fonts", "seguiemj.ttf"),
+            "C:/Windows/Fonts/seguiemj.ttf",
+            os.path.join(os.environ.get("WINDIR", "C:/Windows"), "Fonts", "seguisym.ttf"),
+            "C:/Windows/Fonts/seguisym.ttf",
+        ]
+        _color_emoji_names = {"seguiemj.ttf"}  # только этот файл умеет рендерить SMP emoji
+        self.emoji_font = None
+        self.has_color_emoji = False
+        for _ep in _emoji_candidates:
+            if os.path.exists(_ep):
+                try:
+                    self.emoji_font = pygame.font.Font(_ep, 20)
+                    self.has_color_emoji = os.path.basename(_ep).lower() in _color_emoji_names
+                    break
+                except Exception:
+                    pass
+        if self.emoji_font is None:
+            self.emoji_font = pygame.font.SysFont("Segoe UI Symbol", 20)
+        self.log_icon_chars = set("◎★⚡▲❄◆⚠✶⚔♥○⊕☠↻⚒↺•▸✨☀◼✦🪨")
+
         self.class_data = {
             "Воин": {
                 "desc": "Баланс урона и защиты",
@@ -133,6 +157,32 @@ class ArenaGame:
                 "intellect": 10,
                 "image": "assets/images/spearman.png",
             },
+            "\u0411\u043e\u0435\u0432\u043e\u0439 \u043c\u0430\u0433": {
+                "desc": "\u0412\u043e\u0438\u043d, \u043e\u0432\u043b\u0430\u0434\u0435\u0432\u0448\u0438\u0439 \u0442\u0430\u0439\u043d\u043e\u0439 \u043c\u0430\u0433\u0438\u0438",
+                "skill": "\u0417\u0430\u0440\u044f\u0434 \u043e\u0440\u0443\u0436\u0438\u044f \u2014 2 \u0445\u043e\u0434\u0430 +50% \u0448\u0430\u043d\u0441 \u043c\u0430\u0433\u0438\u0447\u0435\u0441\u043a\u043e\u0433\u043e \u0434\u043e\u0431\u0438\u0432\u0430\u043d\u0438\u044f",
+                "passive": "\u041f\u0430\u0441\u0441\u0438\u0432\u043d\u043e: \u041c\u0430\u0433\u0438\u0447\u0435\u0441\u043a\u0438\u0439 \u043a\u0440\u0438\u0442 \u2014 \u0437\u0430\u043a\u043b\u0438\u043d\u0430\u043d\u0438\u044f \u0411\u043e\u0435\u0432\u043e\u0433\u043e \u043c\u0430\u0433\u0430 \u043c\u043e\u0433\u0443\u0442 \u043d\u0430\u043d\u0435\u0441\u0442\u0438 \u043a\u0440\u0438\u0442\u0438\u0447\u0435\u0441\u043a\u0438\u0439 \u0443\u0434\u0430\u0440 (\u0445\u2032-\u0434\u0432\u043e\u0439\u043d\u043e\u0439 \u0443\u0440\u043e\u043d). \u0423 \u043e\u0441\u0442\u0430\u043b\u044c\u043d\u044b\u0445 \u043a\u043b\u0430\u0441\u0441\u043e\u0432 \u043c\u0430\u0433\u0438\u044f \u043d\u0435 \u043a\u0440\u0438\u0442\u0443\u0435\u0442. \u0428\u0430\u043d\u0441 \u0440\u0430\u0441\u0441\u0447\u0438\u0442\u044b\u0432\u0430\u0435\u0442\u0441\u044f \u0442\u0430\u043a \u0436\u0435, \u043a\u0430\u043a \u0444\u0438\u0437 \u043a\u0440\u0438\u0442, \u0447\u0435\u0440\u0435\u0437 \u0443\u0434\u0430\u0447\u0443.",
+                "active": "\u0410\u043a\u0442\u0438\u0432\u043d\u043e: \u0417\u0430\u0440\u044f\u0434 \u043e\u0440\u0443\u0436\u0438\u044f \u2014 \u043d\u0430 2 \u0445\u043e\u0434\u0430 \u043a\u0430\u0436\u0434\u0430\u044f \u0443\u0441\u043f\u0435\u0448\u043d\u0430\u044f \u0444\u0438\u0437. \u0430\u0442\u0430\u043a\u0430 \u0441 50% \u0448\u0430\u043d\u0441\u043e\u043c \u0434\u043e\u043f\u043e\u043b\u043d\u0438\u0442\u0435\u043b\u044c\u043d\u043e \u043f\u043e\u0440\u0430\u0436\u0430\u0435\u0442 \u0446\u0435\u043b\u044c \u043c\u0430\u0433\u0438\u0435\u0439 \u043f\u0443\u0442\u0438 (\u0441\u0442\u0440\u0435\u043b\u0430 \u043e\u0433\u043d\u044f / \u043b\u0435\u0434\u044f\u043d\u0430\u044f \u0441\u0442\u0440\u0435\u043b\u0430). \u041e\u0442 \u0434\u043e\u043f. \u0443\u0434\u0430\u0440\u0430 \u0442\u043e\u0436\u0435 \u043c\u043e\u0436\u043d\u043e \u0443\u043a\u043b\u043e\u043d\u0438\u0442\u044c\u0441\u044f.",
+                "strength": 14,
+                "stamina": 13,
+                "agility": 10,
+                "luck": 12,
+                "initiative": 10,
+                "intellect": 16,
+                "image": "assets/images/battle_mage.png",
+            },
+            "\u0428\u0430\u043c\u0430\u043d": {
+                "desc": "\u041c\u0438\u0441\u0442\u0438\u043a, \u0447\u0435\u0440\u043f\u0430\u044e\u0449\u0438\u0439 \u0441\u0438\u043b\u0443 \u0438\u0437 \u043f\u0440\u0438\u0440\u043e\u0434\u044b",
+                "skill": "\u041a\u0430\u043c\u043b\u0430\u043d\u0438\u0435 \u2014 \u0442\u0440\u0430\u0442\u0438\u0442 \u0445\u043e\u0434, \u0443\u0432\u0435\u043b\u0438\u0447\u0438\u0432\u0430\u0435\u0442 \u0438\u043d\u0442\u0435\u043b\u043b\u0435\u043a\u0442 \u0432 1.5 \u0440\u0430\u0437\u0430 \u043d\u0430 \u0441\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u0439 \u0445\u043e\u0434",
+                "passive": "\u041f\u0430\u0441\u0441\u0438\u0432\u043d\u043e: \u0422\u043e\u0442\u0435\u043c \u0437\u0432\u0435\u0440\u044f \u2014 \u0432 \u043a\u043e\u043d\u0446\u0435 \u043a\u0430\u0436\u0434\u043e\u0433\u043e \u0445\u043e\u0434\u0430 \u0435\u0441\u0442\u044c 50% \u0448\u0430\u043d\u0441, \u0447\u0442\u043e \u0432 \u043d\u0430\u0447\u0430\u043b\u0435 \u0441\u043b\u0435\u0434\u0443\u044e\u0449\u0435\u0433\u043e \u0445\u043e\u0434\u0430 \u0441\u0438\u043b\u0430 \u0438 \u043b\u043e\u0432\u043a\u043e\u0441\u0442\u044c \u0428\u0430\u043c\u0430\u043d\u0430 \u0443\u0432\u0435\u043b\u0438\u0447\u0430\u0442\u0441\u044f \u0432 1.5 \u0440\u0430\u0437\u0430.",
+                "active": "\u0410\u043a\u0442\u0438\u0432\u043d\u043e: \u041a\u0430\u043c\u043b\u0430\u043d\u0438\u0435 \u2014 \u0448\u0430\u043c\u0430\u043d \u0432\u0445\u043e\u0434\u0438\u0442 \u0432 \u0442\u0440\u0430\u043d\u0441, \u0442\u0440\u0430\u0442\u044f \u0442\u0435\u043a\u0443\u0449\u0438\u0439 \u0445\u043e\u0434. \u041d\u0430 \u0441\u043b\u0435\u0434\u0443\u044e\u0449\u0435\u043c \u0445\u043e\u0434\u0443 \u0438\u043d\u0442\u0435\u043b\u043b\u0435\u043a\u0442 \u0443\u0432\u0435\u043b\u0438\u0447\u0438\u0432\u0430\u0435\u0442\u0441\u044f \u0432 1.5 \u0440\u0430\u0437\u0430.",
+                "strength": 16,
+                "stamina": 12,
+                "agility": 10,
+                "luck": 10,
+                "initiative": 10,
+                "intellect": 14,
+                "image": "assets/images/shaman.png",
+            },
         }
         self.stat_data = {
             "Сильный": "Урон значительно выше",
@@ -141,6 +191,12 @@ class ArenaGame:
             "Удачливый": "Частые криты",
             "Инициативный": "Ходишь раньше врагов",
             "Интеллектуальный": "Больше шанс прозрения и сильнее магия",
+        }
+        self.class_groups = {
+            "Боец": ["Воин", "Боевой маг"],
+            "Дикарь": ["Варвар", "Шаман"],
+            "Ассасин": ["Ассасин"],
+            "Копейщик": ["Копейщик"],
         }
         self.magic_data = {
             "Путь огня": {
@@ -205,6 +261,68 @@ class ArenaGame:
                     },
                 ],
             },
+            "Путь земли": {
+                "desc": "Адепты Пути земли ищут покой, крепость и молчаливую мудрость камня. Они кажутся безучастными, словно древние статуи, но лишь потому, что слышат страшные тайны, скрытые глубоко в недрах мира.",
+                "normal": [
+                    {
+                        "id": "stone_skin",
+                        "name": "Каменная кожа",
+                        "target": "self",
+                        "desc": "На 2 своих хода уменьшает весь входящий урон на 50% и делает мага невосприимчивым к дополнительным эффектам. Пока держится каменная кожа, нельзя колдовать и использовать активную способность.",
+                    },
+                    {
+                        "id": "stone_spikes",
+                        "name": "Каменные шипы",
+                        "target": "enemy",
+                        "desc": "Шипы из земли наносят урон, равный интеллекту. 30% шанс дополнительно наложить либо кровотечение на 3 хода по 40% урона заклинания, либо ошеломление на 1 ход.",
+                    },
+                ],
+                "exalted": [
+                    {
+                        "id": "earth_blast",
+                        "name": "Взрыв земли",
+                        "target": "enemy",
+                        "desc": "Основная цель получает 150% от интеллекта. 50% шанс оглушить её. С вероятностью 65% остальных бойцов тоже задевает тем же уроном, но уже без оглушения.",
+                    },
+                    {
+                        "id": "earthquake",
+                        "name": "Землетрясение",
+                        "target": "enemy",
+                        "desc": "Все, кроме адептов Пути земли, получают 70% от интеллекта. Основная цель оглушается с шансом 50%, остальные пострадавшие — с шансом 30%.",
+                    },
+                ],
+            },
+            "Путь воздуха": {
+                "desc": "Идущие по Пути воздуха учатся слышать шёпот высоты, читать знаки в бурях и двигаться раньше собственной тени. Их стихия кажется невесомой, но именно она первой срывает крыши, ломает строй и приносит небесную кару.",
+                "normal": [
+                    {
+                        "id": "wind_blades",
+                        "name": "Лезвия ветра",
+                        "target": "enemy",
+                        "desc": "Режущие потоки наносят урон, равный интеллекту. 30% шанс оставить кровоточащие порезы на 3 хода по 40% урона заклинания.",
+                    },
+                    {
+                        "id": "tailwind",
+                        "name": "Попутный ветер",
+                        "target": "self",
+                        "desc": "Действует в текущем и ещё в 2 следующих своих ходах. Повышает шанс уклонения на 30% и делает мага трудноуловимым для врагов.",
+                    },
+                ],
+                "exalted": [
+                    {
+                        "id": "sky_thunder",
+                        "name": "Небесная молния",
+                        "target": "enemy",
+                        "desc": "Наносит 220% от интеллекта основной цели. 35% шанс оглушить. С вероятностью 50% молния перескакивает на ещё одного врага и наносит 110% от интеллекта.",
+                    },
+                    {
+                        "id": "storm_front",
+                        "name": "Ураганный фронт",
+                        "target": "enemy",
+                        "desc": "Все остальные бойцы получают 90% от интеллекта мага. Главная цель обезоруживается с шансом 80%, остальные пострадавшие — с шансом 40%.",
+                    },
+                ],
+            },
         }
         self.arena_data = [
             ("Колизей", "hp"),
@@ -237,7 +355,7 @@ class ArenaGame:
 
         self.class_buttons = []
         y = 220
-        for name in self.class_data:
+        for name in self.class_groups:
             self.class_buttons.append(UIButton(name, 120, y, 280, 65))
             y += 95
         self.class_confirm_button = UIButton("Выбрать", 120, 700, 280, 65)
@@ -288,6 +406,7 @@ class ArenaGame:
 
         self.setup_index = 0
         self.selected_class = None
+        self.selected_group = None
         self.selected_magic_path = None
         self.selected_stats = []
         self.allow_back_to_names = True
@@ -310,6 +429,18 @@ class ArenaGame:
         self.winner_name = ""
         self.champion = False
 
+    def _create_fallback_icon(self, class_name, size=220):
+        surface = pygame.Surface((size, size), pygame.SRCALPHA)
+        color = self.get_class_color(class_name)
+        center = size // 2
+        pygame.draw.circle(surface, color, (center, center), center - 5)
+        pygame.draw.circle(surface, WHITE, (center, center), center - 5, 3)
+        letter = class_name[0].upper()
+        letter_font = pygame.font.SysFont("arial", size // 2, bold=True)
+        txt = letter_font.render(letter, True, WHITE)
+        surface.blit(txt, txt.get_rect(center=(center, center)))
+        return surface
+
     def load_class_icons(self):
         icons = {}
         base_dir = os.path.dirname(__file__)
@@ -319,7 +450,7 @@ class ArenaGame:
                 image = pygame.image.load(path)
                 icons[name] = pygame.transform.scale(image, (220, 220))
             except Exception:
-                icons[name] = None
+                icons[name] = self._create_fallback_icon(name)
         return icons
 
     def set_state(self, new_state):
@@ -493,6 +624,7 @@ class ArenaGame:
         self.player_builds = [{"name": name, "class": None, "magic_path": None, "stats": []} for name in self.human_names]
         self.setup_index = 0
         self.selected_class = None
+        self.selected_group = None
         self.selected_magic_path = None
         self.selected_stats = []
         self.set_state(self.CLASS_SELECT)
@@ -500,6 +632,7 @@ class ArenaGame:
     def load_setup_state(self, index):
         build = self.player_builds[index]
         self.selected_class = build["class"]
+        self.selected_group = self.get_group_for_class(self.selected_class) if self.selected_class else None
         self.selected_magic_path = build.get("magic_path")
         self.selected_stats = list(build["stats"])
 
@@ -511,12 +644,42 @@ class ArenaGame:
 
             for button in self.class_buttons:
                 if button.clicked(event):
-                    self.selected_class = button.text
+                    self.selected_group = button.text
+                    subclasses = self.class_groups.get(button.text, [])
+                    if len(subclasses) == 1:
+                        self.selected_class = subclasses[0]
+                    else:
+                        self.selected_class = None
                     return
+
+            if self.selected_group:
+                subclasses = self.class_groups.get(self.selected_group, [])
+                if len(subclasses) == 2 and event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    for rect, sub_name in self.get_subclass_portrait_positions(self.selected_group):
+                        if rect.collidepoint(event.pos):
+                            self.selected_class = sub_name
+                            return
 
             if self.class_confirm_button.clicked(event, enabled=bool(self.selected_class)):
                 self.set_state(self.MAGIC_SELECT)
                 return
+
+    def get_group_for_class(self, class_name):
+        for group, subclasses in self.class_groups.items():
+            if class_name in subclasses:
+                return group
+        return None
+
+    def get_subclass_portrait_positions(self, group_name):
+        subclasses = self.class_groups.get(group_name, [])
+        if len(subclasses) == 2:
+            return [
+                (pygame.Rect(1285, 185, 185, 185), subclasses[0]),
+                (pygame.Rect(1498, 185, 185, 185), subclasses[1]),
+            ]
+        elif len(subclasses) == 1:
+            return [(pygame.Rect(1320, 170, 220, 220), subclasses[0])]
+        return []
 
     def back_from_class_select(self):
         if self.setup_index > 0:
@@ -579,9 +742,7 @@ class ArenaGame:
 
         if self.setup_index < self.player_count - 1:
             self.setup_index += 1
-            self.selected_class = self.player_builds[self.setup_index]["class"]
-            self.selected_magic_path = self.player_builds[self.setup_index].get("magic_path")
-            self.selected_stats = list(self.player_builds[self.setup_index]["stats"])
+            self.load_setup_state(self.setup_index)
             self.set_state(self.CLASS_SELECT)
             return
 
@@ -679,19 +840,43 @@ class ArenaGame:
             "Варвар": (255, 165, 70),
             "Ассасин": (185, 120, 255),
             "Копейщик": (100, 220, 120),
+            "Боевой маг": (180, 130, 255),
+            "Шаман": (100, 200, 140),
         }.get(class_name, WHITE)
 
     def get_magic_path_color(self, path_name):
         return {
             "Путь огня": (255, 195, 70),
             "Путь воды": LIGHT_BLUE,
+            "Путь земли": (150, 105, 60),
+            "Путь воздуха": TURQUOISE,
         }.get(path_name, WHITE)
+
+    def get_magic_path_key(self, path_name):
+        return {
+            "Путь огня": "fire",
+            "Путь воды": "water",
+            "Путь земли": "earth",
+            "Путь воздуха": "air",
+        }.get(path_name, "neutral")
+
+    def get_magic_tier_colors(self, path_name):
+        return {
+            "Путь огня": ((255, 195, 70), (255, 220, 70), GOLD),
+            "Путь воды": (LIGHT_BLUE, LIGHT_BLUE, (90, 150, 255)),
+            "Путь земли": ((150, 105, 60), (150, 105, 60), (205, 145, 80)),
+            "Путь воздуха": (TURQUOISE, TURQUOISE, BRIGHT_TURQUOISE),
+        }.get(path_name, (WHITE, WHITE, WHITE))
 
     def get_spell_button_colors(self, path_name, tier):
         if path_name == "Путь огня":
             return ((255, 185, 55), GOLD) if tier == "exalted" else ((255, 165, 40), (255, 225, 120))
         if path_name == "Путь воды":
             return ((110, 210, 255), (90, 150, 255)) if tier == "exalted" else (LIGHT_BLUE, (210, 245, 255))
+        if path_name == "Путь земли":
+            return ((165, 118, 72), (205, 145, 80)) if tier == "exalted" else ((130, 90, 55), (175, 125, 80))
+        if path_name == "Путь воздуха":
+            return ((70, 205, 200), BRIGHT_TURQUOISE) if tier == "exalted" else (TURQUOISE, (150, 255, 240))
         return (GRAY, WHITE)
 
     def draw_spell_button(self, button, font, path_name, tier):
@@ -752,6 +937,14 @@ class ArenaGame:
             return LIGHT_BLUE
         if category == "magic_water_exalted":
             return (90, 150, 255)
+        if category == "magic_earth_normal":
+            return (150, 105, 60)
+        if category == "magic_earth_exalted":
+            return (205, 145, 80)
+        if category == "magic_air_normal":
+            return TURQUOISE
+        if category == "magic_air_exalted":
+            return BRIGHT_TURQUOISE
 
         if "крит" in lowered or "фатал" in lowered:
             return (255, 220, 70)
@@ -766,37 +959,130 @@ class ArenaGame:
 
         return WHITE
 
+    def _strip_all_smp(self, text):
+        """Удаляет все SMP-символы (> U+FFFF) из текста; если есть цветной emoji-шрифт — оставляет как есть."""
+        if self.has_color_emoji:
+            return text
+        return "".join(c for c in text if ord(c) <= 0xFFFF)
+
+    def _uses_icon_font(self, char):
+        return ord(char) > 0xFFFF or char in self.log_icon_chars
+
+    def _split_runs(self, text):
+        """Разбивает текст на [(str, is_emoji)] для символов, которые надо рисовать icon-шрифтом."""
+        if not text:
+            return []
+        runs = []
+        buf = ""
+        buf_is_em = None
+        for c in text:
+            is_em = self._uses_icon_font(c)
+            if buf_is_em is None:
+                buf_is_em = is_em
+            if is_em != buf_is_em:
+                runs.append((buf, buf_is_em))
+                buf = c
+                buf_is_em = is_em
+            else:
+                buf += c
+        if buf:
+            runs.append((buf, buf_is_em))
+        return runs
+
+    def _measure_token(self, token, base_font):
+        """Ширина токена с учётом emoji-шрифта."""
+        if self.emoji_font is None:
+            return base_font.size(token)[0]
+        total = 0
+        for run, is_em in self._split_runs(token):
+            f = self.emoji_font if is_em else base_font
+            total += f.size(run)[0]
+        return total
+
+    def _strip_leading_log_icon(self, text):
+        if not text:
+            return text
+        trimmed = text.lstrip()
+        while trimmed and (trimmed[0] in self.log_icon_chars or not trimmed[0].isalnum() and not trimmed[0].isalpha()):
+            trimmed = trimmed[1:].lstrip()
+        return trimmed or text.strip()
+
+    def get_log_icon(self, text, category):
+        """Иконка для строки лога. Только BMP-символы (Arial + Segoe UI Symbol)."""
+        cat = str(category or "")
+        low = (text or "").lower()
+        if cat == "arena":                                          return "\u25ce "  # ◎
+        if "magic_fire_exalted" in cat:                            return "\u2605\u26a1 "  # ★⚡
+        if "magic_fire" in cat:                                    return "\u25b2 "  # ▲
+        if "magic_water_exalted" in cat:                           return "\u2744\u25c6 "  # ❄◆
+        if "magic_water" in cat:                                   return "\u25c6 "  # ◆
+        if "magic_earth_exalted" in cat:                           return "\u25fc\u2605 "  # ◼★
+        if "magic_earth" in cat:                                   return "\u25fc "  # ◼
+        if "magic_air_exalted" in cat:                             return "\u2726\u2605 "  # ✦★
+        if "magic_air" in cat:                                     return "\u2726 "  # ✦
+        if cat == "warning":                                        return "\u26a0 "  # ⚠
+        if cat == "passive":                                        return "\u2736 "  # ✶
+        if cat == "active":                                         return "\u26a1 "  # ⚡
+        if cat == "action":                                         return "\u2694 "  # ⚔
+        # По содержимому текста
+        if "крит" in low:                                           return "\u2605 "  # ★
+        if "кров" in low:                                           return "\u2665 "  # ♥
+        if "оглуш" in low or "опрокин" in low:                     return "\u25cb "  # ○
+        if "замороз" in low or "заморо" in low:                    return "\u2744 "  # ❄
+        if "горит" in low or "поджёг" in low or ("огн" in low and "огн" in low): return "\u25b2 "  # ▲
+        if "исцел" in low or "восстанавл" in low:                  return "\u25c6 "  # ◆
+        if "лут" in low or "предмет" in low:                       return "\u2295 "  # ⊕
+        if "сгорает" in low or "гибел" in low or "помер" in low:  return "\u2620 "  # ☠
+        if "уклон" in low:                                         return "\u21bb "  # ↻
+        if "берсерк" in low or "отруб" in low:                    return "\u2692 "  # ⚒
+        if "транс" in low or "камла" in low:                       return "\u21ba "  # ↺
+        if "тотем" in low:                                         return "\u2665 "  # ♥
+        if "камен" in low or "земл" in low:                       return "\u25fc "  # ◼
+        if "ветр" in low or "воздух" in low or "молн" in low:     return "\u2726 "  # ✦
+        if "заряд" in low or "зачаров" in low:                    return "\u26a1 "  # ⚡
+        return "\u2022 "  # •
+
     def render_log_segments(self, segments, x, y, max_width, font):
         line_height = font.get_linesize() + 6
         current_x = x
         current_y = y
+        # Вертикальное выравнивание emoji относительно обычного текста
+        em_offset_y = max(0, (font.get_height() - self.emoji_font.get_height()) // 2) if self.emoji_font else 0
 
         for text, color in segments:
             parts = text.split(" ")
             for index, part in enumerate(parts):
-                token = part
-                if index < len(parts) - 1:
-                    token += " "
+                token = part if index == len(parts) - 1 else part + " "
                 if not token:
                     continue
-                token_width = font.size(token)[0]
+                token_width = self._measure_token(token, font)
                 if current_x > x and current_x + token_width > x + max_width:
                     current_x = x
                     current_y += line_height
-                surface = font.render(token, True, color)
-                self.screen.blit(surface, (current_x, current_y))
-                current_x += token_width
+                if self.emoji_font is None:
+                    surface = font.render(token, True, color)
+                    self.screen.blit(surface, (current_x, current_y))
+                    current_x += surface.get_width()
+                else:
+                    for run, is_em in self._split_runs(token):
+                        f = self.emoji_font if is_em else font
+                        oy = em_offset_y if is_em else 0
+                        surface = f.render(run, True, color)
+                        self.screen.blit(surface, (current_x, current_y + oy))
+                        current_x += surface.get_width()
 
         return current_y + line_height
 
     def render_log_entry(self, entry, x, y, max_width):
         if isinstance(entry, dict) and (entry.get("category") == "action" or str(entry.get("category", "")).startswith("magic_")):
             segments = []
-            if entry.get("indent"):
-                segments.append(("   ▸ ", SILVER))
+            cat = str(entry.get("category", ""))
+            icon = self.get_log_icon(entry.get("text", ""), cat)
+            indent_str = "   ▸ " if entry.get("indent") else ""
+            segments.append((indent_str + icon, SILVER))
 
             actor = entry.get("actor") or ""
-            verb = entry.get("verb") or entry.get("text", "")
+            verb = self._strip_all_smp(entry.get("verb") or entry.get("text", ""))
             target = entry.get("target")
             verb_color = self.infer_log_color(entry.get("text", ""), entry.get("category", "normal")) if str(entry.get("category", "")).startswith("magic_") else (WHITE if target else SILVER)
 
@@ -812,9 +1098,12 @@ class ArenaGame:
 
         text = entry["text"] if isinstance(entry, dict) else str(entry)
         category = entry.get("category", "normal") if isinstance(entry, dict) else "normal"
-        prefix = "   " if isinstance(entry, dict) and entry.get("indent") else ""
+        indent_str = "   " if isinstance(entry, dict) and entry.get("indent") else ""
         color = self.infer_log_color(text, category)
-        return self.render_log_segments([(prefix + text, color)], x, y, max_width, self.log_font)
+        clean_text = self._strip_all_smp(text)
+        display_text = self._strip_leading_log_icon(clean_text)
+        icon = self.get_log_icon(display_text, category)
+        return self.render_log_segments([(indent_str + icon + display_text, color)], x, y, max_width, self.log_font)
 
     def get_class_preview_stats(self, cls):
         data = self.class_data[cls]
@@ -872,6 +1161,50 @@ class ArenaGame:
         wall_bonus = 1.5 if player.fire_wall_turns > 0 else 1.0
         return max(1, int(player.intellect * multiplier * wall_bonus))
 
+    def get_spell_damage_and_crit(self, player, multiplier=1.0):
+        """Возвращает (урон, is_crit). Крит доступен только Боевому магу."""
+        base = self.get_spell_damage(player, multiplier)
+        if player.role == "Боевой маг" and random.randint(1, 100) <= player.crit:
+            return base * 2, True
+        return base, False
+
+    def has_stone_skin(self, player):
+        return getattr(player, "stone_skin_turns", 0) > 0
+
+    def is_secondary_effect_blocked(self, player):
+        return self.has_stone_skin(player)
+
+    def is_spellcasting_blocked(self, player):
+        return self.has_stone_skin(player) and self.spell_tier != "exalted"
+
+    def apply_damage(self, target, amount):
+        amount = max(0, int(amount))
+        if amount <= 0:
+            return 0
+        if self.has_stone_skin(target):
+            amount = max(1, int(amount * 0.5))
+        target.hp = max(0, target.hp - amount)
+        return amount
+
+    def apply_bleeding(self, target, turns, bleed_damage):
+        if self.is_secondary_effect_blocked(target):
+            return False
+        target.bleeding = max(target.bleeding, turns)
+        target.bleed_damage = max(target.bleed_damage, max(1, bleed_damage))
+        return True
+
+    def apply_stun(self, target, turns=1):
+        if self.is_secondary_effect_blocked(target):
+            return False
+        target.stunned = max(target.stunned, turns)
+        return True
+
+    def apply_disarm(self, target, turns=1):
+        if self.is_secondary_effect_blocked(target):
+            return False
+        target.disarmed_turns = max(target.disarmed_turns, turns)
+        return True
+
     def try_spell_dodge(self, caster, target, messages, spell_name):
         dodge_chance = max(0, target.dodge + target.temp_dodge)
         if random.randint(1, 100) <= dodge_chance:
@@ -888,11 +1221,17 @@ class ArenaGame:
         return path.get(tier, [])
 
     def apply_burning(self, target, burn_damage, turns=2):
+        if self.is_secondary_effect_blocked(target):
+            return False
         target.burning = max(target.burning, turns)
         target.burn_damage = max(target.burn_damage, max(1, burn_damage))
+        return True
 
     def apply_freeze(self, target, turns=1):
+        if self.is_secondary_effect_blocked(target):
+            return False
         target.frozen_turns = max(target.frozen_turns, turns)
+        return True
 
     def decay_turn_effects(self, player):
         if player.fire_wall_turns > 0:
@@ -902,6 +1241,34 @@ class ArenaGame:
                 player.fire_wall_turns -= 1
                 if player.fire_wall_turns == 0:
                     self.append_log(f"🔥 Огненная стена вокруг {player.name} гаснет.")
+        if player.tailwind_turns > 0:
+            if player.tailwind_fresh:
+                player.tailwind_fresh = False
+            else:
+                player.tailwind_turns -= 1
+                if player.tailwind_turns == 0:
+                    player.dodge = max(0, player.dodge - 30)
+                    self.append_log(f"✦ Попутный ветер вокруг {player.name} стихает.", category="magic_air_normal")
+        if player.stone_skin_turns > 0:
+            if player.stone_skin_fresh:
+                player.stone_skin_fresh = False
+            else:
+                player.stone_skin_turns -= 1
+                if player.stone_skin_turns == 0:
+                    self.append_log(f"🪨 Каменная кожа {player.name} осыпается пылью.", category="magic_earth_normal")
+        if player.weapon_enchanted_turns > 0:
+            player.weapon_enchanted_turns -= 1
+            if player.weapon_enchanted_turns == 0:
+                self.append_log(f"⚡ Чары оружия {player.name} рассеиваются.")
+        if player.totem_active:
+            player.damage = player.totem_dmg_base
+            player.dodge = player.totem_dodge_base
+            player.totem_active = False
+            self.append_log(f"🐺 Тотем зверя {player.name} затухает.")
+        if player.trance_active:
+            player.intellect = player.trance_intel_base
+            player.trance_active = False
+            self.append_log(f"🌀 {player.name} выходит из транса.")
 
     def maybe_trigger_insight(self, player):
         if player.hp <= 0:
@@ -962,10 +1329,15 @@ class ArenaGame:
             if current.temp_dodge > 0:
                 current.temp_dodge = 0
 
+            if current.stone_skin_turns > 0:
+                self.append_log(f"🪨 {current.name} укрыт каменной кожей. Осталось ходов: {current.stone_skin_turns}", category="magic_earth_normal")
+            if current.tailwind_turns > 0:
+                self.append_log(f"✦ Ветер хранит {current.name}. Осталось ходов: {current.tailwind_turns}", category="magic_air_normal")
+
             if current.burning > 0:
                 burn_damage = max(1, current.burn_damage)
-                current.hp = max(0, current.hp - burn_damage)
-                self.append_log(f"🔥 {current.name} горит и получает -{burn_damage} HP")
+                actual_burn = self.apply_damage(current, burn_damage)
+                self.append_log(f"🔥 {current.name} горит и получает -{actual_burn} HP")
                 current.burning -= 1
                 if current.burning == 0:
                     current.burn_damage = 0
@@ -976,8 +1348,8 @@ class ArenaGame:
 
             if current.bleeding > 0:
                 bleed_damage = max(1, current.bleed_damage)
-                current.hp = max(0, current.hp - bleed_damage)
-                self.append_log(f"🩸 {current.name} истекает кровью: -{bleed_damage} HP")
+                actual_bleed = self.apply_damage(current, bleed_damage)
+                self.append_log(f"🩸 {current.name} истекает кровью: -{actual_bleed} HP")
                 current.bleeding -= 1
                 if current.bleeding == 0:
                     current.bleed_damage = 0
@@ -1007,6 +1379,27 @@ class ArenaGame:
             if current.fire_wall_turns > 0:
                 self.append_log(f"🔥 {current.name} окружён стеной огня. Осталось ходов: {current.fire_wall_turns}")
 
+            # Тотем зверя: применяется в начале хода если был заряжен
+            if current.totem_next and not current.totem_active:
+                current.totem_active = True
+                current.totem_next = False
+                current.totem_dmg_base = current.damage
+                current.totem_dodge_base = current.dodge
+                current.damage = int(current.damage * 1.5)
+                current.dodge = int(current.dodge * 1.5)
+                self.append_log(f"🐺 {current.name}: тотем зверя усиливает! Сила и ловкость x1.5 на этот ход.", category="passive")
+
+            # Транс шамана: применяется в начале хода
+            if current.trance_next and not current.trance_active:
+                current.trance_active = True
+                current.trance_next = False
+                current.trance_intel_base = current.intellect
+                current.intellect = int(current.intellect * 1.5)
+                self.append_log(f"🌀 {current.name}: транс! Интеллект x1.5 на этот ход.", category="passive")
+
+            if current.weapon_enchanted_turns > 0:
+                self.append_log(f"⚡ {current.name}: оружие заряжено магией. Осталось ходов: {current.weapon_enchanted_turns}")
+
             self.ai_action_due = pygame.time.get_ticks() + 700
             return
 
@@ -1027,6 +1420,10 @@ class ArenaGame:
         if current_player.disarmed_turns > 0:
             current_player.disarmed_turns = 0
             self.append_log(f"⚔ {current_player.name} подбирает оружие и снова готов к бою")
+        # Пассивки в конце хода
+        eot_messages = self.apply_end_of_turn_passives(current_player)
+        if eot_messages:
+            self.log.extend(eot_messages)
         self.decay_turn_effects(current_player)
         self.players = self.order_players_for_battle(self.players)
         self.current_turn = self.players.index(current_player)
@@ -1062,8 +1459,8 @@ class ArenaGame:
         messages.append(self.make_log_entry(f"🔥 {attacker.name} атакует сквозь стену огня {defender.name} и теряет 20% урона."))
         if random.randint(1, 100) <= 30:
             burn_damage = max(1, int(defender.intellect * 0.5))
-            self.apply_burning(attacker, burn_damage)
-            messages.append(self.make_log_entry(f"🔥 {attacker.name} загорается от пылающей стены и будет получать {burn_damage} урона ещё 2 хода."))
+            if self.apply_burning(attacker, burn_damage):
+                messages.append(self.make_log_entry(f"🔥 {attacker.name} загорается от пылающей стены и будет получать {burn_damage} урона ещё 2 хода."))
         return 0.8
 
     def execute_attack(self, attacker, defender, strong=False, cautious=False):
@@ -1093,6 +1490,28 @@ class ArenaGame:
         hit_success = defender.hp < hp_before
         if hit_success:
             messages.extend(self.apply_on_hit_passives(attacker, defender))
+            # Заряд оружия (Боевой маг)
+            if attacker.weapon_enchanted_turns > 0 and random.randint(1, 100) <= 50:
+                path_normal = self.magic_data.get(attacker.magic_path, {}).get("normal", [])
+                enchant_spell = next((s for s in path_normal if s["id"] in ("fire_arrow", "ice_arrow")), None)
+                if enchant_spell:
+                    messages.append(self.make_log_entry(f"⚡ Заряженное оружие {attacker.name} высвобождает магию!", category="passive"))
+                    if self.try_spell_dodge(attacker, defender, messages, f"заряда ({enchant_spell['name']})"):
+                        pass  # Уклонился
+                    else:
+                        enc_dmg, enc_crit = self.get_spell_damage_and_crit(attacker, 1.0)
+                        actual_enc_dmg = self.apply_damage(defender, enc_dmg)
+                        crit_str = " (КРИТ)" if enc_crit else ""
+                        if enchant_spell["id"] == "fire_arrow":
+                            messages.append(self.make_log_entry(f"🔥 Магия огня наносит {actual_enc_dmg}{crit_str} доп. урона {defender.name}.", category="magic_fire_normal"))
+                            if random.randint(1, 100) <= 25:
+                                if self.apply_burning(defender, max(1, actual_enc_dmg // 3)):
+                                    messages.append(self.make_log_entry(f"🔥 {defender.name} загорается!", category="magic_fire_normal"))
+                        else:
+                            messages.append(self.make_log_entry(f"🧊 Магия льда наносит {actual_enc_dmg}{crit_str} доп. урона {defender.name}.", category="magic_water_normal"))
+                            if random.randint(1, 100) <= 15:
+                                if self.apply_freeze(defender, 1):
+                                    messages.append(self.make_log_entry(f"🧊 {defender.name} заморожен!", category="magic_water_normal"))
 
         return messages, hit_success
 
@@ -1101,11 +1520,10 @@ class ArenaGame:
         if self.is_passive_blocked(attacker):
             return messages
 
-        if attacker.role == "Воин" and random.randint(1, 100) <= 40:
-            defender.disarmed_turns = 1
+        if attacker.role == "Воин" and random.randint(1, 100) <= 40 and self.apply_disarm(defender, 1):
             messages.append(self.make_log_entry(f"🛡 {attacker.name} обезоруживает {defender.name}! Следующий ход жертвы будет ослаблен.", category="passive"))
 
-        if attacker.role == "Варвар" and random.randint(1, 100) <= 25:
+        if attacker.role == "Варвар" and random.randint(1, 100) <= 25 and not self.is_secondary_effect_blocked(defender):
             roll = random.randint(1, 100)
             if roll <= 10 and not defender.arm_severed:
                 defender.arm_severed = True
@@ -1121,6 +1539,17 @@ class ArenaGame:
 
         return messages
 
+    def apply_end_of_turn_passives(self, player):
+        """Пассивки, срабатывающие в конце хода."""
+        messages = []
+        if player.role == "Шаман" and not self.is_passive_blocked(player):
+            if random.randint(1, 100) <= 50:
+                player.totem_next = True
+                player.totem_dmg_base = player.damage
+                player.totem_dodge_base = player.dodge
+                messages.append(self.make_log_entry(f"🐺 {player.name}: тотем зверя активирован! Следующий ход: сила и ловкость ×1.5.", category="passive"))
+        return messages
+
     def perform_special_action(self, player, target):
         messages = []
         hit_success = False
@@ -1128,28 +1557,32 @@ class ArenaGame:
         if player.disarmed_turns > 0:
             messages.append(self.make_log_entry(f"⚔ {player.name} обезоружен и не может использовать активную способность!", category="warning"))
             return messages, hit_success, None
+        if self.has_stone_skin(player):
+            messages.append(self.make_log_entry(f"🪨 {player.name} скован каменной кожей и не может использовать активную способность!", category="warning"))
+            return messages, hit_success, None
 
-        melee_scale = self.apply_fire_wall_melee_penalty(player, target, messages)
+        melee_scale = 1.0
+        if target is not None:
+            melee_scale = self.apply_fire_wall_melee_penalty(player, target, messages)
 
         if player.role == "Воин":
             dmg = max(1, int(player.damage * 0.5 * melee_scale))
-            target.hp -= dmg
-            messages.append(self.make_log_entry(f"🛡 {player.name} бьёт щитом и наносит {dmg} урона.", category="active"))
-            if random.randint(1, 100) <= 30:
-                target.stunned = 1
+            actual_dmg = self.apply_damage(target, dmg)
+            messages.append(self.make_log_entry(f"🛡 {player.name} бьёт щитом и наносит {actual_dmg} урона.", category="active"))
+            if random.randint(1, 100) <= 30 and self.apply_stun(target, 1):
                 messages.append(self.make_log_entry(f"💫 {target.name} оглушён на 1 ход!"))
             hit_success = True
             messages.extend(self.apply_on_hit_passives(player, target))
         elif player.role == "Варвар":
             dmg = max(1, int(player.damage * 2 * melee_scale))
             if random.randint(1, 100) <= 30:
-                player.hp -= dmg
-                messages.append(self.make_log_entry(f"🤯 {player.name} в ярости попадает по себе и получает {dmg} урона!", category="active"))
+                actual_self_dmg = self.apply_damage(player, dmg)
+                messages.append(self.make_log_entry(f"🤯 {player.name} в ярости попадает по себе и получает {actual_self_dmg} урона!", category="active"))
                 messages.extend(self.apply_on_hit_passives(player, player))
                 hit_success = True
                 return messages, hit_success, player
-            target.hp -= dmg
-            messages.append(self.make_log_entry(f"🪓 {player.name} впадает в берсерк и наносит {dmg} урона.", category="active"))
+            actual_dmg = self.apply_damage(target, dmg)
+            messages.append(self.make_log_entry(f"🪓 {player.name} впадает в берсерк и наносит {actual_dmg} урона.", category="active"))
             hit_success = True
             messages.extend(self.apply_on_hit_passives(player, target))
         elif player.role == "Ассасин":
@@ -1158,17 +1591,25 @@ class ArenaGame:
             messages.extend(attack_messages)
             if hit_success and random.randint(1, 100) <= 60:
                 bleed = max(1, int(player.damage * 0.4))
-                target.bleeding = 3
-                target.bleed_damage = bleed
-                messages.append(self.make_log_entry(f"🩸 {target.name} истекает кровью: {bleed} урона ещё 3 хода."))
+                if self.apply_bleeding(target, 3, bleed):
+                    messages.append(self.make_log_entry(f"🩸 {target.name} истекает кровью: {bleed} урона ещё 3 хода."))
         elif player.role == "Копейщик":
             dmg = max(1, int(player.damage * 0.3 * melee_scale))
-            target.hp -= dmg
-            messages.append(self.make_log_entry(f"🦶 {player.name} проводит подсечку и наносит {dmg} урона.", category="active"))
-            if random.randint(1, 100) <= 50:
-                target.stunned = 1
+            actual_dmg = self.apply_damage(target, dmg)
+            messages.append(self.make_log_entry(f"🦶 {player.name} проводит подсечку и наносит {actual_dmg} урона.", category="active"))
+            if random.randint(1, 100) <= 50 and self.apply_stun(target, 1):
                 messages.append(self.make_log_entry(f"💫 {target.name} опрокинут и пропускает 1 ход!"))
             hit_success = True
+        elif player.role == "Боевой маг":
+            player.weapon_enchanted_turns = 2
+            messages.append(self.make_log_entry(f"⚡ {player.name} заряжает оружие магией на 2 хода! При ударе — 50% шанс дополнительного магического удара.", category="active"))
+            hit_success = False
+            target = None
+        elif player.role == "Шаман":
+            player.trance_next = True
+            messages.append(self.make_log_entry(f"🌀 {player.name} входит в транс. На следующем ходу интеллект возрастёт в 1.5 раза.", category="active"))
+            hit_success = False
+            target = None
 
         return messages, hit_success, target
 
@@ -1180,13 +1621,14 @@ class ArenaGame:
         if spell_id == "fire_arrow":
             if self.try_spell_dodge(player, target, messages, "Стрела огня"):
                 return messages, False, target
-            dmg = self.get_spell_damage(player, 1.0)
-            target.hp -= dmg
-            messages.append(self.make_log_entry(f"🔥 {player.name} выпускает огненную стрелу и наносит {dmg} урона.", category="magic_fire_normal"))
+            dmg, crit_hit = self.get_spell_damage_and_crit(player, 1.0)
+            actual_dmg = self.apply_damage(target, dmg)
+            crit_str = " (КРИТ)" if crit_hit else ""
+            messages.append(self.make_log_entry(f"🔥 {player.name} выпускает огненную стрелу и наносит {actual_dmg}{crit_str} урона.", category="magic_fire_normal"))
             if random.randint(1, 100) <= 50:
-                burn_damage = max(1, int(dmg * 0.5))
-                self.apply_burning(target, burn_damage)
-                messages.append(self.make_log_entry(f"🔥 {target.name} подожжён и будет получать по {burn_damage} урона ещё 2 хода.", category="magic_fire_normal"))
+                burn_damage = max(1, int(actual_dmg * 0.5))
+                if self.apply_burning(target, burn_damage):
+                    messages.append(self.make_log_entry(f"🔥 {target.name} подожжён и будет получать по {burn_damage} урона ещё 2 хода.", category="magic_fire_normal"))
             hit_success = True
         elif spell_id == "fire_wall":
             player.fire_wall_turns = 2
@@ -1194,19 +1636,42 @@ class ArenaGame:
             actual_target = player
             hit_success = True
             messages.append(self.make_log_entry(f"🔥 {player.name} воздвигает вокруг себя стену огня на 2 хода.", category="magic_fire_normal"))
+        elif spell_id == "stone_skin":
+            actual_target = player
+            player.stone_skin_turns = 2
+            player.stone_skin_fresh = True
+            hit_success = True
+            messages.append(self.make_log_entry(f"🪨 {player.name} покрывает себя каменной кожей на 2 хода. Весь входящий урон снижен вдвое, а дополнительные эффекты больше не проходят.", category="magic_earth_normal"))
+        elif spell_id == "stone_spikes":
+            if self.try_spell_dodge(player, target, messages, "Каменные шипы"):
+                return messages, False, target
+            dmg, crit_hit = self.get_spell_damage_and_crit(player, 1.0)
+            actual_dmg = self.apply_damage(target, dmg)
+            crit_str = " (КРИТ)" if crit_hit else ""
+            messages.append(self.make_log_entry(f"🪨 {player.name} поднимает каменные шипы и наносит {actual_dmg}{crit_str} урона {target.name}.", category="magic_earth_normal"))
+            if random.randint(1, 100) <= 30:
+                if random.randint(0, 1) == 0:
+                    bleed_damage = max(1, int(actual_dmg * 0.4))
+                    if self.apply_bleeding(target, 3, bleed_damage):
+                        messages.append(self.make_log_entry(f"🩸 Шипы пронзают {target.name}: кровотечение на 3 хода по {bleed_damage} урона.", category="magic_earth_normal"))
+                else:
+                    if self.apply_stun(target, 1):
+                        messages.append(self.make_log_entry(f"◼ {target.name} скован камнем и пропустит следующий ход!", category="magic_earth_normal"))
+            hit_success = True
         elif spell_id == "supernova":
             if self.try_spell_dodge(player, target, messages, "Сверхновая"):
                 return messages, False, target
-            dmg = self.get_spell_damage(player, 1.5)
-            target.hp -= dmg
+            dmg, crit_hit = self.get_spell_damage_and_crit(player, 1.5)
+            actual_dmg = self.apply_damage(target, dmg)
             hit_success = True
-            messages.append(self.make_log_entry(f"☀ {player.name} вызывает сверхновую и обрушивает {dmg} урона на {target.name}!", category="magic_fire_exalted"))
+            crit_str = " (КРИТ)" if crit_hit else ""
+            messages.append(self.make_log_entry(f"☀ {player.name} вызывает сверхновую и обрушивает {actual_dmg}{crit_str} урона на {target.name}!", category="magic_fire_exalted"))
             for other in [p for p in self.players if p.hp > 0 and p != target]:
                 if random.randint(1, 100) <= 50:
                     if self.try_spell_dodge(player, other, messages, "осколков сверхновой"):
                         continue
-                    other.hp -= dmg
-                    messages.append(self.make_log_entry(f"💥 Взрыв задевает {other.name}: -{dmg} HP", category="magic_fire_exalted"))
+                    splash_dmg = self.apply_damage(other, dmg)
+                    messages.append(self.make_log_entry(f"💥 Взрыв задевает {other.name}: -{splash_dmg} HP", category="magic_fire_exalted"))
         elif spell_id == "phoenix":
             actual_target = player
             roll = random.randint(1, 100)
@@ -1235,13 +1700,14 @@ class ArenaGame:
         elif spell_id == "ice_arrow":
             if self.try_spell_dodge(player, target, messages, "Ледяная стрела"):
                 return messages, False, target
-            dmg = self.get_spell_damage(player, 1.0)
-            target.hp -= dmg
+            dmg, crit_hit = self.get_spell_damage_and_crit(player, 1.0)
+            actual_dmg = self.apply_damage(target, dmg)
             hit_success = True
-            messages.append(self.make_log_entry(f"🧊 {player.name} выпускает ледяную стрелу и наносит {dmg} урона.", category="magic_water_normal"))
+            crit_str = " (КРИТ)" if crit_hit else ""
+            messages.append(self.make_log_entry(f"🧊 {player.name} выпускает ледяную стрелу и наносит {actual_dmg}{crit_str} урона.", category="magic_water_normal"))
             if random.randint(1, 100) <= 20:
-                self.apply_freeze(target, 1)
-                messages.append(self.make_log_entry(f"🧊 {target.name} заморожен на 1 ход!", category="magic_water_normal"))
+                if self.apply_freeze(target, 1):
+                    messages.append(self.make_log_entry(f"🧊 {target.name} заморожен на 1 ход!", category="magic_water_normal"))
         elif spell_id == "water_essence":
             actual_target = player
             if random.randint(1, 100) <= 80:
@@ -1261,10 +1727,11 @@ class ArenaGame:
         elif spell_id == "ice_spear":
             if self.try_spell_dodge(player, target, messages, "Ледяное копьё"):
                 return messages, False, target
-            dmg = self.get_spell_damage(player, 2.0)
-            target.hp -= dmg
+            dmg, crit_hit = self.get_spell_damage_and_crit(player, 2.0)
+            actual_dmg = self.apply_damage(target, dmg)
             hit_success = True
-            messages.append(self.make_log_entry(f"❄ {player.name} пронзает {target.name} ледяным копьём на {dmg} урона.", category="magic_water_exalted"))
+            crit_str = " (КРИТ)" if crit_hit else ""
+            messages.append(self.make_log_entry(f"❄ {player.name} пронзает {target.name} ледяным копьём на {actual_dmg}{crit_str} урона.", category="magic_water_exalted"))
             freeze_proc = random.randint(1, 100) <= 20
             if freeze_proc and target.frozen_turns > 0:
                 if random.randint(1, 100) <= 33:
@@ -1272,11 +1739,90 @@ class ArenaGame:
                     messages.append(self.make_log_entry(f"🧊 {target.name} уже был заморожен и раскалывается на куски!", category="magic_water_exalted"))
                 else:
                     bonus_damage = player.intellect
-                    target.hp -= bonus_damage
-                    messages.append(self.make_log_entry(f"🧊 Повторная заморозка не раскалывает {target.name}, но наносит ещё {bonus_damage} урона.", category="magic_water_exalted"))
+                    actual_bonus = self.apply_damage(target, bonus_damage)
+                    messages.append(self.make_log_entry(f"🧊 Повторная заморозка не раскалывает {target.name}, но наносит ещё {actual_bonus} урона.", category="magic_water_exalted"))
             elif freeze_proc:
-                self.apply_freeze(target, 1)
-                messages.append(self.make_log_entry(f"🧊 {target.name} заморожен на 1 ход!", category="magic_water_exalted"))
+                if self.apply_freeze(target, 1):
+                    messages.append(self.make_log_entry(f"🧊 {target.name} заморожен на 1 ход!", category="magic_water_exalted"))
+        elif spell_id == "earth_blast":
+            if self.try_spell_dodge(player, target, messages, "Взрыв земли"):
+                return messages, False, target
+            dmg, crit_hit = self.get_spell_damage_and_crit(player, 1.5)
+            actual_dmg = self.apply_damage(target, dmg)
+            hit_success = True
+            crit_str = " (КРИТ)" if crit_hit else ""
+            messages.append(self.make_log_entry(f"◼ {player.name} взрывает землю под {target.name} и наносит {actual_dmg}{crit_str} урона!", category="magic_earth_exalted"))
+            if random.randint(1, 100) <= 50 and self.apply_stun(target, 1):
+                messages.append(self.make_log_entry(f"◼ {target.name} ошеломлён ударной волной и пропустит ход!", category="magic_earth_exalted"))
+            for other in [p for p in self.players if p.hp > 0 and p not in (player, target)]:
+                if random.randint(1, 100) <= 65:
+                    if self.try_spell_dodge(player, other, messages, "осколков взрыва земли"):
+                        continue
+                    splash_dmg = self.apply_damage(other, dmg)
+                    messages.append(self.make_log_entry(f"◼ Обломки земли задевают {other.name}: -{splash_dmg} HP", category="magic_earth_exalted"))
+        elif spell_id == "earthquake":
+            hit_success = False
+            messages.append(self.make_log_entry(f"◼ {player.name} обрушивает землетрясение на арену!", category="magic_earth_exalted"))
+            for other in [p for p in self.players if p.hp > 0 and p.magic_path != "Путь земли"]:
+                if other != player and self.try_spell_dodge(player, other, messages, "землетрясения"):
+                    continue
+                quake_dmg = self.apply_damage(other, self.get_spell_damage(player, 0.7))
+                if quake_dmg > 0:
+                    hit_success = True
+                    messages.append(self.make_log_entry(f"◼ Земля разламывается под {other.name}: -{quake_dmg} HP", category="magic_earth_exalted"))
+                    stun_chance = 50 if other == target else 30
+                    if random.randint(1, 100) <= stun_chance and self.apply_stun(other, 1):
+                        messages.append(self.make_log_entry(f"◼ {other.name} ошеломлён толчками и пропустит ход!", category="magic_earth_exalted"))
+        elif spell_id == "wind_blades":
+            if self.try_spell_dodge(player, target, messages, "Лезвия ветра"):
+                return messages, False, target
+            dmg, crit_hit = self.get_spell_damage_and_crit(player, 1.0)
+            actual_dmg = self.apply_damage(target, dmg)
+            hit_success = True
+            crit_str = " (КРИТ)" if crit_hit else ""
+            messages.append(self.make_log_entry(f"✦ {player.name} выпускает лезвия ветра и наносит {actual_dmg}{crit_str} урона {target.name}.", category="magic_air_normal"))
+            if random.randint(1, 100) <= 30:
+                bleed_damage = max(1, int(actual_dmg * 0.4))
+                if self.apply_bleeding(target, 3, bleed_damage):
+                    messages.append(self.make_log_entry(f"♥ Воздушные порезы открывают кровотечение у {target.name}: {bleed_damage} урона ещё 3 хода.", category="magic_air_normal"))
+        elif spell_id == "tailwind":
+            actual_target = player
+            if player.tailwind_turns <= 0:
+                player.dodge += 30
+            player.tailwind_turns = max(player.tailwind_turns, 3)
+            player.tailwind_fresh = True
+            hit_success = True
+            messages.append(self.make_log_entry(f"✦ {player.name} призывает попутный ветер и получает +30% к уклонению на текущий и ещё 2 следующих своих хода.", category="magic_air_normal"))
+        elif spell_id == "sky_thunder":
+            if self.try_spell_dodge(player, target, messages, "Небесная молния"):
+                return messages, False, target
+            dmg, crit_hit = self.get_spell_damage_and_crit(player, 2.2)
+            actual_dmg = self.apply_damage(target, dmg)
+            hit_success = True
+            crit_str = " (КРИТ)" if crit_hit else ""
+            messages.append(self.make_log_entry(f"✦ {player.name} низводит небесную молнию и наносит {actual_dmg}{crit_str} урона {target.name}.", category="magic_air_exalted"))
+            if random.randint(1, 100) <= 35 and self.apply_stun(target, 1):
+                messages.append(self.make_log_entry(f"✦ {target.name} ошеломлён ударом молнии!", category="magic_air_exalted"))
+            chain_targets = [p for p in self.players if p.hp > 0 and p not in (player, target)]
+            if chain_targets and random.randint(1, 100) <= 50:
+                chained = random.choice(chain_targets)
+                if not self.try_spell_dodge(player, chained, messages, "цепной молнии"):
+                    chain_dmg = self.apply_damage(chained, self.get_spell_damage(player, 1.1))
+                    messages.append(self.make_log_entry(f"✦ Цепная молния перескакивает на {chained.name}: -{chain_dmg} HP", category="magic_air_exalted"))
+        elif spell_id == "storm_front":
+            actual_target = target
+            hit_success = False
+            messages.append(self.make_log_entry(f"✦ {player.name} раскрывает ураганный фронт!", category="magic_air_exalted"))
+            for other in [p for p in self.players if p.hp > 0 and p != player]:
+                if self.try_spell_dodge(player, other, messages, "ураганного фронта"):
+                    continue
+                storm_dmg = self.apply_damage(other, self.get_spell_damage(player, 0.9))
+                if storm_dmg > 0:
+                    hit_success = True
+                    messages.append(self.make_log_entry(f"✦ Буря рвёт {other.name}: -{storm_dmg} HP", category="magic_air_exalted"))
+                disarm_chance = 80 if other == target else 40
+                if random.randint(1, 100) <= disarm_chance and self.apply_disarm(other, 1):
+                    messages.append(self.make_log_entry(f"✦ Порыв выбивает оружие из рук {other.name}!", category="magic_air_exalted"))
 
         return messages, hit_success, actual_target
 
@@ -1302,11 +1848,19 @@ class ArenaGame:
     def toggle_spell_menu(self):
         if self.spell_tier == "exalted":
             return
+        if self.state == self.BATTLE and 0 <= self.current_turn < len(self.players):
+            current = self.players[self.current_turn]
+            if self.is_spellcasting_blocked(current):
+                self.append_log(f"🪨 {current.name} покрыт каменной кожей и не может колдовать.", category="warning")
+                return
         self.spell_menu_open = not self.spell_menu_open
 
     def perform_spell_cast(self, player, spell, target=None):
         spell_id = spell["id"]
-        path_key = "fire" if player.magic_path == "Путь огня" else "water"
+        if self.is_spellcasting_blocked(player):
+            self.append_log(f"🪨 {player.name} покрыт каменной кожей и не может колдовать.", category="warning")
+            return False
+        path_key = self.get_magic_path_key(player.magic_path)
         category = f"magic_{path_key}_{self.spell_tier}"
         requires_target = spell.get("target") == "enemy"
         if requires_target and (target is None or target.hp <= 0):
@@ -1397,7 +1951,10 @@ class ArenaGame:
     def perform_player_action(self, action_name):
         player = self.players[self.current_turn]
 
-        if action_name in {"attack", "cautious", "special"} and (self.selected_target is None or self.selected_target.hp <= 0):
+        if action_name in {"attack", "cautious"} and (self.selected_target is None or self.selected_target.hp <= 0):
+            self.append_log("Сначала выберите цель", category="warning")
+            return
+        if action_name == "special" and player.role not in ("Боевой маг", "Шаман") and (self.selected_target is None or self.selected_target.hp <= 0):
             self.append_log("Сначала выберите цель", category="warning")
             return
 
@@ -1433,12 +1990,13 @@ class ArenaGame:
                 self.log.extend(messages)
         elif action_name == "special":
             messages, hit_success, actual_target = self.perform_special_action(player, self.selected_target)
+            shown_target = self.selected_target.name if self.selected_target and self.selected_target.hp > 0 else None
             self.append_log(
-                f"{player.name} использует спец против {self.selected_target.name}",
+                f"{player.name} использует спец" + (f" против {shown_target}" if shown_target else ""),
                 category="action",
                 actor=player.name,
-                verb="использует спец против",
-                target=self.selected_target.name,
+                verb="использует спец" + (" против" if shown_target else ""),
+                target=shown_target,
                 target_hit=hit_success,
                 indent=True,
             )
@@ -1463,11 +2021,49 @@ class ArenaGame:
             return
 
         target = min(alive_targets, key=lambda x: x.hp)
+
+        # Шаман: если HP < 50% — предпочитает транс
+        if player.role == "Шаман" and player.hp < player.max_hp * 0.5 and not player.trance_next and not player.trance_active:
+            messages, hit_success, actual_target = self.perform_special_action(player, target)
+            self.append_log(f"{player.name} уходит в транс", category="action", actor=player.name, verb="уходит в транс", indent=True)
+            if messages:
+                self.log.extend(messages)
+            self.normalize_health()
+            self.advance_turn()
+            return
+
+        # Боевой маг: иногда заряжает оружие
+        if player.role == "Боевой маг" and player.weapon_enchanted_turns == 0 and random.randint(1, 100) <= 35:
+            messages, hit_success, actual_target = self.perform_special_action(player, target)
+            self.append_log(f"{player.name} заряжает оружие", category="action", actor=player.name, verb="заряжает оружие", indent=True)
+            if messages:
+                self.log.extend(messages)
+            self.normalize_health()
+            self.advance_turn()
+            return
+
         roll = random.randint(1, 100)
+
+        spell_blocked = self.is_spellcasting_blocked(player)
+        special_blocked = self.has_stone_skin(player)
+
+        if player.magic_path == "Путь земли" and not self.has_stone_skin(player) and player.hp < player.max_hp * 0.6:
+            stone_skin_spell = next((s for s in self.get_spells_for_player(player, "normal") if s["id"] == "stone_skin"), None)
+            if stone_skin_spell:
+                self.spell_tier = "normal"
+                self.spell_menu_open = True
+                self.perform_spell_cast(player, stone_skin_spell, player)
+                if self.state == self.BATTLE and self.current_turn < len(self.players) and self.players[self.current_turn] == player and self.spell_tier == "exalted" and player.hp > 0:
+                    exalted_spells = self.get_spells_for_player(player, "exalted")
+                    if exalted_spells:
+                        exalted_spell = random.choice(exalted_spells)
+                        chosen_target = target if exalted_spell.get("target") == "enemy" and target.hp > 0 else player
+                        self.perform_spell_cast(player, exalted_spell, chosen_target)
+                return
 
         if roll <= 20:
             self.log.extend(self.perform_loot_action(player))
-        elif roll <= 40:
+        elif roll <= 40 and not spell_blocked:
             normal_spells = self.get_spells_for_player(player, "normal")
             if normal_spells:
                 spell = random.choice(normal_spells)
@@ -1483,7 +2079,7 @@ class ArenaGame:
                         self.perform_spell_cast(player, exalted_spell, chosen_target)
                 return
             self.log.extend(self.perform_loot_action(player))
-        elif roll <= 45:
+        elif roll <= 45 and not special_blocked:
             messages, hit_success, actual_target = self.perform_special_action(player, target)
             self.append_log(
                 f"{player.name} использует спец против {target.name}",
@@ -1569,6 +2165,7 @@ class ArenaGame:
         self.name_index = 0
         self.name_buffer = ""
         self.selected_class = None
+        self.selected_group = None
         self.selected_magic_path = None
         self.selected_stats = []
         self.players = []
@@ -1638,45 +2235,85 @@ class ArenaGame:
         self.screen.blit(title, (610, 50))
 
         for button in self.class_buttons:
-            button.draw(self.screen, self.font, active=(button.text == self.selected_class))
+            button.draw(self.screen, self.font, active=(button.text == self.selected_group))
 
-        if self.selected_class:
-            data = self.class_data[self.selected_class]
-            preview = self.get_class_preview_stats(self.selected_class)
-            class_color = self.get_class_color(self.selected_class)
-            image = self.icons.get(self.selected_class)
-            if image:
-                self.screen.blit(image, (1320, 170))
+        if self.selected_group:
+            subclasses = self.class_groups.get(self.selected_group, [])
+            portrait_items = self.get_subclass_portrait_positions(self.selected_group)
+            mouse = pygame.mouse.get_pos()
 
-            y_text = 190
-            class_title = self.class_name_font.render(self.selected_class.upper(), True, class_color)
-            self.screen.blit(class_title, (620, 125))
+            # Рисуем кружки-аватарки подклассов
+            for rect, sub_name in portrait_items:
+                center = rect.center
+                radius = rect.width // 2 + 7
+                is_selected = (sub_name == self.selected_class)
+                is_hovered = rect.collidepoint(mouse)
 
-            lines = [
-                f"Сила: {preview['strength']} ({preview['damage']} урона)",
-                f"Выносливость: {preview['stamina']} ({preview['hp']} HP)",
-                f"Ловкость: {preview['agility']} ({preview['dodge']}% уклон)",
-                f"Удача: {preview['luck']} ({preview['crit']}% крит)",
-                f"Инициатива: {preview['initiative']} (ходит раньше)",
-                f"Интеллект: {preview['intellect']} ({preview['insight']}% прозрения)",
-                "",
-                "Пассивная способность:",
-                data["passive"],
-                "Активная способность:",
-                data["active"],
-                "",
-                data["desc"],
-            ]
-            for line in lines:
-                if not line:
-                    y_text += 20
-                    continue
-                wrapped = self.wrap_text(line, self.font, 650)
-                line_color = self.get_info_line_color(line, self.selected_class)
-                for part in wrapped:
-                    txt = self.font.render(part, True, line_color)
-                    self.screen.blit(txt, (620, y_text))
-                    y_text += 40
+                # Фон
+                pygame.draw.circle(self.screen, (50, 50, 70), center, radius)
+
+                # Портретная картинка
+                sub_image = self.icons.get(sub_name)
+                if sub_image:
+                    scaled = pygame.transform.scale(sub_image, (rect.width, rect.height))
+                    self.screen.blit(scaled, (rect.x, rect.y))
+
+                # Кольцо выбора
+                if is_selected:
+                    pygame.draw.circle(self.screen, GOLD, center, radius, 4)
+                elif is_hovered:
+                    pygame.draw.circle(self.screen, (200, 200, 210), center, radius, 3)
+                else:
+                    pygame.draw.circle(self.screen, (110, 110, 130), center, radius, 2)
+
+                # Подпись под кружком
+                label_color = GOLD if is_selected else (WHITE if is_hovered else GRAY)
+                label = self.font.render(sub_name, True, label_color)
+                self.screen.blit(label, (center[0] - label.get_width() // 2, rect.y + rect.height + 10))
+
+            # Описание выбранного подкласса
+            display_class = self.selected_class
+            if display_class:
+                data = self.class_data[display_class]
+                preview = self.get_class_preview_stats(display_class)
+                class_color = self.get_class_color(display_class)
+
+                y_text = 190
+                class_title = self.class_name_font.render(display_class.upper(), True, class_color)
+                self.screen.blit(class_title, (620, 125))
+
+                lines = [
+                    f"Сила: {preview['strength']} ({preview['damage']} урона)",
+                    f"Выносливость: {preview['stamina']} ({preview['hp']} HP)",
+                    f"Ловкость: {preview['agility']} ({preview['dodge']}% уклон)",
+                    f"Удача: {preview['luck']} ({preview['crit']}% крит)",
+                    f"Инициатива: {preview['initiative']} (ходит раньше)",
+                    f"Интеллект: {preview['intellect']} ({preview['insight']}% прозрения)",
+                    "",
+                    "Пассивная способность:",
+                    data["passive"],
+                    "Активная способность:",
+                    data["active"],
+                    "",
+                    data["desc"],
+                ]
+                for line in lines:
+                    if not line:
+                        y_text += 20
+                        continue
+                    wrapped = self.wrap_text(line, self.font, 640)
+                    line_color = self.get_info_line_color(line, display_class)
+                    for part in wrapped:
+                        txt = self.font.render(part, True, line_color)
+                        self.screen.blit(txt, (620, y_text))
+                        y_text += 40
+            elif len(subclasses) == 2:
+                # Подкласс не выбран — подсказка
+                group_color = self.get_class_color(subclasses[0])
+                group_title = self.class_name_font.render(self.selected_group.upper(), True, group_color)
+                self.screen.blit(group_title, (620, 125))
+                hint = self.font.render("← Выбери подкласс, нажав на портрет", True, (170, 170, 190))
+                self.screen.blit(hint, (620, 200))
 
         self.class_confirm_button.draw(self.screen, self.font, enabled=bool(self.selected_class))
 
@@ -1700,9 +2337,7 @@ class ArenaGame:
         if self.selected_magic_path:
             data = self.magic_data[self.selected_magic_path]
             y_text = 208
-            path_color = (255, 195, 70) if self.selected_magic_path == "Путь огня" else LIGHT_BLUE
-            normal_color = (255, 220, 70) if self.selected_magic_path == "Путь огня" else LIGHT_BLUE
-            exalted_color = GOLD if self.selected_magic_path == "Путь огня" else (90, 150, 255)
+            path_color, normal_color, exalted_color = self.get_magic_tier_colors(self.selected_magic_path)
             path_title = self.class_name_font.render(self.selected_magic_path.upper(), True, path_color)
             self.screen.blit(path_title, (620, 145))
 
@@ -1869,13 +2504,21 @@ class ArenaGame:
 
         if not self.players[self.current_turn].is_ai:
             spells_only = self.spell_menu_open and self.spell_tier == "exalted"
+            current_player = self.players[self.current_turn]
+            special_locked = self.has_stone_skin(current_player)
+            spell_locked = self.is_spellcasting_blocked(current_player)
             for index, button in enumerate(self.battle_buttons):
                 enabled = not spells_only or index == 4
+                if index == 2 and special_locked:
+                    enabled = False
+                if index == 4 and spell_locked and not self.spell_menu_open:
+                    enabled = False
                 button.draw(self.screen, self.medium_font, enabled=enabled, active=(index == 4 and self.spell_menu_open))
 
             if self.spell_menu_open:
                 spell_title = "Возвышенная магия" if self.spell_tier == "exalted" else "Обычная магия"
-                title_surface = self.font.render(spell_title, True, LIGHT_PINK if self.spell_tier == "exalted" else LIGHT_BLUE)
+                _, normal_color, exalted_color = self.get_magic_tier_colors(current_player.magic_path)
+                title_surface = self.font.render(spell_title, True, exalted_color if self.spell_tier == "exalted" else normal_color)
                 self.screen.blit(title_surface, (1375, 545))
                 spells = self.get_spells_for_player(self.players[self.current_turn], self.spell_tier)
                 hovered_spell = None
@@ -1887,10 +2530,15 @@ class ArenaGame:
                             hovered_spell = spells[index]
                 if hovered_spell:
                     wrapped = self.wrap_text(hovered_spell["desc"], self.small_font, 340)
-                    box_y = 770
-                    for row, part in enumerate(wrapped[:4]):
+                    box_h = min(len(wrapped), 5) * 22 + 18
+                    box_rect = pygame.Rect(1338, 758, 360, box_h)
+                    tooltip_surf = pygame.Surface((box_rect.width, box_rect.height), pygame.SRCALPHA)
+                    tooltip_surf.fill((25, 25, 45, 210))
+                    self.screen.blit(tooltip_surf, (box_rect.x, box_rect.y))
+                    pygame.draw.rect(self.screen, (140, 140, 180), box_rect, 1, border_radius=6)
+                    for row, part in enumerate(wrapped[:5]):
                         txt = self.small_font.render(part, True, WHITE)
-                        self.screen.blit(txt, (1350, box_y + row * 22))
+                        self.screen.blit(txt, (box_rect.x + 10, box_rect.y + 9 + row * 22))
         else:
             thinking = self.medium_font.render("AI обдумывает ход...", True, WHITE)
             self.screen.blit(thinking, (120, 620))
@@ -1974,6 +2622,16 @@ class ArenaGame:
             status_lines.append("Эффект: заморожен — пропустит следующий ход.")
         if player.fire_wall_turns > 0:
             status_lines.append(f"Эффект: стена огня активна ещё {player.fire_wall_turns} ход(а).")
+        if player.stone_skin_turns > 0:
+            status_lines.append(f"Эффект: каменная кожа активна ещё {player.stone_skin_turns} ход(а) — входящий урон x0.5, доп. эффекты блокируются, магия и активка недоступны.")
+        if player.tailwind_turns > 0:
+            status_lines.append(f"Эффект: попутный ветер активен ещё {player.tailwind_turns} ход(а) — уклонение повышено на 30%.")
+        if player.weapon_enchanted_turns > 0:
+            status_lines.append(f"Эффект: оружие заряжено магией ещё {player.weapon_enchanted_turns} ход(а).")
+        if player.totem_active:
+            status_lines.append("Эффект: тотем зверя активен — сила и ловкость x1.5 в этот ход.")
+        if player.trance_active:
+            status_lines.append("Эффект: транс шамана — интеллект x1.5 в этот ход.")
         if not status_lines:
             status_lines.append("Эффекты: активных эффектов сейчас нет.")
 
