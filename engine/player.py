@@ -12,6 +12,7 @@ class Player:
         self.agility=10
         self.luck=10
         self.initiative=10
+        self.intellect=10
 
         self.inventory=[]
 
@@ -24,14 +25,24 @@ class Player:
 
         self.temp_dodge=0
         self.stunned=0
+        self.disarmed_turns=0
+        self.arm_severed=False
+        self.leg_severed=False
+        self.frozen_turns=0
 
         self.bleeding=0
         self.bleed_damage=0
+        self.burning=0
+        self.burn_damage=0
+        self.fire_wall_turns=0
+        self.fire_wall_fresh=False
+
+        self.magic_path=""
 
 
     def calc(self):
 
-        self.max_hp=self.stamina*5
+        self.max_hp=self.stamina*8
         self.hp=self.max_hp
 
         self.damage=self.strength
@@ -47,4 +58,5 @@ class Player:
         print("Урон:",self.damage)
         print("Уклон:",self.dodge,"%")
         print("Крит:",self.crit,"%")
+        print("Интеллект:",self.intellect)
         print("Инвентарь:",self.inventory)

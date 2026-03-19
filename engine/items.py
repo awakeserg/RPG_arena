@@ -19,7 +19,7 @@ def loot(p):
         {
             "id": "heal_potion",
             "name": "Зелье здоровья",
-            "effect": lambda p: setattr(p, "hp", min(p.max_hp, p.hp + 30)),
+            "effect": lambda p: setattr(p, "hp", p.hp + 30),
             "desc": "+30 HP",
             "log": f"получает 30 HP"
         },
@@ -33,21 +33,21 @@ def loot(p):
         {
             "id": "rejuvenation_potion",
             "name": "Зелье омоложения",
-            "effect": lambda p: setattr(p, "hp", p.max_hp),
+            "effect": lambda p: setattr(p, "hp", max(p.hp, p.max_hp)),
             "desc": "восстанавливает всё HP",
             "log": f"полностью восстанавливает здоровье"
         },
         {
             "id": "luck_amulet",
             "name": "Амулет удачи",
-            "effect": lambda p: setattr(p, "luck", p.luck + 10),
+            "effect": lambda p: (setattr(p, "luck", p.luck + 10), setattr(p, "crit", p.crit + 20)),
             "desc": "+10 к удаче навсегда",
             "log": f"навсегда увеличивает удачу на 10"
         },
         {
             "id": "cursed_amulet",
             "name": "Проклятый амулет",
-            "effect": lambda p: setattr(p, "luck", p.luck - 7),
+            "effect": lambda p: (setattr(p, "luck", p.luck - 7), setattr(p, "crit", max(0, p.crit - 14))),
             "desc": "-7 к удаче навсегда",
             "log": f"навсегда уменьшает удачу на 7"
         },

@@ -1,13 +1,11 @@
 import pygame
 import sys
+from ui import WIDTH, HEIGHT, get_screen
 
 pygame.init()
 
-WIDTH, HEIGHT = 800, 600
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("RPG Arena")
-
-font = pygame.font.SysFont("arial", 36)
+font = pygame.font.SysFont("arial", 42)
+title_font = pygame.font.SysFont("arial", 72, bold=True)
 
 WHITE = (255,255,255)
 BLACK = (0,0,0)
@@ -26,6 +24,7 @@ class Button:
         self.rect = pygame.Rect(x,y,w,h)
 
     def draw(self):
+        screen = get_screen()
         mouse_pos = pygame.mouse.get_pos()
 
         # подсветка при наведении
@@ -47,22 +46,28 @@ class Button:
 
 
 # 🎮 кнопки (теперь 1-4 игрока)
-btn_1 = Button("1 игрок", 300, 150, 200, 50)
-btn_2 = Button("2 игрока", 300, 220, 200, 50)
-btn_3 = Button("3 игрока", 300, 290, 200, 50)
-btn_4 = Button("4 игрока", 300, 360, 200, 50)
-btn_exit = Button("Выход", 300, 430, 200, 50)
+btn_1 = Button("1 игрок", 760, 240, 280, 70)
+btn_2 = Button("2 игрока", 760, 330, 280, 70)
+btn_3 = Button("3 игрока", 760, 420, 280, 70)
+btn_4 = Button("4 игрока", 760, 510, 280, 70)
+btn_exit = Button("Выход", 760, 620, 280, 70)
 
 
 def main_menu():
+    screen = get_screen("RPG Arena")
+    clock = pygame.time.Clock()
 
     while True:
 
         # фон (просто цвет, можно заменить на картинку)
         screen.fill(DARK)
 
-        title = font.render("RPG ARENA", True, WHITE)
-        screen.blit(title, (300,70))
+        panel = pygame.Rect(620, 120, 560, 650)
+        pygame.draw.rect(screen, (55,55,55), panel, border_radius=20)
+        pygame.draw.rect(screen, WHITE, panel, 3, border_radius=20)
+
+        title = title_font.render("RPG ARENA", True, WHITE)
+        screen.blit(title, (705, 145))
 
         btn_1.draw()
         btn_2.draw()
@@ -93,3 +98,4 @@ def main_menu():
                 sys.exit()
 
         pygame.display.flip()
+        clock.tick(60)

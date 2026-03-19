@@ -1,0 +1,2080 @@
+import os
+import random
+import sys
+
+import pygame
+
+from engine.combat import attack
+from engine.items import loot
+from engine.player import Player
+
+
+WIDTH, HEIGHT = 1800, 900
+
+WHITE = (255, 255, 255)
+GRAY = (120, 120, 120)
+GREEN = (0, 200, 0)
+RED = (200, 0, 0)
+DARK = (30, 30, 30)
+PANEL = (45, 45, 55)
+GOLD = (255, 215, 0)
+SILVER = (210, 210, 220)
+BRONZE = (205, 140, 90)
+SKY = (80, 180, 255)
+LIGHT_BLUE = (170, 225, 255)
+LIGHT_PINK = (255, 190, 220)
+
+
+class UIButton:
+    def __init__(self, text, x, y, w, h):
+        self.text = text
+        self.rect = pygame.Rect(x, y, w, h)
+
+    def draw(self, screen, font, enabled=True, active=False):
+        mouse = pygame.mouse.get_pos()
+        if not enabled:
+            color = (85, 85, 85)
+            text_color = (170, 170, 170)
+        elif active:
+            color = (0, 180, 0)
+            text_color = WHITE
+        elif self.rect.collidepoint(mouse):
+            color = GREEN
+            text_color = WHITE
+        else:
+            color = GRAY
+            text_color = WHITE
+
+        pygame.draw.rect(screen, color, self.rect, border_radius=12)
+        txt = font.render(self.text, True, text_color)
+        txt_rect = txt.get_rect(center=self.rect.center)
+        screen.blit(txt, txt_rect)
+
+    def clicked(self, event, enabled=True):
+        return enabled and event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and self.rect.collidepoint(event.pos)
+
+
+class ArenaGame:
+    MENU = "menu"
+    NAME_INPUT = "name_input"
+    CLASS_SELECT = "class_select"
+    MAGIC_SELECT = "magic_select"
+    STAT_SELECT = "stat_select"
+    BATTLE = "battle"
+    POST_BATTLE = "post_battle"
+
+    def __init__(self):
+        pygame.init()
+        self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
+        pygame.display.set_caption("RPG Arena")
+        self.clock = pygame.time.Clock()
+        self.running = True
+        self.state = self.MENU
+
+        self.font = pygame.font.SysFont("arial", 30)
+        self.medium_font = pygame.font.SysFont("arial", 42)
+        self.big_font = pygame.font.SysFont("arial", 60)
+        self.title_font = pygame.font.SysFont("arial", 72, bold=True)
+        self.hero_font = pygame.font.SysFont("arial", 88, bold=True)
+        self.small_font = pygame.font.SysFont("arial", 24)
+        self.log_font = pygame.font.SysFont("arial", 22)
+        self.class_name_font = pygame.font.SysFont("arial", 38, bold=True)
+
+        self.class_data = {
+            "Воин": {
+                "desc": "Баланс урона и защиты",
+                "skill": "Удар щитом — 50% урона и 30% шанс оглушить врага на 1 ход",
+                "passive": "Пассивно: Обезоруживание — 40% шанс при любом успешном ударе. На следующий ход цель не может использовать активку, её урон снижен вдвое, пассивка отключена, шанс лута ниже на 20%.",
+                "active": "Активно: Удар щитом наносит 50% от текущего урона и с шансом 30% оглушает цель на 1 ход.",
+                "strength": 15,
+                "stamina": 15,
+                "agility": 10,
+                "luck": 10,
+                "initiative": 10,
+                "intellect": 10,
+                "image": "assets/images/warrior.png",
+            },
+            "Варвар": {
+                "desc": "Огромный урон, но риск",
+                "skill": "Берсерк — 200% урона, но 30% шанс ранить себя тем же ударом",
+                "passive": "Пассивно: 25% шанс искалечить цель при любом успешном ударе: 10% отрубить руку (урон жертвы x0.5 до конца боя), 10% отрубить ногу (инициатива жертвы = 1), 3% отрубить голову (мгновенная смерть).",
+                "active": "Активно: Берсерк наносит 200% урона, но с шансом 30% варвар бьёт только себя на тот же урон. На самоудар пассивка тоже может сработать.",
+                "strength": 20,
+                "stamina": 12,
+                "agility": 8,
+                "luck": 8,
+                "initiative": 10,
+                "intellect": 10,
+                "image": "assets/images/barbarian.png",
+            },
+            "Ассасин": {
+                "desc": "Смертельно быстрый охотник",
+                "skill": "Кровопускание — атака и 60% шанс наложить кровотечение",
+                "passive": "Пассивно: 30% шанс сразу получить ещё 1 ход. На бонусный ход пассивка уже не срабатывает.",
+                "active": "Активно: выполняет обычную атаку и с шансом 60% накладывает кровотечение на 3 хода по 40% от текущего урона за тик.",
+                "strength": 12,
+                "stamina": 10,
+                "agility": 18,
+                "luck": 14,
+                "initiative": 10,
+                "intellect": 10,
+                "image": "assets/images/assassin.png",
+            },
+            "Копейщик": {
+                "desc": "Контроль дистанции и крит",
+                "skill": "Подсечка — 30% урона и 50% шанс опрокинуть врага на 1 ход",
+                "passive": "Пассивно: Точный удар — 60% шанс при любом ударе полностью игнорировать уклонение врага, словно его ловкость равна 0.",
+                "active": "Активно: Подсечка наносит 30% от текущего урона и с шансом 50% опрокидывает цель на 1 ход.",
+                "strength": 14,
+                "stamina": 14,
+                "agility": 12,
+                "luck": 12,
+                "initiative": 10,
+                "intellect": 10,
+                "image": "assets/images/spearman.png",
+            },
+        }
+        self.stat_data = {
+            "Сильный": "Урон значительно выше",
+            "Выносливый": "Много HP",
+            "Ловкий": "Высокий шанс уклонения",
+            "Удачливый": "Частые криты",
+            "Инициативный": "Ходишь раньше врагов",
+            "Интеллектуальный": "Больше шанс прозрения и сильнее магия",
+        }
+        self.magic_data = {
+            "Путь огня": {
+                "desc": "Идущий по Пути огня стремится слиться с самой разрушительной стихией, чтобы сжечь этот мир или сгореть изнутри, перейдя в иную форму существования.",
+                "normal": [
+                    {
+                        "id": "fire_arrow",
+                        "name": "Стрела огня",
+                        "target": "enemy",
+                        "desc": "Наносит урон, равный интеллекту. 50% шанс поджечь цель: ещё 2 её хода она получает половину урона заклинания.",
+                    },
+                    {
+                        "id": "fire_wall",
+                        "name": "Стена огня",
+                        "target": "self",
+                        "desc": "На 2 своих хода окружает мага пламенем. Враги в ближнем бою наносят на 20% меньше урона и с шансом 30% загораются. Магия через стену бьёт в 1.5 раза сильнее.",
+                    },
+                ],
+                "exalted": [
+                    {
+                        "id": "supernova",
+                        "name": "Сверхновая",
+                        "target": "enemy",
+                        "desc": "Взрыв наносит 150% от интеллекта основной цели. Каждого прочего бойца, включая мага, может задеть с шансом 50% на тот же урон.",
+                    },
+                    {
+                        "id": "phoenix",
+                        "name": "Феникс",
+                        "target": "self",
+                        "desc": "70% шанс полностью восстановить HP, 15% шанс сгореть дотла и проиграть, 15% — ничего не происходит.",
+                    },
+                ],
+            },
+            "Путь воды": {
+                "desc": "Идущие по Пути воды познали тайны тихих вод и обрели гармонию с миром, но им также ведомы сокрушительные штормы и беспощадный холод глубин.",
+                "normal": [
+                    {
+                        "id": "heal",
+                        "name": "Исцеление",
+                        "target": "self",
+                        "desc": "Восстанавливает HP, равное интеллекту. 25% шанс исцелиться полностью.",
+                    },
+                    {
+                        "id": "ice_arrow",
+                        "name": "Ледяная стрела",
+                        "target": "enemy",
+                        "desc": "Наносит урон, равный интеллекту. 20% шанс заморозить цель на 1 ход.",
+                    },
+                ],
+                "exalted": [
+                    {
+                        "id": "water_essence",
+                        "name": "Суть воды",
+                        "target": "self",
+                        "desc": "80% шанс полностью исцелить мага. Если удалось, то ещё 60% шанс полностью исцелить всех вокруг.",
+                    },
+                    {
+                        "id": "ice_spear",
+                        "name": "Ледяное копьё",
+                        "target": "enemy",
+                        "desc": "Наносит двойной урон от интеллекта. 20% шанс заморозить. Если цель уже заморожена, повторная заморозка раскалывает её насмерть.",
+                    },
+                ],
+            },
+        }
+        self.arena_data = [
+            ("Колизей", "hp"),
+            ("Лес", "dodge"),
+            ("Вулкан", "damage"),
+            ("Ледяная пустошь", "crit"),
+        ]
+
+        self.menu_buttons = [
+            UIButton("1 игрок", 760, 240, 280, 70),
+            UIButton("2 игрока", 760, 330, 280, 70),
+            UIButton("3 игрока", 760, 420, 280, 70),
+            UIButton("4 игрока", 760, 510, 280, 70),
+        ]
+        self.menu_exit_button = UIButton("Выход", 760, 620, 280, 70)
+
+        self.name_confirm_button = UIButton("Продолжить", 760, 560, 280, 70)
+        self.name_back_button = UIButton("Назад", 500, 560, 180, 70)
+        self.name_clear_button = UIButton("Очистить", 1080, 560, 180, 70)
+        self.name_space_button = UIButton("Пробел", 640, 760, 220, 60)
+        self.name_delete_button = UIButton("Стереть", 890, 760, 220, 60)
+        self.name_space_button.rect = pygame.Rect(520, 648, 220, 56)
+        self.name_delete_button.rect = pygame.Rect(790, 648, 220, 56)
+        self.name_clear_button.rect = pygame.Rect(1060, 648, 220, 56)
+        self.name_confirm_button.rect = pygame.Rect(610, 730, 260, 64)
+        self.name_back_button.rect = pygame.Rect(930, 730, 260, 64)
+
+        self.name_key_buttons = []
+        self.rebuild_name_key_buttons()
+
+        self.class_buttons = []
+        y = 220
+        for name in self.class_data:
+            self.class_buttons.append(UIButton(name, 120, y, 280, 65))
+            y += 95
+        self.class_confirm_button = UIButton("Выбрать", 120, 700, 280, 65)
+        self.class_back_button = UIButton("Назад", 120, 615, 280, 65)
+
+        self.magic_buttons = []
+        y = 220
+        for name in self.magic_data:
+            self.magic_buttons.append(UIButton(name, 120, y, 280, 65))
+            y += 95
+        self.magic_confirm_button = UIButton("Продолжить", 120, 730, 280, 65)
+        self.magic_back_button = UIButton("←", 420, 730, 65, 65)
+
+        self.stat_buttons = []
+        y = 170
+        for name in self.stat_data:
+            self.stat_buttons.append(UIButton(name, 120, y, 280, 65))
+            y += 72
+        self.stat_confirm_button = UIButton("Продолжить", 120, 730, 280, 65)
+        self.stat_back_button = UIButton("←", 420, 730, 65, 65)
+
+        self.battle_buttons = [
+            UIButton("Атака", 70, 600, 220, 100),
+            UIButton("Осторожно", 320, 600, 220, 100),
+            UIButton("Спец", 570, 600, 220, 100),
+            UIButton("Лут", 820, 600, 220, 100),
+            UIButton("Колдовать", 1070, 600, 220, 100),
+        ]
+        self.spell_buttons = [
+            UIButton("", 1360, 590, 330, 70),
+            UIButton("", 1360, 675, 330, 70),
+        ]
+
+        self.post_rematch_button = UIButton("Реванш", 420, 720, 260, 75)
+        self.post_restart_button = UIButton("Начать заново", 770, 720, 320, 75)
+        self.post_quit_button = UIButton("Закрыть игру", 1180, 720, 300, 75)
+
+        self.icons = self.load_class_icons()
+
+        self.player_count = 0
+        self.human_names = []
+        self.player_builds = []
+        self.scores = {}
+        self.rematch_mode = False
+
+        self.name_index = 0
+        self.name_buffer = ""
+
+        self.setup_index = 0
+        self.selected_class = None
+        self.selected_magic_path = None
+        self.selected_stats = []
+        self.allow_back_to_names = True
+
+        self.players = []
+        self.current_turn = 0
+        self.bonus_turn_player = None
+        self.selected_target = None
+        self.hit_target = None
+        self.hit_timer = 0
+        self.log = []
+        self.info_rects = []
+        self.show_info_idx = None
+        self.close_popup_rect = None
+        self.arena_name = ""
+        self.ai_action_due = 0
+        self.spell_menu_open = False
+        self.spell_tier = "normal"
+
+        self.winner_name = ""
+        self.champion = False
+
+    def load_class_icons(self):
+        icons = {}
+        base_dir = os.path.dirname(__file__)
+        for name, data in self.class_data.items():
+            path = os.path.join(base_dir, data["image"])
+            try:
+                image = pygame.image.load(path)
+                icons[name] = pygame.transform.scale(image, (220, 220))
+            except Exception:
+                icons[name] = None
+        return icons
+
+    def set_state(self, new_state):
+        self.state = new_state
+
+    def run(self):
+        while self.running:
+            events = pygame.event.get()
+            for event in events:
+                if event.type == pygame.QUIT:
+                    self.running = False
+
+            if not self.running:
+                break
+
+            self.handle_events(events)
+            self.update()
+            self.render()
+            pygame.display.flip()
+            self.clock.tick(60)
+
+        pygame.quit()
+
+    def handle_events(self, events):
+        if self.state == self.MENU:
+            self.handle_menu_events(events)
+        elif self.state == self.NAME_INPUT:
+            self.handle_name_events(events)
+        elif self.state == self.CLASS_SELECT:
+            self.handle_class_events(events)
+        elif self.state == self.MAGIC_SELECT:
+            self.handle_magic_events(events)
+        elif self.state == self.STAT_SELECT:
+            self.handle_stat_events(events)
+        elif self.state == self.BATTLE:
+            self.handle_battle_events(events)
+        elif self.state == self.POST_BATTLE:
+            self.handle_post_battle_events(events)
+
+    def update(self):
+        if self.state == self.BATTLE:
+            if self.hit_timer > 0:
+                self.hit_timer -= 1
+
+            if self.show_info_idx is None and self.players:
+                current_player = self.players[self.current_turn]
+                if current_player.is_ai and pygame.time.get_ticks() >= self.ai_action_due:
+                    self.perform_ai_turn(current_player)
+
+    def render(self):
+        if self.state == self.MENU:
+            self.render_menu()
+        elif self.state == self.NAME_INPUT:
+            self.render_name_input()
+        elif self.state == self.CLASS_SELECT:
+            self.render_class_select()
+        elif self.state == self.MAGIC_SELECT:
+            self.render_magic_select()
+        elif self.state == self.STAT_SELECT:
+            self.render_stat_select()
+        elif self.state == self.BATTLE:
+            self.render_battle()
+        elif self.state == self.POST_BATTLE:
+            self.render_post_battle()
+
+    def handle_menu_events(self, events):
+        for event in events:
+            for index, button in enumerate(self.menu_buttons, start=1):
+                if button.clicked(event):
+                    self.start_new_series(index)
+                    return
+            if self.menu_exit_button.clicked(event):
+                self.running = False
+                return
+
+    def start_new_series(self, count):
+        self.player_count = count
+        self.human_names = [""] * count
+        self.player_builds = [{"name": "", "class": None, "magic_path": None, "stats": []} for _ in range(count)]
+        self.scores = {}
+        self.rematch_mode = False
+        self.name_index = 0
+        self.name_buffer = ""
+        self.rebuild_name_key_buttons()
+        self.set_state(self.NAME_INPUT)
+
+    def handle_name_events(self, events):
+        for event in events:
+            if self.name_confirm_button.clicked(event, enabled=bool(self.name_buffer.strip())):
+                self.confirm_name_input()
+                return
+            if self.name_back_button.clicked(event):
+                self.back_from_name_input()
+                return
+            if self.name_clear_button.clicked(event):
+                self.name_buffer = ""
+                return
+
+            if self.name_space_button.clicked(event, enabled=len(self.name_buffer) < 12 and bool(self.name_buffer)):
+                self.append_name_space()
+                return
+            if self.name_delete_button.clicked(event, enabled=bool(self.name_buffer)):
+                self.delete_name_char()
+                return
+
+            for char, button in self.name_key_buttons:
+                if button.clicked(event, enabled=len(self.name_buffer) < 12):
+                    self.append_name_char(char)
+                    return
+
+    def append_name_char(self, char):
+        if len(self.name_buffer) >= 12:
+            return
+
+        if char.isalpha():
+            if not self.name_buffer or self.name_buffer.endswith(" "):
+                char = char.upper()
+            else:
+                char = char.lower()
+
+        self.name_buffer += char
+
+    def append_name_space(self):
+        if self.name_buffer and len(self.name_buffer) < 12 and not self.name_buffer.endswith(" "):
+            self.name_buffer += " "
+
+    def delete_name_char(self):
+        if self.name_buffer:
+            self.name_buffer = self.name_buffer[:-1]
+
+    def rebuild_name_key_buttons(self):
+        self.name_key_buttons = []
+        keyboard_rows = [
+            "йцукенгшщзхъ",
+            "фывапролджэ",
+            "ячсмитьбю.-",
+        ]
+        start_y = 430
+        key_w = 58
+        key_h = 58
+        gap = 8
+        for row_index, row in enumerate(keyboard_rows):
+            row_width = len(row) * key_w + (len(row) - 1) * gap
+            start_x = (WIDTH - row_width) // 2
+            for col_index, char in enumerate(row):
+                x = start_x + col_index * (key_w + gap)
+                y = start_y + row_index * (key_h + gap)
+                self.name_key_buttons.append((char, UIButton(char.upper(), x, y, key_w, key_h)))
+
+    def confirm_name_input(self):
+        self.human_names[self.name_index] = self.name_buffer.strip()
+        if self.name_index < self.player_count - 1:
+            self.name_index += 1
+            self.name_buffer = self.human_names[self.name_index]
+            return
+
+        self.scores = {name: 0 for name in self.human_names}
+        if self.player_count == 1:
+            self.scores["AI"] = 0
+        self.start_setup_flow(allow_back_to_names=True)
+
+    def back_from_name_input(self):
+        if self.name_index > 0:
+            self.name_index -= 1
+            self.name_buffer = self.human_names[self.name_index]
+        else:
+            self.set_state(self.MENU)
+
+    def start_setup_flow(self, allow_back_to_names):
+        self.allow_back_to_names = allow_back_to_names
+        self.player_builds = [{"name": name, "class": None, "magic_path": None, "stats": []} for name in self.human_names]
+        self.setup_index = 0
+        self.selected_class = None
+        self.selected_magic_path = None
+        self.selected_stats = []
+        self.set_state(self.CLASS_SELECT)
+
+    def load_setup_state(self, index):
+        build = self.player_builds[index]
+        self.selected_class = build["class"]
+        self.selected_magic_path = build.get("magic_path")
+        self.selected_stats = list(build["stats"])
+
+    def handle_class_events(self, events):
+        for event in events:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                self.back_from_class_select()
+                return
+
+            for button in self.class_buttons:
+                if button.clicked(event):
+                    self.selected_class = button.text
+                    return
+
+            if self.class_confirm_button.clicked(event, enabled=bool(self.selected_class)):
+                self.set_state(self.MAGIC_SELECT)
+                return
+
+    def back_from_class_select(self):
+        if self.setup_index > 0:
+            self.setup_index -= 1
+            self.load_setup_state(self.setup_index)
+            self.set_state(self.STAT_SELECT)
+        elif self.allow_back_to_names:
+            self.name_index = self.player_count - 1
+            self.name_buffer = self.human_names[self.name_index]
+            self.set_state(self.NAME_INPUT)
+
+    def handle_magic_events(self, events):
+        for event in events:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                self.set_state(self.CLASS_SELECT)
+                return
+
+            for button in self.magic_buttons:
+                if button.clicked(event):
+                    self.selected_magic_path = button.text
+                    return
+
+            if self.magic_back_button.clicked(event):
+                self.set_state(self.CLASS_SELECT)
+                return
+
+            if self.magic_confirm_button.clicked(event, enabled=bool(self.selected_magic_path)):
+                self.set_state(self.STAT_SELECT)
+                return
+
+    def handle_stat_events(self, events):
+        for event in events:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                self.set_state(self.MAGIC_SELECT)
+                return
+
+            for button in self.stat_buttons:
+                if button.clicked(event):
+                    if button.text in self.selected_stats:
+                        self.selected_stats.remove(button.text)
+                    elif len(self.selected_stats) < 2:
+                        self.selected_stats.append(button.text)
+                    return
+
+            if self.stat_back_button.clicked(event):
+                self.set_state(self.MAGIC_SELECT)
+                return
+
+            if self.stat_confirm_button.clicked(event, enabled=len(self.selected_stats) == 2):
+                self.confirm_player_build()
+                return
+
+    def confirm_player_build(self):
+        self.player_builds[self.setup_index] = {
+            "name": self.human_names[self.setup_index],
+            "class": self.selected_class,
+            "magic_path": self.selected_magic_path,
+            "stats": list(self.selected_stats),
+        }
+
+        if self.setup_index < self.player_count - 1:
+            self.setup_index += 1
+            self.selected_class = self.player_builds[self.setup_index]["class"]
+            self.selected_magic_path = self.player_builds[self.setup_index].get("magic_path")
+            self.selected_stats = list(self.player_builds[self.setup_index]["stats"])
+            self.set_state(self.CLASS_SELECT)
+            return
+
+        self.start_battle()
+
+    def start_battle(self):
+        self.players = [self.build_human_player(build) for build in self.player_builds]
+        if self.player_count == 1:
+            self.players.append(self.create_ai_player())
+
+        self.arena_name = self.apply_random_arena(self.players)
+        self.players = self.order_players_for_battle(self.players)
+
+        self.current_turn = 0
+        self.bonus_turn_player = None
+        self.selected_target = None
+        self.hit_target = None
+        self.hit_timer = 0
+        self.log = [self.make_log_entry(f"🏟 Арена: {self.arena_name}", category="arena")]
+        self.info_rects = [None] * len(self.players)
+        self.show_info_idx = None
+        self.close_popup_rect = None
+        self.reset_spell_state()
+        self.set_state(self.BATTLE)
+        self.prepare_current_turn()
+
+    def build_human_player(self, build):
+        player = Player(build["name"])
+        player.role = build["class"]
+        player.magic_path = build.get("magic_path") or "Путь огня"
+        self.apply_class_base_stats(player, build["class"])
+        self.apply_stat_bonuses(player, build["stats"])
+        player.calc()
+        self.apply_class_bonuses(player, build["class"])
+        return player
+
+    def create_ai_player(self):
+        ai_class = random.choice(list(self.class_data.keys()))
+        ai_stats = random.sample(list(self.stat_data.keys()), 2)
+        bot = Player("AI", True)
+        bot.role = ai_class
+        bot.magic_path = random.choice(list(self.magic_data.keys()))
+        self.apply_class_base_stats(bot, ai_class)
+        self.apply_stat_bonuses(bot, ai_stats)
+        bot.calc()
+        self.apply_class_bonuses(bot, ai_class)
+        return bot
+
+    def apply_class_base_stats(self, player, cls):
+        class_info = self.class_data.get(cls, {})
+        player.strength = class_info.get("strength", player.strength)
+        player.stamina = class_info.get("stamina", player.stamina)
+        player.agility = class_info.get("agility", player.agility)
+        player.luck = class_info.get("luck", player.luck)
+        player.initiative = class_info.get("initiative", player.initiative)
+        player.intellect = class_info.get("intellect", player.intellect)
+
+    def apply_stat_bonuses(self, player, stats):
+        for stat in stats:
+            if stat == "Сильный":
+                player.strength += 10
+            elif stat == "Выносливый":
+                player.stamina += 10
+            elif stat == "Ловкий":
+                player.agility += 10
+            elif stat == "Удачливый":
+                player.luck += 10
+            elif stat == "Инициативный":
+                player.initiative += 10
+            elif stat == "Интеллектуальный":
+                player.intellect += 10
+
+    def apply_class_bonuses(self, player, cls):
+        return
+
+    def wrap_text(self, text, font, max_width):
+        words = text.split(" ")
+        lines = []
+        current_line = ""
+        for word in words:
+            test = (current_line + " " + word).strip()
+            if font.size(test)[0] <= max_width:
+                current_line = test
+            else:
+                if current_line:
+                    lines.append(current_line)
+                current_line = word
+        if current_line:
+            lines.append(current_line)
+        return lines
+
+    def get_class_color(self, class_name):
+        return {
+            "Воин": (90, 160, 255),
+            "Варвар": (255, 165, 70),
+            "Ассасин": (185, 120, 255),
+            "Копейщик": (100, 220, 120),
+        }.get(class_name, WHITE)
+
+    def get_magic_path_color(self, path_name):
+        return {
+            "Путь огня": (255, 195, 70),
+            "Путь воды": LIGHT_BLUE,
+        }.get(path_name, WHITE)
+
+    def get_spell_button_colors(self, path_name, tier):
+        if path_name == "Путь огня":
+            return ((255, 185, 55), GOLD) if tier == "exalted" else ((255, 165, 40), (255, 225, 120))
+        if path_name == "Путь воды":
+            return ((110, 210, 255), (90, 150, 255)) if tier == "exalted" else (LIGHT_BLUE, (210, 245, 255))
+        return (GRAY, WHITE)
+
+    def draw_spell_button(self, button, font, path_name, tier):
+        base_color, hover_color = self.get_spell_button_colors(path_name, tier)
+        mouse = pygame.mouse.get_pos()
+        color = hover_color if button.rect.collidepoint(mouse) else base_color
+        pygame.draw.rect(self.screen, color, button.rect, border_radius=12)
+        pygame.draw.rect(self.screen, WHITE, button.rect, 2, border_radius=12)
+        txt = font.render(button.text, True, DARK)
+        txt_rect = txt.get_rect(center=button.rect.center)
+        self.screen.blit(txt, txt_rect)
+
+    def get_info_line_color(self, line, class_name=None, magic_path=None):
+        if line == "Пассивная способность:":
+            return LIGHT_BLUE
+        if line == "Активная способность:":
+            return LIGHT_PINK
+        if line.startswith("Пассивно:"):
+            return LIGHT_BLUE
+        if line.startswith("Активно:"):
+            return LIGHT_PINK
+        if line.startswith("Класс:") and class_name:
+            return self.get_class_color(class_name)
+        if line.startswith("Мистический путь:") and magic_path:
+            return self.get_magic_path_color(magic_path)
+        return WHITE
+
+    def make_log_entry(self, text, category="normal", actor=None, verb=None, target=None, target_hit=None, indent=False):
+        return {
+            "text": text,
+            "category": category,
+            "actor": actor,
+            "verb": verb,
+            "target": target,
+            "target_hit": target_hit,
+            "indent": indent,
+        }
+
+    def append_log(self, text, category="normal", actor=None, verb=None, target=None, target_hit=None, indent=False):
+        self.log.append(self.make_log_entry(text, category, actor, verb, target, target_hit, indent))
+
+    def infer_log_color(self, text, category="normal"):
+        lowered = text.lower()
+
+        if category == "passive":
+            return LIGHT_BLUE
+        if category == "active":
+            return LIGHT_PINK
+        if category == "warning":
+            return (255, 210, 120)
+        if category == "arena":
+            return (180, 230, 255)
+        if category == "magic_fire_normal":
+            return (255, 195, 70)
+        if category == "magic_fire_exalted":
+            return GOLD
+        if category == "magic_water_normal":
+            return LIGHT_BLUE
+        if category == "magic_water_exalted":
+            return (90, 150, 255)
+
+        if "крит" in lowered or "фатал" in lowered:
+            return (255, 220, 70)
+        if "кров" in lowered:
+            return (255, 110, 110)
+        if "оглуш" in lowered or "опрокинут" in lowered:
+            return (140, 220, 255)
+        if "обезоруж" in lowered or "оружие" in lowered or "подбирает" in lowered:
+            return (140, 200, 255)
+        if "берсерк" in lowered or "кровопускан" in lowered or "подсечк" in lowered or "щит" in lowered:
+            return LIGHT_PINK
+
+        return WHITE
+
+    def render_log_segments(self, segments, x, y, max_width, font):
+        line_height = font.get_linesize() + 6
+        current_x = x
+        current_y = y
+
+        for text, color in segments:
+            parts = text.split(" ")
+            for index, part in enumerate(parts):
+                token = part
+                if index < len(parts) - 1:
+                    token += " "
+                if not token:
+                    continue
+                token_width = font.size(token)[0]
+                if current_x > x and current_x + token_width > x + max_width:
+                    current_x = x
+                    current_y += line_height
+                surface = font.render(token, True, color)
+                self.screen.blit(surface, (current_x, current_y))
+                current_x += token_width
+
+        return current_y + line_height
+
+    def render_log_entry(self, entry, x, y, max_width):
+        if isinstance(entry, dict) and (entry.get("category") == "action" or str(entry.get("category", "")).startswith("magic_")):
+            segments = []
+            if entry.get("indent"):
+                segments.append(("   ▸ ", SILVER))
+
+            actor = entry.get("actor") or ""
+            verb = entry.get("verb") or entry.get("text", "")
+            target = entry.get("target")
+            verb_color = self.infer_log_color(entry.get("text", ""), entry.get("category", "normal")) if str(entry.get("category", "")).startswith("magic_") else (WHITE if target else SILVER)
+
+            if actor:
+                segments.append((actor, (110, 255, 130)))
+            if verb:
+                segments.append((f" {verb}", verb_color))
+            if target:
+                target_color = (255, 220, 90) if entry.get("target_hit") is False else (255, 110, 110)
+                segments.append((f" {target}", target_color))
+
+            return self.render_log_segments(segments, x, y, max_width, self.log_font)
+
+        text = entry["text"] if isinstance(entry, dict) else str(entry)
+        category = entry.get("category", "normal") if isinstance(entry, dict) else "normal"
+        prefix = "   " if isinstance(entry, dict) and entry.get("indent") else ""
+        color = self.infer_log_color(text, category)
+        return self.render_log_segments([(prefix + text, color)], x, y, max_width, self.log_font)
+
+    def get_class_preview_stats(self, cls):
+        data = self.class_data[cls]
+        strength = data["strength"]
+        stamina = data["stamina"]
+        agility = data["agility"]
+        luck = data["luck"]
+        initiative = data.get("initiative", 10)
+        intellect = data.get("intellect", 10)
+
+        damage = strength
+        dodge = agility * 2
+        crit = luck * 2
+
+        return {
+            "strength": strength,
+            "stamina": stamina,
+            "agility": agility,
+            "luck": luck,
+            "initiative": initiative,
+            "intellect": intellect,
+            "damage": damage,
+            "hp": stamina * 8,
+            "dodge": dodge,
+            "crit": crit,
+            "insight": min(100, intellect * 2),
+        }
+
+    def get_stat_selection_preview(self, cls, selected_stats):
+        preview = self.get_class_preview_stats(cls)
+        for stat in selected_stats:
+            if stat == "Сильный":
+                preview["strength"] += 10
+                preview["damage"] += 10
+            elif stat == "Выносливый":
+                preview["stamina"] += 10
+                preview["hp"] += 80
+            elif stat == "Ловкий":
+                preview["agility"] += 10
+                preview["dodge"] += 20
+            elif stat == "Удачливый":
+                preview["luck"] += 10
+                preview["crit"] += 20
+            elif stat == "Инициативный":
+                preview["initiative"] += 10
+            elif stat == "Интеллектуальный":
+                preview["intellect"] += 10
+                preview["insight"] = min(100, preview["insight"] + 20)
+        return preview
+
+    def get_insight_chance(self, player):
+        return max(0, min(100, player.intellect * 2))
+
+    def get_spell_damage(self, player, multiplier=1.0):
+        wall_bonus = 1.5 if player.fire_wall_turns > 0 else 1.0
+        return max(1, int(player.intellect * multiplier * wall_bonus))
+
+    def try_spell_dodge(self, caster, target, messages, spell_name):
+        dodge_chance = max(0, target.dodge + target.temp_dodge)
+        if random.randint(1, 100) <= dodge_chance:
+            messages.append(self.make_log_entry(f"✨ {target.name} уклоняется от заклинания {spell_name} от {caster.name}!"))
+            return True
+        return False
+
+    def reset_spell_state(self):
+        self.spell_menu_open = False
+        self.spell_tier = "normal"
+
+    def get_spells_for_player(self, player, tier="normal"):
+        path = self.magic_data.get(player.magic_path or "", {})
+        return path.get(tier, [])
+
+    def apply_burning(self, target, burn_damage, turns=2):
+        target.burning = max(target.burning, turns)
+        target.burn_damage = max(target.burn_damage, max(1, burn_damage))
+
+    def apply_freeze(self, target, turns=1):
+        target.frozen_turns = max(target.frozen_turns, turns)
+
+    def decay_turn_effects(self, player):
+        if player.fire_wall_turns > 0:
+            if player.fire_wall_fresh:
+                player.fire_wall_fresh = False
+            else:
+                player.fire_wall_turns -= 1
+                if player.fire_wall_turns == 0:
+                    self.append_log(f"🔥 Огненная стена вокруг {player.name} гаснет.")
+
+    def maybe_trigger_insight(self, player):
+        if player.hp <= 0:
+            return False
+        if random.randint(1, 100) <= self.get_insight_chance(player):
+            self.spell_menu_open = True
+            self.spell_tier = "exalted"
+            self.append_log(f"✨ {player.name} получает прозрение и может сотворить возвышенную магию!", category="active")
+            return True
+        return False
+
+    def order_players_for_battle(self, players):
+        grouped = {}
+        for player in players:
+            grouped.setdefault(player.initiative, []).append(player)
+
+        ordered_players = []
+        for initiative in sorted(grouped.keys(), reverse=True):
+            same_initiative = grouped[initiative][:]
+            while same_initiative:
+                weights = [max(1, contender.luck) for contender in same_initiative]
+                chosen = random.choices(same_initiative, weights=weights, k=1)[0]
+                ordered_players.append(chosen)
+                same_initiative.remove(chosen)
+
+        return ordered_players
+
+    def apply_random_arena(self, players):
+        arena_name, arena_effect = random.choice(self.arena_data)
+        for player in players:
+            if arena_effect == "hp":
+                player.max_hp += 10
+                player.hp += 10
+            elif arena_effect == "dodge":
+                player.dodge += 10
+            elif arena_effect == "damage":
+                player.damage += 5
+            elif arena_effect == "crit":
+                player.crit += 10
+        return arena_name
+
+    def prepare_current_turn(self):
+        while True:
+            alive = [player for player in self.players if player.hp > 0]
+            if len(alive) == 0:
+                self.winner_name = "Никто"
+                self.set_state(self.POST_BATTLE)
+                return
+            if len(alive) == 1:
+                self.finish_battle(alive[0].name)
+                return
+
+            current = self.players[self.current_turn]
+            if current.hp <= 0:
+                self.current_turn = self.next_alive_index(self.current_turn)
+                continue
+
+            if current.temp_dodge > 0:
+                current.temp_dodge = 0
+
+            if current.burning > 0:
+                burn_damage = max(1, current.burn_damage)
+                current.hp = max(0, current.hp - burn_damage)
+                self.append_log(f"🔥 {current.name} горит и получает -{burn_damage} HP")
+                current.burning -= 1
+                if current.burning == 0:
+                    current.burn_damage = 0
+                if current.hp <= 0:
+                    self.append_log(f"☠ {current.name} сгорает в пламени")
+                    self.current_turn = self.next_alive_index(self.current_turn)
+                    continue
+
+            if current.bleeding > 0:
+                bleed_damage = max(1, current.bleed_damage)
+                current.hp = max(0, current.hp - bleed_damage)
+                self.append_log(f"🩸 {current.name} истекает кровью: -{bleed_damage} HP")
+                current.bleeding -= 1
+                if current.bleeding == 0:
+                    current.bleed_damage = 0
+                if current.hp <= 0:
+                    self.append_log(f"☠ {current.name} пал от кровотечения")
+                    self.current_turn = self.next_alive_index(self.current_turn)
+                    continue
+
+            if current.frozen_turns > 0:
+                current.frozen_turns -= 1
+                self.append_log(f"🧊 {current.name} заморожен и пропускает ход")
+                self.current_turn = self.next_alive_index(self.current_turn)
+                continue
+
+            if current.stunned > 0:
+                current.stunned -= 1
+                self.append_log(f"💫 {current.name} оглушён и пропускает ход")
+                if current.disarmed_turns > 0:
+                    self.append_log(f"⚔ {current.name} приходит в себя и подбирает оружие")
+                    current.disarmed_turns = 0
+                self.current_turn = self.next_alive_index(self.current_turn)
+                continue
+
+            if current.disarmed_turns > 0:
+                self.append_log(f"⚔ {current.name} обезоружен: активка заблокирована, урон вдвое меньше, лут -20%")
+
+            if current.fire_wall_turns > 0:
+                self.append_log(f"🔥 {current.name} окружён стеной огня. Осталось ходов: {current.fire_wall_turns}")
+
+            self.ai_action_due = pygame.time.get_ticks() + 700
+            return
+
+    def next_alive_index(self, start_index):
+        for step in range(1, len(self.players) + 1):
+            idx = (start_index + step) % len(self.players)
+            if self.players[idx].hp > 0:
+                return idx
+        return start_index
+
+    def advance_turn(self):
+        if self.state != self.BATTLE:
+            return
+        current_player = self.players[self.current_turn]
+        self.selected_target = None
+        self.bonus_turn_player = None
+        self.reset_spell_state()
+        if current_player.disarmed_turns > 0:
+            current_player.disarmed_turns = 0
+            self.append_log(f"⚔ {current_player.name} подбирает оружие и снова готов к бою")
+        self.decay_turn_effects(current_player)
+        self.players = self.order_players_for_battle(self.players)
+        self.current_turn = self.players.index(current_player)
+        self.current_turn = self.next_alive_index(self.current_turn)
+        self.prepare_current_turn()
+
+    def try_grant_assassin_bonus_turn(self, player):
+        if player.role != "Ассасин":
+            return False
+        if self.bonus_turn_player is player:
+            return False
+        if self.is_passive_blocked(player):
+            return False
+        if random.randint(1, 100) <= 30:
+            self.bonus_turn_player = player
+            self.selected_target = None
+            self.append_log(f"🌫 {player.name} исчезает в тени и получает ещё 1 ход!", category="passive")
+            if player.is_ai:
+                self.ai_action_due = pygame.time.get_ticks() + 700
+            return True
+        return False
+
+    def is_passive_blocked(self, player):
+        return player.disarmed_turns > 0
+
+    def get_attack_damage_scale(self, player):
+        return 0.5 if player.disarmed_turns > 0 else 1.0
+
+    def apply_fire_wall_melee_penalty(self, attacker, defender, messages):
+        if defender.fire_wall_turns <= 0:
+            return 1.0
+
+        messages.append(self.make_log_entry(f"🔥 {attacker.name} атакует сквозь стену огня {defender.name} и теряет 20% урона."))
+        if random.randint(1, 100) <= 30:
+            burn_damage = max(1, int(defender.intellect * 0.5))
+            self.apply_burning(attacker, burn_damage)
+            messages.append(self.make_log_entry(f"🔥 {attacker.name} загорается от пылающей стены и будет получать {burn_damage} урона ещё 2 хода."))
+        return 0.8
+
+    def execute_attack(self, attacker, defender, strong=False, cautious=False):
+        messages = []
+        damage_scale = self.get_attack_damage_scale(attacker) * self.apply_fire_wall_melee_penalty(attacker, defender, messages)
+        damage_backup = attacker.damage
+        defender_dodge_backup = defender.dodge
+        defender_temp_dodge_backup = defender.temp_dodge
+        ignore_dodge = False
+
+        if attacker.role == "Копейщик" and not self.is_passive_blocked(attacker) and random.randint(1, 100) <= 60:
+            ignore_dodge = True
+            defender.dodge = 0
+            defender.temp_dodge = 0
+            messages.append(self.make_log_entry(f"🎯 {attacker.name} наносит точный удар и полностью игнорирует уклонение {defender.name}!", category="passive"))
+
+        if damage_scale != 1.0:
+            attacker.damage = max(1, int(attacker.damage * damage_scale))
+
+        hp_before = defender.hp
+        messages.extend(attack(attacker, defender, strong, cautious))
+
+        attacker.damage = damage_backup
+        defender.dodge = defender_dodge_backup
+        defender.temp_dodge = defender_temp_dodge_backup
+
+        hit_success = defender.hp < hp_before
+        if hit_success:
+            messages.extend(self.apply_on_hit_passives(attacker, defender))
+
+        return messages, hit_success
+
+    def apply_on_hit_passives(self, attacker, defender):
+        messages = []
+        if self.is_passive_blocked(attacker):
+            return messages
+
+        if attacker.role == "Воин" and random.randint(1, 100) <= 40:
+            defender.disarmed_turns = 1
+            messages.append(self.make_log_entry(f"🛡 {attacker.name} обезоруживает {defender.name}! Следующий ход жертвы будет ослаблен.", category="passive"))
+
+        if attacker.role == "Варвар" and random.randint(1, 100) <= 25:
+            roll = random.randint(1, 100)
+            if roll <= 10 and not defender.arm_severed:
+                defender.arm_severed = True
+                defender.damage = max(1, defender.damage // 2)
+                messages.append(self.make_log_entry(f"🪓 {attacker.name} отрубает руку {defender.name}! Урон жертвы навсегда снижен вдвое.", category="passive"))
+            elif roll <= 20 and not defender.leg_severed:
+                defender.leg_severed = True
+                defender.initiative = 1
+                messages.append(self.make_log_entry(f"🦿 {attacker.name} отрубает ногу {defender.name}! Инициатива жертвы падает до 1.", category="passive"))
+            elif roll <= 23:
+                defender.hp = 0
+                messages.append(self.make_log_entry(f"💀 {attacker.name} отрубает голову {defender.name}! Мгновенная смерть.", category="passive"))
+
+        return messages
+
+    def perform_special_action(self, player, target):
+        messages = []
+        hit_success = False
+
+        if player.disarmed_turns > 0:
+            messages.append(self.make_log_entry(f"⚔ {player.name} обезоружен и не может использовать активную способность!", category="warning"))
+            return messages, hit_success, None
+
+        melee_scale = self.apply_fire_wall_melee_penalty(player, target, messages)
+
+        if player.role == "Воин":
+            dmg = max(1, int(player.damage * 0.5 * melee_scale))
+            target.hp -= dmg
+            messages.append(self.make_log_entry(f"🛡 {player.name} бьёт щитом и наносит {dmg} урона.", category="active"))
+            if random.randint(1, 100) <= 30:
+                target.stunned = 1
+                messages.append(self.make_log_entry(f"💫 {target.name} оглушён на 1 ход!"))
+            hit_success = True
+            messages.extend(self.apply_on_hit_passives(player, target))
+        elif player.role == "Варвар":
+            dmg = max(1, int(player.damage * 2 * melee_scale))
+            if random.randint(1, 100) <= 30:
+                player.hp -= dmg
+                messages.append(self.make_log_entry(f"🤯 {player.name} в ярости попадает по себе и получает {dmg} урона!", category="active"))
+                messages.extend(self.apply_on_hit_passives(player, player))
+                hit_success = True
+                return messages, hit_success, player
+            target.hp -= dmg
+            messages.append(self.make_log_entry(f"🪓 {player.name} впадает в берсерк и наносит {dmg} урона.", category="active"))
+            hit_success = True
+            messages.extend(self.apply_on_hit_passives(player, target))
+        elif player.role == "Ассасин":
+            attack_messages, hit_success = self.execute_attack(player, target)
+            messages.append(self.make_log_entry(f"🩸 {player.name} использует кровопускание против {target.name}.", category="active"))
+            messages.extend(attack_messages)
+            if hit_success and random.randint(1, 100) <= 60:
+                bleed = max(1, int(player.damage * 0.4))
+                target.bleeding = 3
+                target.bleed_damage = bleed
+                messages.append(self.make_log_entry(f"🩸 {target.name} истекает кровью: {bleed} урона ещё 3 хода."))
+        elif player.role == "Копейщик":
+            dmg = max(1, int(player.damage * 0.3 * melee_scale))
+            target.hp -= dmg
+            messages.append(self.make_log_entry(f"🦶 {player.name} проводит подсечку и наносит {dmg} урона.", category="active"))
+            if random.randint(1, 100) <= 50:
+                target.stunned = 1
+                messages.append(self.make_log_entry(f"💫 {target.name} опрокинут и пропускает 1 ход!"))
+            hit_success = True
+
+        return messages, hit_success, target
+
+    def perform_spell_action(self, player, spell_id, target=None, tier="normal"):
+        messages = []
+        hit_success = False
+        actual_target = target
+
+        if spell_id == "fire_arrow":
+            if self.try_spell_dodge(player, target, messages, "Стрела огня"):
+                return messages, False, target
+            dmg = self.get_spell_damage(player, 1.0)
+            target.hp -= dmg
+            messages.append(self.make_log_entry(f"🔥 {player.name} выпускает огненную стрелу и наносит {dmg} урона.", category="magic_fire_normal"))
+            if random.randint(1, 100) <= 50:
+                burn_damage = max(1, int(dmg * 0.5))
+                self.apply_burning(target, burn_damage)
+                messages.append(self.make_log_entry(f"🔥 {target.name} подожжён и будет получать по {burn_damage} урона ещё 2 хода.", category="magic_fire_normal"))
+            hit_success = True
+        elif spell_id == "fire_wall":
+            player.fire_wall_turns = 2
+            player.fire_wall_fresh = True
+            actual_target = player
+            hit_success = True
+            messages.append(self.make_log_entry(f"🔥 {player.name} воздвигает вокруг себя стену огня на 2 хода.", category="magic_fire_normal"))
+        elif spell_id == "supernova":
+            if self.try_spell_dodge(player, target, messages, "Сверхновая"):
+                return messages, False, target
+            dmg = self.get_spell_damage(player, 1.5)
+            target.hp -= dmg
+            hit_success = True
+            messages.append(self.make_log_entry(f"☀ {player.name} вызывает сверхновую и обрушивает {dmg} урона на {target.name}!", category="magic_fire_exalted"))
+            for other in [p for p in self.players if p.hp > 0 and p != target]:
+                if random.randint(1, 100) <= 50:
+                    if self.try_spell_dodge(player, other, messages, "осколков сверхновой"):
+                        continue
+                    other.hp -= dmg
+                    messages.append(self.make_log_entry(f"💥 Взрыв задевает {other.name}: -{dmg} HP", category="magic_fire_exalted"))
+        elif spell_id == "phoenix":
+            actual_target = player
+            roll = random.randint(1, 100)
+            if roll <= 70:
+                restored = max(0, player.max_hp - player.hp)
+                player.hp = max(player.hp, player.max_hp)
+                hit_success = restored > 0
+                messages.append(self.make_log_entry(f"🕊 {player.name} пробуждает Феникса и восстанавливает {restored} HP!", category="magic_fire_exalted"))
+            elif roll <= 85:
+                player.hp = 0
+                messages.append(self.make_log_entry(f"🔥 {player.name} не удерживает пламя Феникса и сгорает дотла!", category="magic_fire_exalted"))
+            else:
+                messages.append(self.make_log_entry(f"✨ Пламя Феникса не отвечает {player.name}.", category="magic_fire_exalted"))
+        elif spell_id == "heal":
+            actual_target = player
+            heal_amount = player.intellect
+            if random.randint(1, 100) <= 25:
+                restored = max(0, player.max_hp - player.hp)
+                player.hp = max(player.hp, player.max_hp)
+                messages.append(self.make_log_entry(f"💧 {player.name} применяет исцеление и восстанавливает {restored} HP!", category="magic_water_normal"))
+            else:
+                restored = heal_amount
+                player.hp += heal_amount
+                messages.append(self.make_log_entry(f"💧 {player.name} восстанавливает {restored} HP.", category="magic_water_normal"))
+            hit_success = restored > 0
+        elif spell_id == "ice_arrow":
+            if self.try_spell_dodge(player, target, messages, "Ледяная стрела"):
+                return messages, False, target
+            dmg = self.get_spell_damage(player, 1.0)
+            target.hp -= dmg
+            hit_success = True
+            messages.append(self.make_log_entry(f"🧊 {player.name} выпускает ледяную стрелу и наносит {dmg} урона.", category="magic_water_normal"))
+            if random.randint(1, 100) <= 20:
+                self.apply_freeze(target, 1)
+                messages.append(self.make_log_entry(f"🧊 {target.name} заморожен на 1 ход!", category="magic_water_normal"))
+        elif spell_id == "water_essence":
+            actual_target = player
+            if random.randint(1, 100) <= 80:
+                restored = max(0, player.max_hp - player.hp)
+                player.hp = max(player.hp, player.max_hp)
+                hit_success = restored > 0
+                messages.append(self.make_log_entry(f"🌊 {player.name} раскрывает Суть воды и восстанавливает {restored} HP!", category="magic_water_exalted"))
+                if random.randint(1, 100) <= 60:
+                    healed_targets = []
+                    for other in self.players:
+                        if other.hp > 0:
+                            other.hp = max(other.hp, other.max_hp)
+                            healed_targets.append(other.name)
+                    messages.append(self.make_log_entry(f"🌊 Волна гармонии исцеляет всех живых бойцов: {', '.join(healed_targets)}.", category="magic_water_exalted"))
+            else:
+                messages.append(self.make_log_entry(f"🌊 Поток ускользает от {player.name}, и Суть воды не срабатывает.", category="magic_water_exalted"))
+        elif spell_id == "ice_spear":
+            if self.try_spell_dodge(player, target, messages, "Ледяное копьё"):
+                return messages, False, target
+            dmg = self.get_spell_damage(player, 2.0)
+            target.hp -= dmg
+            hit_success = True
+            messages.append(self.make_log_entry(f"❄ {player.name} пронзает {target.name} ледяным копьём на {dmg} урона.", category="magic_water_exalted"))
+            freeze_proc = random.randint(1, 100) <= 20
+            if freeze_proc and target.frozen_turns > 0:
+                if random.randint(1, 100) <= 33:
+                    target.hp = 0
+                    messages.append(self.make_log_entry(f"🧊 {target.name} уже был заморожен и раскалывается на куски!", category="magic_water_exalted"))
+                else:
+                    bonus_damage = player.intellect
+                    target.hp -= bonus_damage
+                    messages.append(self.make_log_entry(f"🧊 Повторная заморозка не раскалывает {target.name}, но наносит ещё {bonus_damage} урона.", category="magic_water_exalted"))
+            elif freeze_proc:
+                self.apply_freeze(target, 1)
+                messages.append(self.make_log_entry(f"🧊 {target.name} заморожен на 1 ход!", category="magic_water_exalted"))
+
+        return messages, hit_success, actual_target
+
+    def perform_loot_action(self, player):
+        messages = [self.make_log_entry(f"{player.name} ищет предмет", category="action", actor=player.name, verb="ищет предмет", indent=True)]
+        luck_backup = player.luck
+        if player.disarmed_turns > 0:
+            player.luck -= 20
+        loot_result = loot(player)
+        player.luck = luck_backup
+        if isinstance(loot_result, str) and loot_result:
+            messages.append(self.make_log_entry(f"🎒 {player.name} {loot_result}"))
+        else:
+            messages.append(self.make_log_entry(f"🎒 {player.name} ничего не нашёл"))
+        return messages
+
+    def get_spell_by_button_index(self, player, index):
+        spells = self.get_spells_for_player(player, self.spell_tier)
+        if 0 <= index < len(spells):
+            return spells[index]
+        return None
+
+    def toggle_spell_menu(self):
+        if self.spell_tier == "exalted":
+            return
+        self.spell_menu_open = not self.spell_menu_open
+
+    def perform_spell_cast(self, player, spell, target=None):
+        spell_id = spell["id"]
+        path_key = "fire" if player.magic_path == "Путь огня" else "water"
+        category = f"magic_{path_key}_{self.spell_tier}"
+        requires_target = spell.get("target") == "enemy"
+        if requires_target and (target is None or target.hp <= 0):
+            self.append_log("Сначала выберите цель для заклинания", category="warning")
+            return False
+
+        actual_target = target if requires_target else player
+        messages, hit_success, result_target = self.perform_spell_action(player, spell_id, actual_target, self.spell_tier)
+        shown_target = actual_target.name if requires_target and actual_target else None
+        self.append_log(
+            f"{player.name} колдует {spell['name']}",
+            category=category,
+            actor=player.name,
+            verb=f"колдует {spell['name']}",
+            target=shown_target,
+            target_hit=hit_success if requires_target else None,
+            indent=True,
+        )
+        if messages:
+            self.log.extend(messages)
+        self.hit_target = result_target
+        self.hit_timer = 10 if result_target else 0
+        self.normalize_health()
+
+        if self.spell_tier == "normal" and self.maybe_trigger_insight(player):
+            return True
+
+        self.advance_turn()
+        return True
+
+    def handle_battle_events(self, events):
+        current = self.players[self.current_turn]
+
+        for event in events:
+            if self.show_info_idx is not None:
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                    self.show_info_idx = None
+                    return
+                if self.close_popup_rect and self.close_popup_rect.collidepoint(getattr(event, "pos", (-1, -1))):
+                    if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                        self.show_info_idx = None
+                        return
+                continue
+
+            if current.is_ai:
+                continue
+
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                for idx, rect in enumerate(self.info_rects):
+                    if rect and rect.collidepoint(event.pos):
+                        self.show_info_idx = idx
+                        return
+
+                for player, rect in self.get_target_rects():
+                    if rect.collidepoint(event.pos) and player != current and player.hp > 0:
+                        self.selected_target = player
+                        return
+
+                if self.spell_menu_open:
+                    for index, button in enumerate(self.spell_buttons):
+                        spell = self.get_spell_by_button_index(current, index)
+                        if spell and button.clicked(event):
+                            self.perform_spell_cast(current, spell, self.selected_target)
+                            return
+
+                spells_only = self.spell_menu_open and self.spell_tier == "exalted"
+
+                if self.battle_buttons[0].clicked(event, enabled=not spells_only):
+                    self.reset_spell_state()
+                    self.perform_player_action("attack")
+                    return
+                if self.battle_buttons[1].clicked(event, enabled=not spells_only):
+                    self.reset_spell_state()
+                    self.perform_player_action("cautious")
+                    return
+                if self.battle_buttons[2].clicked(event, enabled=not spells_only):
+                    self.reset_spell_state()
+                    self.perform_player_action("special")
+                    return
+                if self.battle_buttons[3].clicked(event, enabled=not spells_only):
+                    self.reset_spell_state()
+                    self.perform_player_action("loot")
+                    return
+                if self.battle_buttons[4].clicked(event, enabled=not spells_only or self.spell_menu_open):
+                    self.toggle_spell_menu()
+                    return
+
+    def perform_player_action(self, action_name):
+        player = self.players[self.current_turn]
+
+        if action_name in {"attack", "cautious", "special"} and (self.selected_target is None or self.selected_target.hp <= 0):
+            self.append_log("Сначала выберите цель", category="warning")
+            return
+
+        if action_name == "attack":
+            messages, hit_success = self.execute_attack(player, self.selected_target, True)
+            self.append_log(
+                f"{player.name} атакует {self.selected_target.name}",
+                category="action",
+                actor=player.name,
+                verb="атакует",
+                target=self.selected_target.name,
+                target_hit=hit_success,
+                indent=True,
+            )
+            self.hit_target = self.selected_target
+            self.hit_timer = 10
+            if messages:
+                self.log.extend(messages)
+        elif action_name == "cautious":
+            messages, hit_success = self.execute_attack(player, self.selected_target, False, True)
+            self.append_log(
+                f"{player.name} осторожно атакует {self.selected_target.name}",
+                category="action",
+                actor=player.name,
+                verb="осторожно атакует",
+                target=self.selected_target.name,
+                target_hit=hit_success,
+                indent=True,
+            )
+            self.hit_target = self.selected_target
+            self.hit_timer = 10
+            if messages:
+                self.log.extend(messages)
+        elif action_name == "special":
+            messages, hit_success, actual_target = self.perform_special_action(player, self.selected_target)
+            self.append_log(
+                f"{player.name} использует спец против {self.selected_target.name}",
+                category="action",
+                actor=player.name,
+                verb="использует спец против",
+                target=self.selected_target.name,
+                target_hit=hit_success,
+                indent=True,
+            )
+            self.hit_target = actual_target
+            self.hit_timer = 10 if actual_target else 0
+            if messages:
+                self.log.extend(messages)
+        elif action_name == "loot":
+            self.log.extend(self.perform_loot_action(player))
+
+        self.normalize_health()
+        if self.bonus_turn_player is player:
+            self.advance_turn()
+            return
+        if self.try_grant_assassin_bonus_turn(player):
+            return
+        self.advance_turn()
+
+    def perform_ai_turn(self, player):
+        alive_targets = [x for x in self.players if x.hp > 0 and x != player]
+        if not alive_targets:
+            return
+
+        target = min(alive_targets, key=lambda x: x.hp)
+        roll = random.randint(1, 100)
+
+        if roll <= 20:
+            self.log.extend(self.perform_loot_action(player))
+        elif roll <= 40:
+            normal_spells = self.get_spells_for_player(player, "normal")
+            if normal_spells:
+                spell = random.choice(normal_spells)
+                chosen_target = target if spell.get("target") == "enemy" else player
+                self.spell_tier = "normal"
+                self.spell_menu_open = True
+                self.perform_spell_cast(player, spell, chosen_target)
+                if self.state == self.BATTLE and self.current_turn < len(self.players) and self.players[self.current_turn] == player and self.spell_tier == "exalted" and player.hp > 0:
+                    exalted_spells = self.get_spells_for_player(player, "exalted")
+                    if exalted_spells:
+                        exalted_spell = random.choice(exalted_spells)
+                        chosen_target = target if exalted_spell.get("target") == "enemy" and target.hp > 0 else player
+                        self.perform_spell_cast(player, exalted_spell, chosen_target)
+                return
+            self.log.extend(self.perform_loot_action(player))
+        elif roll <= 45:
+            messages, hit_success, actual_target = self.perform_special_action(player, target)
+            self.append_log(
+                f"{player.name} использует спец против {target.name}",
+                category="action",
+                actor=player.name,
+                verb="использует спец против",
+                target=target.name,
+                target_hit=hit_success,
+                indent=True,
+            )
+            self.hit_target = actual_target
+            self.hit_timer = 10 if actual_target else 0
+            if messages:
+                self.log.extend(messages)
+        elif roll <= 65:
+            messages, hit_success = self.execute_attack(player, target, False, True)
+            self.append_log(
+                f"{player.name} осторожно атакует {target.name}",
+                category="action",
+                actor=player.name,
+                verb="осторожно атакует",
+                target=target.name,
+                target_hit=hit_success,
+                indent=True,
+            )
+            self.hit_target = target
+            self.hit_timer = 10
+            if messages:
+                self.log.extend(messages)
+        else:
+            messages, hit_success = self.execute_attack(player, target, True)
+            self.append_log(
+                f"{player.name} атакует {target.name}",
+                category="action",
+                actor=player.name,
+                verb="атакует",
+                target=target.name,
+                target_hit=hit_success,
+                indent=True,
+            )
+            self.hit_target = target
+            self.hit_timer = 10
+            if messages:
+                self.log.extend(messages)
+
+        self.normalize_health()
+        if self.bonus_turn_player is player:
+            self.advance_turn()
+            return
+        if self.try_grant_assassin_bonus_turn(player):
+            return
+        self.advance_turn()
+
+    def normalize_health(self):
+        for player in self.players:
+            player.hp = max(0, player.hp)
+
+    def finish_battle(self, winner_name):
+        self.winner_name = winner_name
+        self.scores[winner_name] = self.scores.get(winner_name, 0) + 1
+        self.champion = self.scores[winner_name] >= 3
+        self.set_state(self.POST_BATTLE)
+
+    def handle_post_battle_events(self, events):
+        for event in events:
+            if not self.champion and self.post_rematch_button.clicked(event):
+                self.rematch_mode = True
+                self.start_setup_flow(allow_back_to_names=False)
+                return
+            if self.post_restart_button.clicked(event):
+                self.reset_to_menu()
+                return
+            if self.post_quit_button.clicked(event):
+                self.running = False
+                return
+
+    def reset_to_menu(self):
+        self.player_count = 0
+        self.human_names = []
+        self.player_builds = []
+        self.scores = {}
+        self.rematch_mode = False
+        self.name_index = 0
+        self.name_buffer = ""
+        self.selected_class = None
+        self.selected_magic_path = None
+        self.selected_stats = []
+        self.players = []
+        self.log = []
+        self.selected_target = None
+        self.show_info_idx = None
+        self.winner_name = ""
+        self.champion = False
+        self.reset_spell_state()
+        self.set_state(self.MENU)
+
+    def render_menu(self):
+        self.screen.fill(DARK)
+        panel = pygame.Rect(620, 120, 560, 650)
+        pygame.draw.rect(self.screen, (55, 55, 55), panel, border_radius=20)
+        pygame.draw.rect(self.screen, WHITE, panel, 3, border_radius=20)
+
+        title = self.title_font.render("RPG ARENA", True, WHITE)
+        self.screen.blit(title, (705, 145))
+
+        for button in self.menu_buttons:
+            button.draw(self.screen, self.medium_font)
+        self.menu_exit_button.draw(self.screen, self.medium_font)
+
+    def render_name_input(self):
+        self.screen.fill(DARK)
+
+        panel = pygame.Rect(330, 110, 1140, 760)
+        pygame.draw.rect(self.screen, PANEL, panel, border_radius=24)
+        pygame.draw.rect(self.screen, WHITE, panel, 3, border_radius=24)
+
+        title = self.big_font.render(f"Игрок {self.name_index + 1}: введи имя", True, WHITE)
+        self.screen.blit(title, (560, 160))
+
+        hint = self.small_font.render("Безопасный режим: ввод имени только экранной клавиатурой, чтобы окно не зависало.", True, (200, 200, 200))
+        self.screen.blit(hint, (445, 245))
+
+        pygame.draw.rect(self.screen, GRAY, (510, 300, 780, 90), border_radius=12)
+        txt_surface = self.medium_font.render(self.name_buffer, True, WHITE)
+        self.screen.blit(txt_surface, (535, 324))
+
+        if pygame.time.get_ticks() % 1000 < 500 and len(self.name_buffer) < 12:
+            cursor_x = 535 + txt_surface.get_width() + 4
+            pygame.draw.line(self.screen, WHITE, (cursor_x, 322), (cursor_x, 368), 3)
+
+        for _, button in self.name_key_buttons:
+            button.draw(self.screen, self.small_font, enabled=len(self.name_buffer) < 12)
+
+        self.name_space_button.draw(self.screen, self.font, enabled=len(self.name_buffer) < 12 and bool(self.name_buffer))
+        self.name_delete_button.draw(self.screen, self.font, enabled=bool(self.name_buffer))
+        self.name_clear_button.draw(self.screen, self.font)
+        self.name_confirm_button.draw(self.screen, self.font, enabled=bool(self.name_buffer.strip()))
+        self.name_back_button.draw(self.screen, self.font)
+
+    def render_class_select(self):
+        self.screen.fill(DARK)
+
+        left_panel = pygame.Rect(70, 120, 400, 690)
+        right_panel = pygame.Rect(520, 120, 1210, 690)
+        pygame.draw.rect(self.screen, PANEL, left_panel, border_radius=20)
+        pygame.draw.rect(self.screen, PANEL, right_panel, border_radius=20)
+        pygame.draw.rect(self.screen, WHITE, left_panel, 3, border_radius=20)
+        pygame.draw.rect(self.screen, WHITE, right_panel, 3, border_radius=20)
+
+        player_name = self.human_names[self.setup_index]
+        title = self.big_font.render(f"Выбор класса: {player_name}", True, WHITE)
+        self.screen.blit(title, (610, 50))
+
+        for button in self.class_buttons:
+            button.draw(self.screen, self.font, active=(button.text == self.selected_class))
+
+        if self.selected_class:
+            data = self.class_data[self.selected_class]
+            preview = self.get_class_preview_stats(self.selected_class)
+            class_color = self.get_class_color(self.selected_class)
+            image = self.icons.get(self.selected_class)
+            if image:
+                self.screen.blit(image, (1320, 170))
+
+            y_text = 190
+            class_title = self.class_name_font.render(self.selected_class.upper(), True, class_color)
+            self.screen.blit(class_title, (620, 125))
+
+            lines = [
+                f"Сила: {preview['strength']} ({preview['damage']} урона)",
+                f"Выносливость: {preview['stamina']} ({preview['hp']} HP)",
+                f"Ловкость: {preview['agility']} ({preview['dodge']}% уклон)",
+                f"Удача: {preview['luck']} ({preview['crit']}% крит)",
+                f"Инициатива: {preview['initiative']} (ходит раньше)",
+                f"Интеллект: {preview['intellect']} ({preview['insight']}% прозрения)",
+                "",
+                "Пассивная способность:",
+                data["passive"],
+                "Активная способность:",
+                data["active"],
+                "",
+                data["desc"],
+            ]
+            for line in lines:
+                if not line:
+                    y_text += 20
+                    continue
+                wrapped = self.wrap_text(line, self.font, 650)
+                line_color = self.get_info_line_color(line, self.selected_class)
+                for part in wrapped:
+                    txt = self.font.render(part, True, line_color)
+                    self.screen.blit(txt, (620, y_text))
+                    y_text += 40
+
+        self.class_confirm_button.draw(self.screen, self.font, enabled=bool(self.selected_class))
+
+    def render_magic_select(self):
+        self.screen.fill(DARK)
+
+        left_panel = pygame.Rect(70, 120, 420, 720)
+        right_panel = pygame.Rect(540, 120, 1190, 720)
+        pygame.draw.rect(self.screen, PANEL, left_panel, border_radius=20)
+        pygame.draw.rect(self.screen, PANEL, right_panel, border_radius=20)
+        pygame.draw.rect(self.screen, WHITE, left_panel, 3, border_radius=20)
+        pygame.draw.rect(self.screen, WHITE, right_panel, 3, border_radius=20)
+
+        player_name = self.human_names[self.setup_index]
+        title = self.big_font.render(f"Мистический путь: {player_name}", True, WHITE)
+        self.screen.blit(title, (520, 50))
+
+        for button in self.magic_buttons:
+            button.draw(self.screen, self.font, active=(button.text == self.selected_magic_path))
+
+        if self.selected_magic_path:
+            data = self.magic_data[self.selected_magic_path]
+            y_text = 208
+            path_color = (255, 195, 70) if self.selected_magic_path == "Путь огня" else LIGHT_BLUE
+            normal_color = (255, 220, 70) if self.selected_magic_path == "Путь огня" else LIGHT_BLUE
+            exalted_color = GOLD if self.selected_magic_path == "Путь огня" else (90, 150, 255)
+            path_title = self.class_name_font.render(self.selected_magic_path.upper(), True, path_color)
+            self.screen.blit(path_title, (620, 145))
+
+            lines = [
+                data["desc"],
+                "",
+                "Обычные заклинания:",
+            ]
+            for spell in data["normal"]:
+                lines.append(f"{spell['name']} — {spell['desc']}")
+            lines.extend(["", "Возвышенные заклинания:"])
+            for spell in data["exalted"]:
+                lines.append(f"{spell['name']} — {spell['desc']}")
+
+            for line in lines:
+                if not line:
+                    y_text += 18
+                    continue
+                color = WHITE
+                if line == "Обычные заклинания:":
+                    color = normal_color
+                elif line == "Возвышенные заклинания:":
+                    color = exalted_color
+                wrapped = self.wrap_text(line, self.font, 980)
+                for part in wrapped:
+                    txt = self.font.render(part, True, color)
+                    self.screen.blit(txt, (620, y_text))
+                    y_text += 38
+
+        self.magic_back_button.draw(self.screen, self.font)
+        self.magic_confirm_button.draw(self.screen, self.font, enabled=bool(self.selected_magic_path))
+
+    def render_stat_select(self):
+        self.screen.fill(DARK)
+
+        left_panel = pygame.Rect(70, 120, 420, 720)
+        right_panel = pygame.Rect(540, 120, 1190, 720)
+        desc_panel = pygame.Rect(570, 170, 560, 560)
+        preview_panel = pygame.Rect(1170, 170, 520, 560)
+        pygame.draw.rect(self.screen, PANEL, left_panel, border_radius=20)
+        pygame.draw.rect(self.screen, PANEL, right_panel, border_radius=20)
+        pygame.draw.rect(self.screen, (35, 35, 45), desc_panel, border_radius=18)
+        pygame.draw.rect(self.screen, (35, 35, 45), preview_panel, border_radius=18)
+        pygame.draw.rect(self.screen, WHITE, left_panel, 3, border_radius=20)
+        pygame.draw.rect(self.screen, WHITE, right_panel, 3, border_radius=20)
+        pygame.draw.rect(self.screen, WHITE, desc_panel, 2, border_radius=18)
+        pygame.draw.rect(self.screen, WHITE, preview_panel, 2, border_radius=18)
+
+        player_name = self.human_names[self.setup_index]
+        title = self.big_font.render(f"Какой ты воин, {player_name}?", True, WHITE)
+        self.screen.blit(title, (560, 50))
+
+        for button in self.stat_buttons:
+            button.draw(self.screen, self.font, active=(button.text in self.selected_stats))
+
+        desc_title = self.font.render("Суть характеристик", True, WHITE)
+        self.screen.blit(desc_title, (610, 185))
+
+        y_text = 245
+        for name, desc in self.stat_data.items():
+            if name == "Интеллектуальный":
+                txt = self.font.render(f"{name} — шанс прозрения", True, WHITE)
+                self.screen.blit(txt, (610, y_text))
+                txt2 = self.font.render("                 и сила магии", True, WHITE)
+                self.screen.blit(txt2, (610, y_text + 30))
+                y_text += 64
+            else:
+                txt = self.font.render(f"{name} — {desc}", True, WHITE)
+                self.screen.blit(txt, (610, y_text))
+                y_text += 64
+
+        if self.selected_class:
+            preview = self.get_stat_selection_preview(self.selected_class, self.selected_stats)
+            class_color = self.get_class_color(self.selected_class)
+            preview_title = self.font.render("Текущие характеристики", True, WHITE)
+            class_title = self.class_name_font.render(self.selected_class.upper(), True, class_color)
+            self.screen.blit(preview_title, (1200, 185))
+            self.screen.blit(class_title, (1200, 230))
+
+            preview_lines = [
+                f"Сила: {preview['strength']} ({preview['damage']} урона)",
+                f"Выносливость: {preview['stamina']} ({preview['hp']} HP)",
+                f"Ловкость: {preview['agility']} ({preview['dodge']}% уклон)",
+                f"Удача: {preview['luck']} ({preview['crit']}% крит)",
+                f"Инициатива: {preview['initiative']}",
+                f"Интеллект: {preview['intellect']} ({preview['insight']}% прозрения)",
+            ]
+            preview_y = 300
+            for line in preview_lines:
+                txt = self.font.render(line, True, WHITE)
+                self.screen.blit(txt, (1200, preview_y))
+                preview_y += 62
+
+        selected_text = self.medium_font.render(f"Выбрано: {len(self.selected_stats)}/2", True, WHITE)
+        self.screen.blit(selected_text, (610, 650))
+
+        self.stat_back_button.draw(self.screen, self.font)
+        self.stat_confirm_button.draw(self.screen, self.font, enabled=len(self.selected_stats) == 2)
+
+    def get_target_rects(self):
+        rects = []
+        for i, player in enumerate(self.players):
+            x, y = 50, 50 + i * 120
+            rects.append((player, pygame.Rect(x - 18, y, 238, 80)))
+        return rects
+
+    def draw_player_card(self, player, x, y, highlight=False, dead=False, idx=0):
+        rect_x = x - 18
+        player_rect = pygame.Rect(rect_x, y, 238, 80)
+        if dead:
+            pygame.draw.rect(self.screen, (80, 80, 80), player_rect)
+        if highlight:
+            pygame.draw.rect(self.screen, GREEN, player_rect, 4)
+
+        name_font = pygame.font.SysFont("arial", 32)
+        name = name_font.render(player.name, True, WHITE if not dead else (180, 180, 180))
+        self.screen.blit(name, (x, y + 2))
+
+        icon = self.icons.get(player.role)
+        if icon:
+            small_icon = pygame.transform.scale(icon, (80, 80))
+            self.screen.blit(small_icon, (x + 220, y))
+
+        info_x = x + 308
+        info_y = y + 22
+        pygame.draw.circle(self.screen, SKY, (info_x + 14, info_y + 14), 14)
+        pygame.draw.circle(self.screen, WHITE, (info_x + 14, info_y + 14), 14, 2)
+        i_font = pygame.font.SysFont("arial", 20, bold=True)
+        i_txt = i_font.render("i", True, WHITE)
+        i_rect = i_txt.get_rect(center=(info_x + 14, info_y + 13))
+        self.screen.blit(i_txt, i_rect)
+        self.info_rects[idx] = pygame.Rect(info_x, info_y, 28, 28)
+
+        hp_bar_height = 12
+        pygame.draw.rect(self.screen, RED, (x, y + 40, 200, hp_bar_height))
+        hp_width = int(200 * (player.hp / player.max_hp)) if player.max_hp else 0
+        if not dead:
+            pygame.draw.rect(self.screen, GREEN, (x, y + 40, hp_width, hp_bar_height))
+
+        hp_font = pygame.font.SysFont("arial", 22)
+        hp_text = hp_font.render(f"{player.hp}/{player.max_hp}", True, WHITE if not dead else (180, 180, 180))
+        self.screen.blit(hp_text, (x + 60, y + 54))
+
+    def render_battle(self):
+        self.screen.fill(DARK)
+
+        arena_title = self.big_font.render(f"Арена: {self.arena_name}", True, WHITE)
+        self.screen.blit(arena_title, (650, 20))
+
+        self.info_rects = [None] * len(self.players)
+        for i, player in enumerate(self.players):
+            x, y = 50, 50 + i * 120
+            current = player == self.players[self.current_turn] and player.hp > 0
+            dead = player.hp <= 0
+            self.draw_player_card(player, x, y, highlight=current, dead=dead, idx=i)
+
+            if self.selected_target == player:
+                pygame.draw.rect(self.screen, (255, 255, 0), pygame.Rect(x - 18, y, 238, 80), 4)
+            if self.hit_timer > 0 and self.hit_target == player:
+                pygame.draw.rect(self.screen, (255, 0, 0), pygame.Rect(x - 18, y, 238, 80), 6)
+
+        self.render_log()
+        self.render_battle_descriptions()
+
+        if not self.players[self.current_turn].is_ai:
+            spells_only = self.spell_menu_open and self.spell_tier == "exalted"
+            for index, button in enumerate(self.battle_buttons):
+                enabled = not spells_only or index == 4
+                button.draw(self.screen, self.medium_font, enabled=enabled, active=(index == 4 and self.spell_menu_open))
+
+            if self.spell_menu_open:
+                spell_title = "Возвышенная магия" if self.spell_tier == "exalted" else "Обычная магия"
+                title_surface = self.font.render(spell_title, True, LIGHT_PINK if self.spell_tier == "exalted" else LIGHT_BLUE)
+                self.screen.blit(title_surface, (1375, 545))
+                spells = self.get_spells_for_player(self.players[self.current_turn], self.spell_tier)
+                hovered_spell = None
+                for index, button in enumerate(self.spell_buttons):
+                    if index < len(spells):
+                        button.text = spells[index]["name"]
+                        self.draw_spell_button(button, self.font, self.players[self.current_turn].magic_path, self.spell_tier)
+                        if button.rect.collidepoint(pygame.mouse.get_pos()):
+                            hovered_spell = spells[index]
+                if hovered_spell:
+                    wrapped = self.wrap_text(hovered_spell["desc"], self.small_font, 340)
+                    box_y = 770
+                    for row, part in enumerate(wrapped[:4]):
+                        txt = self.small_font.render(part, True, WHITE)
+                        self.screen.blit(txt, (1350, box_y + row * 22))
+        else:
+            thinking = self.medium_font.render("AI обдумывает ход...", True, WHITE)
+            self.screen.blit(thinking, (120, 620))
+
+        if self.show_info_idx is not None:
+            self.close_popup_rect = self.draw_info_popup(self.players[self.show_info_idx])
+        else:
+            self.close_popup_rect = None
+
+    def render_log(self):
+        y_log = 30
+        log_x = WIDTH - 600
+        log_width = 550
+        log_height = 520
+        pygame.draw.rect(self.screen, (40, 40, 40), (log_x - 10, y_log - 10, log_width + 20, log_height), border_radius=12)
+
+        max_log_width = log_width - 20
+        for entry in self.log[-10:]:
+            y_log = self.render_log_entry(entry, log_x, y_log, max_log_width)
+            if y_log > 475:
+                break
+
+    def render_battle_descriptions(self):
+        descriptions = [
+            "Обычная атака по выбранной цели.",
+            "Атака с меньшим уроном, но с шансом уклониться.",
+            self.class_data.get(self.players[self.current_turn].role, {}).get("skill", "Спец-удар персонажа."),
+            "Попытаться найти предмет.",
+            "Открыть выбор заклинаний мистического пути.",
+        ]
+        desc_y = 710
+        for i, text in enumerate(descriptions):
+            x = [70, 320, 570, 820, 1070][i]
+            words = text.split(" ")
+            lines = []
+            current_line = ""
+            for word in words:
+                test = (current_line + " " + word).strip()
+                if self.small_font.size(test)[0] <= 220:
+                    current_line = test
+                else:
+                    if current_line:
+                        lines.append(current_line)
+                    current_line = word
+            if current_line:
+                lines.append(current_line)
+            for j, line in enumerate(lines):
+                txt = self.small_font.render(line, True, WHITE)
+                self.screen.blit(txt, (x + 10, desc_y + j * 28))
+
+    def draw_info_popup(self, player):
+        overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 150))
+        self.screen.blit(overlay, (0, 0))
+
+        popup_w, popup_h = 780, 760
+        popup_x = (WIDTH - popup_w) // 2
+        popup_y = (HEIGHT - popup_h) // 2
+        popup_rect = pygame.Rect(popup_x, popup_y, popup_w, popup_h)
+
+        pygame.draw.rect(self.screen, PANEL, popup_rect, border_radius=18)
+        pygame.draw.rect(self.screen, WHITE, popup_rect, 3, border_radius=18)
+
+        title = self.medium_font.render(player.name, True, WHITE)
+        self.screen.blit(title, (popup_x + 30, popup_y + 25))
+
+        status_lines = []
+        if player.disarmed_turns > 0:
+            status_lines.append("Эффект: обезоружен — активка заблокирована, урон x0.5, пассивка выкл, лут -20%.")
+        if player.arm_severed:
+            status_lines.append("Эффект: отрублена рука — урон снижен вдвое до конца боя.")
+        if player.leg_severed:
+            status_lines.append("Эффект: отрублена нога — инициатива снижена до 1.")
+        if player.bleeding > 0:
+            status_lines.append(f"Эффект: кровотечение ещё {player.bleeding} ход(а), {player.bleed_damage} урона за тик.")
+        if player.burning > 0:
+            status_lines.append(f"Эффект: горение ещё {player.burning} ход(а), {player.burn_damage} урона за тик.")
+        if player.stunned > 0:
+            status_lines.append("Эффект: оглушён — пропустит следующий ход.")
+        if player.frozen_turns > 0:
+            status_lines.append("Эффект: заморожен — пропустит следующий ход.")
+        if player.fire_wall_turns > 0:
+            status_lines.append(f"Эффект: стена огня активна ещё {player.fire_wall_turns} ход(а).")
+        if not status_lines:
+            status_lines.append("Эффекты: активных эффектов сейчас нет.")
+
+        lines = [
+            f"Класс: {player.role or 'Не выбран'}",
+            f"Мистический путь: {player.magic_path or 'Не выбран'}",
+            f"HP: {player.hp}/{player.max_hp}",
+            f"Сила: {player.strength} (наносит {player.damage} урона)",
+            f"Выносливость: {player.stamina} ({player.max_hp} HP)",
+            f"Ловкость: {player.agility} ({player.dodge}% уклон)",
+            f"Удача: {player.luck} ({player.crit}% крит)",
+            f"Инициатива: {player.initiative}",
+            f"Интеллект: {player.intellect} ({self.get_insight_chance(player)}% прозрения)",
+            "Инвентарь: пусто",
+            "",
+            "Пассивная способность:",
+            self.class_data.get(player.role, {}).get("passive", "Нет"),
+            "Активная способность:",
+            self.class_data.get(player.role, {}).get("active", "Нет"),
+            "",
+            "Текущие эффекты:",
+        ]
+
+        y_text = popup_y + 95
+        for line in lines + status_lines:
+            if not line:
+                y_text += 12
+                continue
+            wrapped = self.wrap_text(line, self.small_font if len(line) > 55 else self.font, popup_w - 60)
+            line_color = self.get_info_line_color(line, player.role, player.magic_path)
+            for part in wrapped:
+                font = self.small_font if len(part) > 50 else self.font
+                txt = font.render(part, True, line_color)
+                self.screen.blit(txt, (popup_x + 30, y_text))
+                y_text += 28
+
+        close_rect = pygame.Rect(popup_x + popup_w - 150, popup_y + popup_h - 75, 120, 48)
+        pygame.draw.rect(self.screen, RED, close_rect, border_radius=10)
+        close_txt = self.font.render("Закрыть", True, WHITE)
+        self.screen.blit(close_txt, (close_rect.x + 8, close_rect.y + 7))
+        return close_rect
+
+    def render_post_battle(self):
+        self.screen.fill(DARK)
+
+        overlay_rect = pygame.Rect(250, 110, WIDTH - 500, HEIGHT - 220)
+        pygame.draw.rect(self.screen, PANEL, overlay_rect, border_radius=24)
+        pygame.draw.rect(self.screen, GOLD, overlay_rect, 4, border_radius=24)
+
+        if self.champion:
+            crown_points = [
+                (WIDTH // 2 - 120, 145),
+                (WIDTH // 2 - 70, 85),
+                (WIDTH // 2 - 20, 145),
+                (WIDTH // 2 + 30, 75),
+                (WIDTH // 2 + 80, 145),
+                (WIDTH // 2 + 120, 120),
+                (WIDTH // 2 + 120, 165),
+                (WIDTH // 2 - 120, 165),
+            ]
+            pygame.draw.polygon(self.screen, GOLD, crown_points)
+            pygame.draw.circle(self.screen, (255, 240, 120), (WIDTH // 2 - 70, 88), 8)
+            pygame.draw.circle(self.screen, (255, 240, 120), (WIDTH // 2 + 30, 78), 8)
+            pygame.draw.circle(self.screen, (255, 240, 120), (WIDTH // 2 + 118, 122), 8)
+        winner_surface = self.hero_font.render(self.winner_name, True, GOLD)
+        winner_rect = winner_surface.get_rect(center=(WIDTH // 2, 245 if self.champion else 220))
+        self.screen.blit(winner_surface, winner_rect)
+
+        winner_score = self.scores.get(self.winner_name, 0)
+        if self.champion:
+            message = self.medium_font.render("непревзойдённый чемпион", True, WHITE)
+            score = self.font.render(f"Итог серии: {winner_score} победы", True, SILVER)
+            hint = self.small_font.render("Реванш недоступен: чемпион уже определён", True, SILVER)
+            self.screen.blit(message, message.get_rect(center=(WIDTH // 2, 345)))
+            self.screen.blit(score, score.get_rect(center=(WIDTH // 2, 410)))
+            self.screen.blit(hint, hint.get_rect(center=(WIDTH // 2, 470)))
+        else:
+            line1 = self.medium_font.render("одержал доблестную победу", True, WHITE)
+            line2 = self.medium_font.render("в суровой схватке", True, WHITE)
+            score = self.font.render(f"Побед у {self.winner_name}: {winner_score}/3", True, SILVER)
+            self.screen.blit(line1, line1.get_rect(center=(WIDTH // 2, 300)))
+            self.screen.blit(line2, line2.get_rect(center=(WIDTH // 2, 360)))
+            self.screen.blit(score, score.get_rect(center=(WIDTH // 2, 430)))
+
+        board_title = self.font.render("Счёт серии", True, WHITE)
+        self.screen.blit(board_title, (760, 500))
+
+        score_panel = pygame.Rect(700, 535, 400, max(90, len(self.scores) * 44 + 30))
+        pygame.draw.rect(self.screen, (35, 35, 45), score_panel, border_radius=16)
+        pygame.draw.rect(self.screen, (120, 120, 145), score_panel, 2, border_radius=16)
+
+        sorted_scores = sorted(self.scores.items(), key=lambda item: (-item[1], item[0]))
+        for idx, (name, wins) in enumerate(sorted_scores):
+            color = GOLD if idx == 0 else SILVER if idx == 1 else BRONZE if idx == 2 else WHITE
+            line = self.font.render(f"{idx + 1}. {name}: {wins}", True, color)
+            self.screen.blit(line, (735, 550 + idx * 40))
+
+        self.post_rematch_button.draw(self.screen, self.font, enabled=not self.champion)
+        self.post_restart_button.draw(self.screen, self.font)
+        self.post_quit_button.draw(self.screen, self.font)
+
+
+def run_game():
+    ArenaGame().run()

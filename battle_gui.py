@@ -2,13 +2,9 @@
 import pygame
 import sys
 import os
+from ui import WIDTH, HEIGHT, get_screen
 
 pygame.init()
-
-
-
-# Размеры окна боя
-WIDTH, HEIGHT = 1800, 900
 
 WHITE = (255,255,255)
 GRAY = (120,120,120)
@@ -80,6 +76,162 @@ def draw_player(screen, font, p, x, y, highlight=False, class_icons=None, dead=F
 
 
 
+def draw_player_info_popup(screen, player):
+    overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+    overlay.fill((0, 0, 0, 150))
+    screen.blit(overlay, (0, 0))
+
+    popup_w, popup_h = 520, 420
+    popup_x = (WIDTH - popup_w) // 2
+    popup_y = (HEIGHT - popup_h) // 2
+    popup_rect = pygame.Rect(popup_x, popup_y, popup_w, popup_h)
+
+    pygame.draw.rect(screen, (45,45,55), popup_rect, border_radius=18)
+    pygame.draw.rect(screen, WHITE, popup_rect, 3, border_radius=18)
+
+    title_font = pygame.font.SysFont("arial", 42, bold=True)
+    text_font = pygame.font.SysFont("arial", 30)
+
+    title = title_font.render(player.name, True, WHITE)
+    screen.blit(title, (popup_x + 30, popup_y + 25))
+
+    lines = [
+        f"Класс: {player.role or 'Не выбран'}",
+        f"HP: {player.hp}/{player.max_hp}",
+        f"Сила: {player.strength}",
+        f"Выносливость: {player.stamina}",
+        f"Ловкость: {player.agility}",
+        f"Удача: {player.luck}",
+        f"Инициатива: {player.initiative}",
+        f"Урон: {player.damage}",
+        f"Уклон: {player.dodge}%",
+        f"Крит: {player.crit}%",
+        "Инвентарь: " + (", ".join(map(str, player.inventory)) if player.inventory else "пусто"),
+    ]
+
+    for i, line in enumerate(lines):
+        txt = text_font.render(line, True, WHITE)
+        screen.blit(txt, (popup_x + 30, popup_y + 95 + i * 28))
+
+    close_rect = pygame.Rect(popup_x + popup_w - 140, popup_y + popup_h - 70, 110, 45)
+    pygame.draw.rect(screen, RED, close_rect, border_radius=10)
+    close_txt = text_font.render("Закрыть", True, WHITE)
+    screen.blit(close_txt, (close_rect.x + 10, close_rect.y + 7))
+
+    return close_rect
+
+
+def show_post_battle_screen(winner_name, scores, champion=False):
+    screen = get_screen("Итоги боя")
+
+    title_font = pygame.font.SysFont("arial", 88, bold=True)
+    text_font = pygame.font.SysFont("arial", 44)
+    small_font = pygame.font.SysFont("arial", 32)
+    hint_font = pygame.font.SysFont("arial", 28)
+
+    rematch_btn = Button("Реванш", 420, 720, 260, 75)
+    restart_btn = Button("Начать заново", 770, 720, 320, 75)
+    quit_btn = Button("Закрыть игру", 1180, 720, 300, 75)
+
+    winner_score = scores.get(winner_name, 0)
+
+    crown_points = [
+        (WIDTH // 2 - 120, 145),
+        (WIDTH // 2 - 70, 85),
+        (WIDTH // 2 - 20, 145),
+        (WIDTH // 2 + 30, 75),
+        (WIDTH // 2 + 80, 145),
+        (WIDTH // 2 + 120, 120),
+        (WIDTH // 2 + 120, 165),
+        (WIDTH // 2 - 120, 165),
+    ]
+
+    while True:
+        screen.fill(DARK)
+
+        overlay_rect = pygame.Rect(250, 110, WIDTH - 500, HEIGHT - 220)
+        pygame.draw.rect(screen, (45, 45, 55), overlay_rect, border_radius=24)
+        pygame.draw.rect(screen, (212, 175, 55), overlay_rect, 4, border_radius=24)
+
+        if champion:
+            pygame.draw.polygon(screen, (255, 215, 0), crown_points)
+            pygame.draw.circle(screen, (255, 240, 120), (WIDTH // 2 - 70, 88), 8)
+            pygame.draw.circle(screen, (255, 240, 120), (WIDTH // 2 + 30, 78), 8)
+            pygame.draw.circle(screen, (255, 240, 120), (WIDTH // 2 + 118, 122), 8)
+
+        winner_surface = title_font.render(winner_name, True, (255, 215, 0))
+        winner_rect = winner_surface.get_rect(center=(WIDTH // 2, 245 if champion else 220))
+        screen.blit(winner_surface, winner_rect)
+
+        if champion:
+            message_surface = text_font.render("непревзойдённый чемпион", True, WHITE)
+            champion_score = small_font.render(f"Итог серии: {winner_score} победы", True, (220, 220, 220))
+            hint_surface = hint_font.render("Реванш недоступен: чемпион уже определён", True, (210, 210, 210))
+            message_rect = message_surface.get_rect(center=(WIDTH // 2, 345))
+            score_rect = champion_score.get_rect(center=(WIDTH // 2, 410))
+            hint_rect = hint_surface.get_rect(center=(WIDTH // 2, 470))
+            screen.blit(message_surface, message_rect)
+            screen.blit(champion_score, score_rect)
+            screen.blit(hint_surface, hint_rect)
+        else:
+            message_surface = text_font.render("одержал доблестную победу", True, WHITE)
+            message_surface_2 = text_font.render("в суровой схватке", True, WHITE)
+            score_surface = small_font.render(f"Побед у {winner_name}: {winner_score}/3", True, (220, 220, 220))
+            message_rect = message_surface.get_rect(center=(WIDTH // 2, 300))
+            message_rect_2 = message_surface_2.get_rect(center=(WIDTH // 2, 360))
+            score_rect = score_surface.get_rect(center=(WIDTH // 2, 430))
+            screen.blit(message_surface, message_rect)
+            screen.blit(message_surface_2, message_rect_2)
+            screen.blit(score_surface, score_rect)
+
+        board_title = small_font.render("Счёт серии", True, WHITE)
+        screen.blit(board_title, (760, 500))
+
+        score_panel = pygame.Rect(700, 535, 400, max(90, len(scores) * 44 + 30))
+        pygame.draw.rect(screen, (35, 35, 45), score_panel, border_radius=16)
+        pygame.draw.rect(screen, (120, 120, 145), score_panel, 2, border_radius=16)
+
+        sorted_scores = sorted(scores.items(), key=lambda item: (-item[1], item[0]))
+        for idx, (name, wins) in enumerate(sorted_scores):
+            if idx == 0:
+                color = (255, 215, 0)
+            elif idx == 1:
+                color = (210, 210, 220)
+            elif idx == 2:
+                color = (205, 140, 90)
+            else:
+                color = WHITE
+
+            score_line = small_font.render(f"{idx + 1}. {name}: {wins}", True, color)
+            screen.blit(score_line, (735, 550 + idx * 40))
+
+        if champion:
+            pygame.draw.rect(screen, (85, 85, 85), rematch_btn.rect, border_radius=10)
+            rematch_text = small_font.render("Реванш", True, (170, 170, 170))
+            screen.blit(rematch_text, (rematch_btn.rect.x + 58, rematch_btn.rect.y + 20))
+        else:
+            rematch_btn.draw(screen, small_font)
+
+        restart_btn.draw(screen, small_font)
+        quit_btn.draw(screen, small_font)
+
+        pygame.display.flip()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return "quit"
+
+            if not champion and rematch_btn.clicked(event):
+                return "rematch"
+
+            if restart_btn.clicked(event):
+                return "restart"
+
+            if quit_btn.clicked(event):
+                return "quit"
+
+
+
 
 def battle_gui(players, attack, special, loot, use_item, ai_turn):
     # --- Загрузка иконок классов ---
@@ -99,8 +251,7 @@ def battle_gui(players, attack, special, loot, use_item, ai_turn):
         except Exception:
             class_icons[role] = None
     # Локальные объекты только для боя
-    screen = pygame.display.set_mode((WIDTH, HEIGHT))
-    pygame.display.set_caption("Бой")
+    screen = get_screen("Бой")
     font = pygame.font.SysFont("arial", 44)
     big_font = pygame.font.SysFont("arial", 60)
 
@@ -247,11 +398,29 @@ def battle_gui(players, attack, special, loot, use_item, ai_turn):
         for b in buttons:
             b.draw(screen, font)
 
+        close_rect = None
+        if show_info_idx is not None:
+            close_rect = draw_player_info_popup(screen, players[show_info_idx])
+
         for event in pygame.event.get():
 
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if show_info_idx is not None:
+                    if close_rect and close_rect.collidepoint(event.pos):
+                        show_info_idx = None
+                    continue
+
+                for idx, rect in enumerate(info_rects):
+                    if rect and rect.collidepoint(event.pos):
+                        show_info_idx = idx
+                        break
+
+                if show_info_idx is not None:
+                    continue
 
             # 🎯 выбор цели
             if event.type == pygame.MOUSEBUTTONDOWN:
@@ -300,16 +469,4 @@ def battle_gui(players, attack, special, loot, use_item, ai_turn):
                 current = (int(current) + 1) % len(players)
 
             # (Кнопка инвентарь и обработка больше не нужны)
-
-        # Клик по иконке инфо
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            if show_info_idx is not None:
-                # Проверка на закрытие окна
-                if close_rect.collidepoint(event.pos):
-                    show_info_idx = None
-            else:
-                for idx, rect in enumerate(info_rects):
-                    if rect and rect.collidepoint(event.pos):
-                        show_info_idx = idx
-                        break
         pygame.display.flip()
