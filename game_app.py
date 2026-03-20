@@ -1,3 +1,4 @@
+import math
 import os
 import random
 import sys
@@ -538,6 +539,7 @@ class ArenaGame:
         self.post_restart_button = UIButton("Начать заново", 770, 720, 320, 75)
         self.post_quit_button = UIButton("Закрыть игру", 1180, 720, 300, 75)
 
+        self.use_new_art = True
         self.icons = self.load_class_icons()
         self.subclass_showcase_art = self.create_subclass_showcase_art()
 
@@ -604,19 +606,24 @@ class ArenaGame:
     def load_class_icons(self):
         icons = {}
         base_dir = os.path.dirname(__file__)
+        # Map of procedural new icon creators (for all 10 classes)
+        new_icon_creators = {
+            "Воин":      self._create_warrior_portrait_icon,
+            "Боевой маг":self._create_battle_mage_portrait_icon,
+            "Варвар":    self._create_barbarian_portrait_icon,
+            "Шаман":     self._create_shaman_portrait_icon,
+            "Ассасин":   self._create_assassin_portrait_icon,
+            "Эльф":      self._create_elf_portrait_icon,
+            "Плут":      self._create_plut_portrait_icon,
+            "Орк":       self._create_orc_portrait_icon,
+            "Некромант": self._create_necromancer_portrait_icon,
+            "Мистик":    self._create_mystic_portrait_icon,
+        }
         for name, data in self.class_data.items():
-            if name == "Плут":
-                icons[name] = self._create_plut_portrait_icon()
+            if self.use_new_art and name in new_icon_creators:
+                icons[name] = new_icon_creators[name]()
                 continue
-            if name == "Орк":
-                icons[name] = self._create_orc_portrait_icon()
-                continue
-            if name == "Некромант":
-                icons[name] = self._create_necromancer_portrait_icon()
-                continue
-            if name == "Мистик":
-                icons[name] = self._create_mystic_portrait_icon()
-                continue
+            # Legacy path: try PNG, fallback to letter icon
             path = os.path.join(base_dir, data["image"])
             try:
                 image = pygame.image.load(path)
@@ -626,7 +633,17 @@ class ArenaGame:
                     scaled = self._tint_surface(scaled, (64, 168, 150), 10)
                 icons[name] = scaled
             except Exception:
-                icons[name] = self._create_fallback_icon(name)
+                # Use legacy procedural icons for the 4 that have them
+                legacy = {
+                    "Плут":     self._create_plut_portrait_icon_legacy,
+                    "Орк":      self._create_orc_portrait_icon_legacy,
+                    "Некромант":self._create_necromancer_portrait_icon_legacy,
+                    "Мистик":   self._create_mystic_portrait_icon_legacy,
+                }
+                if name in legacy:
+                    icons[name] = legacy[name]()
+                else:
+                    icons[name] = self._create_fallback_icon(name)
         return icons
 
     def _tint_surface(self, surface, color, alpha=40):
@@ -645,7 +662,7 @@ class ArenaGame:
         result.blit(mask, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
         return result
 
-    def _create_assassin_portrait_icon(self):
+    def _create_assassin_portrait_icon_legacy(self):
         surface = pygame.Surface((220, 220), pygame.SRCALPHA)
         hood = (84, 50, 140)
         hood_dark = (48, 26, 88)
@@ -671,7 +688,7 @@ class ArenaGame:
         pygame.draw.line(surface, hood, (110, 132), (110, 182), 4)
         return surface
 
-    def _create_plut_portrait_icon(self):
+    def _create_plut_portrait_icon_legacy(self):
         surface = pygame.Surface((220, 220), pygame.SRCALPHA)
         hat = (126, 96, 34)
         hat_dark = (78, 58, 18)
@@ -704,7 +721,7 @@ class ArenaGame:
         pygame.draw.polygon(surface, steel, [(174, 194), (184, 198), (178, 206), (166, 200)])
         return surface
 
-    def _create_orc_portrait_icon(self):
+    def _create_orc_portrait_icon_legacy(self):
         surface = pygame.Surface((220, 220), pygame.SRCALPHA)
         skin = (104, 156, 74)
         skin_dark = (70, 112, 46)
@@ -728,7 +745,7 @@ class ArenaGame:
         pygame.draw.polygon(surface, fur, [(62, 140), (110, 132), (158, 140), (144, 186), (76, 186)])
         return surface
 
-    def _create_necromancer_portrait_icon(self):
+    def _create_necromancer_portrait_icon_legacy(self):
         surface = pygame.Surface((220, 220), pygame.SRCALPHA)
         hood = (94, 68, 128)
         hood_dark = (54, 34, 82)
@@ -752,7 +769,7 @@ class ArenaGame:
         pygame.draw.line(surface, ghost, (48, 156), (76, 156), 2)
         return surface
 
-    def _create_mystic_portrait_icon(self):
+    def _create_mystic_portrait_icon_legacy(self):
         surface = pygame.Surface((220, 220), pygame.SRCALPHA)
         hood = (84, 132, 186)
         hood_dark = (42, 72, 112)
@@ -776,7 +793,7 @@ class ArenaGame:
         pygame.draw.polygon(surface, star, [(160, 58), (168, 42), (176, 58), (192, 66), (176, 74), (168, 90), (160, 74), (144, 66)])
         return surface
 
-    def _create_barbarian_showcase_art(self):
+    def _create_barbarian_showcase_art_legacy(self):
         surface = pygame.Surface((220, 280), pygame.SRCALPHA)
         skin = (206, 160, 122)
         fur = (126, 82, 44)
@@ -808,7 +825,7 @@ class ArenaGame:
         pygame.draw.line(surface, metal, (144, 260), (164, 276), 5)
         return surface
 
-    def _create_warrior_showcase_art(self):
+    def _create_warrior_showcase_art_legacy(self):
         surface = pygame.Surface((220, 280), pygame.SRCALPHA)
         skin = (212, 174, 138)
         steel = (172, 184, 204)
@@ -841,7 +858,7 @@ class ArenaGame:
         pygame.draw.line(surface, steel_dark, (130, 258), (146, 274), 4)
         return surface
 
-    def _create_battle_mage_showcase_art(self):
+    def _create_battle_mage_showcase_art_legacy(self):
         surface = pygame.Surface((220, 280), pygame.SRCALPHA)
         skin = (206, 166, 132)
         cloth = (118, 86, 180)
@@ -875,7 +892,7 @@ class ArenaGame:
         pygame.draw.line(surface, cloth_dark, (130, 260), (146, 274), 4)
         return surface
 
-    def _create_shaman_showcase_art(self):
+    def _create_shaman_showcase_art_legacy(self):
         surface = pygame.Surface((220, 280), pygame.SRCALPHA)
         skin = (190, 150, 118)
         robe = (255, 214, 64)
@@ -930,7 +947,7 @@ class ArenaGame:
         pygame.draw.line(surface, bone, (128, 260), (144, 274), 4)
         return surface
 
-    def _create_assassin_showcase_art(self):
+    def _create_assassin_showcase_art_legacy(self):
         surface = pygame.Surface((220, 280), pygame.SRCALPHA)
         skin = (200, 162, 132)
         hood = (68, 42, 102)
@@ -960,7 +977,7 @@ class ArenaGame:
         pygame.draw.line(surface, hood_dark, (130, 260), (146, 274), 4)
         return surface
 
-    def _create_plut_showcase_art(self):
+    def _create_plut_showcase_art_legacy(self):
         surface = pygame.Surface((220, 280), pygame.SRCALPHA)
         skin = (206, 168, 136)
         coat = (122, 88, 38)
@@ -994,7 +1011,7 @@ class ArenaGame:
         pygame.draw.line(surface, coat_dark, (130, 260), (146, 274), 4)
         return surface
 
-    def _create_elf_showcase_art(self):
+    def _create_elf_showcase_art_legacy(self):
         surface = pygame.Surface((220, 280), pygame.SRCALPHA)
         skin = (214, 184, 152)
         hair = (228, 230, 186)
@@ -1022,7 +1039,7 @@ class ArenaGame:
         pygame.draw.line(surface, robe_dark, (130, 260), (146, 274), 4)
         return surface
 
-    def _create_orc_showcase_art(self):
+    def _create_orc_showcase_art_legacy(self):
         surface = pygame.Surface((220, 280), pygame.SRCALPHA)
         skin = (110, 156, 76)
         fur = (94, 68, 42)
@@ -1051,7 +1068,7 @@ class ArenaGame:
         pygame.draw.line(surface, metal, (142, 260), (160, 276), 5)
         return surface
 
-    def _create_necromancer_showcase_art(self):
+    def _create_necromancer_showcase_art_legacy(self):
         surface = pygame.Surface((220, 280), pygame.SRCALPHA)
         hood = (98, 70, 132)
         hood_dark = (56, 36, 86)
@@ -1077,7 +1094,7 @@ class ArenaGame:
         pygame.draw.line(surface, hood_dark, (130, 260), (146, 274), 4)
         return surface
 
-    def _create_mystic_showcase_art(self):
+    def _create_mystic_showcase_art_legacy(self):
         surface = pygame.Surface((220, 280), pygame.SRCALPHA)
         skin = (214, 182, 150)
         robe = (78, 132, 188)
@@ -1104,19 +1121,1253 @@ class ArenaGame:
         pygame.draw.line(surface, robe_dark, (130, 260), (146, 274), 4)
         return surface
 
+    # ─── NEW PORTRAIT ICONS ────────────────────────────────────────────
+    @staticmethod
+    def _draw_face(surface, cx, cy, r, skin, skin_dark, skin_hi,
+                   eye_color=(60, 80, 150), hair_color=(60, 40, 20),
+                   mouth_color=(180, 90, 90), brow_color=None, teeth=False):
+        """Draw a detailed face at (cx,cy) with radius r."""
+        if brow_color is None:
+            brow_color = hair_color
+        # Jaw/chin shading
+        pygame.draw.ellipse(surface, skin_dark,
+                            (cx - r, cy - r + r//3, r*2, r*2))
+        # Face base
+        pygame.draw.circle(surface, skin, (cx, cy), r)
+        # Cheek highlight
+        pygame.draw.circle(surface, skin_hi, (cx - r//3, cy - r//5), r//4)
+        # Eyes (white + iris + pupil + highlight)
+        for ex_off in (-r//3, r//3):
+            ex, ey = cx + ex_off, cy - r//8
+            pygame.draw.ellipse(surface, (240,240,240), (ex-r//6, ey-r//10, r//3, r//5))
+            pygame.draw.circle(surface, eye_color, (ex, ey+1), r//11)
+            pygame.draw.circle(surface, (10,10,10), (ex, ey+1), r//16)
+            pygame.draw.circle(surface, (255,255,255), (ex+r//18, ey-r//18), r//24)
+            # Upper eyelid line
+            pygame.draw.arc(surface, (80,50,40),
+                            (ex-r//6, ey-r//10, r//3, r//5), math.pi*0.1, math.pi*0.9, 2)
+        # Nose
+        nx, ny = cx, cy + r//8
+        pygame.draw.ellipse(surface, skin_dark, (nx-r//8, ny, r//4, r//5))
+        pygame.draw.circle(surface, skin_hi, (nx-r//12, ny+2), r//16)
+        # Mouth
+        lip_y = cy + r//4
+        if teeth:
+            pygame.draw.ellipse(surface, (30,20,20), (cx-r//4, lip_y, r//2, r//5+2))
+            pygame.draw.ellipse(surface, (230,220,210), (cx-r//4+2, lip_y+2, r//2-4, r//5-2))
+            for tx in range(-r//4+4, r//4-4, max(1,r//6)):
+                pygame.draw.line(surface, (160,140,130), (cx+tx, lip_y+2), (cx+tx, lip_y+r//5+1), 1)
+        pygame.draw.arc(surface, mouth_color,
+                        (cx-r//4, lip_y, r//2, r//5), math.pi+0.3, math.pi*2-0.3, 2)
+        # Eyebrows
+        for ex_off in (-r//3, r//3):
+            ex = cx + ex_off
+            pygame.draw.line(surface, brow_color,
+                             (ex - r//8, cy - r//3 - 1), (ex + r//8, cy - r//3 + 2), 2)
+        # Ear nubs
+        for side in (-1, 1):
+            pygame.draw.ellipse(surface, skin,
+                                (cx + side*(r-2) - 4, cy - r//8 - 5, 10, 14))
+            pygame.draw.ellipse(surface, skin_dark,
+                                (cx + side*(r-2) - 3, cy - r//8 - 3, 7, 9))
+
+    def _create_assassin_portrait_icon(self):
+        s = pygame.Surface((220, 220), pygame.SRCALPHA)
+        cx, cy = 110, 110
+        # Background – dark purple circle
+        for i in range(5):
+            alpha = 255 - i*40
+            pygame.draw.circle(s, (*[max(0,c-i*10) for c in (42,22,62)], alpha), (cx,cy), 108-i*4)
+        # Cloak
+        pygame.draw.ellipse(s, (38,22,58), (30, 80, 160, 130))
+        pygame.draw.ellipse(s, (62,38,92), (42, 78, 136, 110))
+        # Hood layers
+        hood1 = [(cx-66,cy+10),(cx-30,cy-70),(cx,cy-80),(cx+30,cy-70),(cx+66,cy+10)]
+        pygame.draw.polygon(s, (68,42,100), hood1)
+        hood2 = [(cx-40,cy),(cx-14,cy-60),(cx,cy-66),(cx+14,cy-60),(cx+40,cy)]
+        pygame.draw.polygon(s, (46,28,74), hood2)
+        # Face
+        self._draw_face(s, cx, cy-8, 36, (190,150,120),(140,100,78),(220,180,150),
+                        eye_color=(70,60,120), hair_color=(40,20,60),
+                        mouth_color=(160,80,80))
+        # Mask across lower face
+        pygame.draw.ellipse(s, (40,24,64), (cx-26, cy+8, 52, 22))
+        pygame.draw.ellipse(s, (56,36,84), (cx-22, cy+10, 44, 14))
+        # Daggers at either side
+        for side, x0 in ((-1,46),(1,174)):
+            blade_pts = [(x0, cy+30),(x0+side*4, cy+60),(x0+side*14, cy+80),(x0+side*10, cy+80)]
+            pygame.draw.polygon(s, (192,198,218), blade_pts)
+            pygame.draw.line(s, (150,160,190),(x0+side*6,cy+40),(x0+side*6,cy+76),2)
+        return s
+
+    def _create_plut_portrait_icon(self):
+        s = pygame.Surface((220, 220), pygame.SRCALPHA)
+        cx, cy = 110, 110
+        for i in range(5):
+            pygame.draw.circle(s, (max(0,44-i*6),max(0,34-i*4),max(0,22-i*3)), (cx,cy), 108-i*4)
+        # Coat body
+        pygame.draw.ellipse(s, (108,78,30), (36, 88, 148, 122))
+        pygame.draw.ellipse(s, (140,104,44), (48, 86, 124, 100))
+        # Wide-brim hat
+        pygame.draw.ellipse(s, (90,66,22), (34, 52, 152, 24))
+        pygame.draw.polygon(s, (74,52,16), [(cx-40,64),(cx-28,20),(cx+28,20),(cx+40,64)])
+        pygame.draw.ellipse(s, (110,82,32), (cx-36,14,72,28))
+        # Plume
+        for i,col in enumerate([(180,80,220),(200,100,240),(160,60,200)]):
+            pygame.draw.line(s, col, (cx+30,50-i*6),(cx+56,12-i*8), 3)
+        # Face
+        self._draw_face(s, cx, cy-14, 33, (204,166,132),(160,120,90),(230,194,162),
+                        eye_color=(100,80,50), hair_color=(80,56,18),
+                        mouth_color=(170,90,80))
+        # Moustache
+        pygame.draw.arc(s, (80,56,18), (cx-20,cy+6,18,12), 3.3, 6.0, 3)
+        pygame.draw.arc(s, (80,56,18), (cx+2,cy+6,18,12), 3.3, 6.0, 3)
+        # Gold coin
+        pygame.draw.circle(s, (255,210,60), (58,158), 14)
+        pygame.draw.circle(s, (200,160,40), (58,158), 12,2)
+        pygame.draw.line(s, (200,160,40),(50,158),(66,158),2)
+        return s
+
+    def _create_orc_portrait_icon(self):
+        s = pygame.Surface((220, 220), pygame.SRCALPHA)
+        cx, cy = 110, 110
+        for i in range(5):
+            pygame.draw.circle(s, (max(0,28-i*4),max(0,36-i*4),max(0,20-i*3)), (cx,cy), 108-i*4)
+        skin, skin_d, skin_hi = (96,148,64),(60,100,36),(140,194,104)
+        # Neck / collar
+        pygame.draw.ellipse(s, skin_d, (cx-28, cy+38, 56, 60))
+        pygame.draw.polygon(s, (80,58,32), [(cx-50,cy+48),(cx+50,cy+48),(cx+60,cy+80),(cx-60,cy+80)])
+        # Fur shoulder pads
+        for side in (-1,1):
+            pts = [(cx+side*30,cy+40),(cx+side*70,cy+20),(cx+side*80,cy+60),(cx+side*44,cy+70)]
+            pygame.draw.polygon(s, (88,62,34), pts)
+        # Head
+        pygame.draw.ellipse(s, skin_d, (cx-46, cy-60, 92, 108))
+        pygame.draw.ellipse(s, skin, (cx-44, cy-62, 88, 102))
+        pygame.draw.ellipse(s, skin_hi, (cx-20,cy-58,40,28))
+        # Facial features – orcish
+        for ex_off in (-14,14):
+            ex, ey = cx+ex_off, cy-18
+            pygame.draw.ellipse(s, (220,220,220),(ex-7,ey-5,14,10))
+            pygame.draw.circle(s, (220,170,40),(ex,ey+1),4)
+            pygame.draw.circle(s, (10,10,10),(ex,ey+1),2)
+            pygame.draw.circle(s, (255,255,255),(ex+2,ey-2),1)
+        # Flat nose
+        pygame.draw.ellipse(s, skin_d, (cx-12,cy-4,24,16))
+        pygame.draw.circle(s, skin_hi,(cx-5,cy-2),3)
+        # Tusks
+        pygame.draw.polygon(s, (228,218,186),[(cx-16,cy+14),(cx-10,cy+12),(cx-12,cy+36),(cx-18,cy+34)])
+        pygame.draw.polygon(s, (228,218,186),[(cx+16,cy+14),(cx+10,cy+12),(cx+12,cy+36),(cx+18,cy+34)])
+        # Mouth
+        pygame.draw.arc(s,(60,30,20),(cx-16,cy+8,32,18),math.pi+0.4,math.pi*2-0.4,3)
+        # Ears – large
+        for side in (-1,1):
+            ear_x = cx + side*50
+            pygame.draw.ellipse(s, skin, (ear_x-8,cy-26,22,34))
+            pygame.draw.ellipse(s, skin_d, (ear_x-5,cy-20,14,22))
+        # War paint – orange stripes
+        for yi in range(3):
+            pygame.draw.line(s,(255,140,30),(cx-30,cy-50+yi*14),(cx-8,cy-50+yi*14+4),2)
+        return s
+
+    def _create_necromancer_portrait_icon(self):
+        s = pygame.Surface((220, 220), pygame.SRCALPHA)
+        cx, cy = 110, 110
+        for i in range(5):
+            pygame.draw.circle(s, (max(0,24-i*3),max(0,18-i*2),max(0,34-i*4)), (cx,cy), 108-i*4)
+        ghost = (100,200,180)
+        bone = (220,214,186)
+        # Robe bottom
+        pygame.draw.ellipse(s, (60,36,88), (28,88,164,132))
+        # Hood
+        hood = [(cx-60,cy+14),(cx-26,cy-72),(cx,cy-84),(cx+26,cy-72),(cx+60,cy+14)]
+        pygame.draw.polygon(s, (72,46,104), hood)
+        hood2 = [(cx-38,cy+2),(cx-12,cy-60),(cx,cy-70),(cx+12,cy-60),(cx+38,cy+2)]
+        pygame.draw.polygon(s, (50,30,78), hood2)
+        # Skull-like face
+        pygame.draw.ellipse(s, bone, (cx-28,cy-50,56,62))
+        pygame.draw.ellipse(s, (200,194,166),(cx-24,cy-48,48,54))
+        # Dark eye sockets
+        for ex_off in (-11,11):
+            pygame.draw.ellipse(s,(18,12,28),(cx+ex_off-8,cy-32,16,16))
+            pygame.draw.circle(s, ghost, (cx+ex_off, cy-24), 4)
+            pygame.draw.circle(s, (200,240,240),(cx+ex_off,cy-24),2)
+        # Nose holes
+        pygame.draw.ellipse(s,(30,20,40),(cx-8,cy-12,6,8))
+        pygame.draw.ellipse(s,(30,20,40),(cx+2,cy-12,6,8))
+        # Rictus grin
+        pygame.draw.arc(s,(30,20,40),(cx-18,cy+4,36,16),math.pi+0.5,math.pi*2-0.5,3)
+        for tx in range(-16,18,6):
+            pygame.draw.line(s,(30,20,40),(cx+tx,cy+10),(cx+tx,cy+16),2)
+        # Ghost wisps around
+        for angle,r2 in [(0.5,68),(1.8,72),(3.2,64),(4.6,70)]:
+            wx = cx + int(r2*math.cos(angle))
+            wy = cy + int(r2*math.sin(angle))
+            pygame.draw.circle(s, (*ghost, 140), (wx,wy), 8)
+            pygame.draw.circle(s, (*ghost, 80), (wx,wy), 14)
+        return s
+
+    def _create_mystic_portrait_icon(self):
+        s = pygame.Surface((220, 220), pygame.SRCALPHA)
+        cx, cy = 110, 110
+        for i in range(5):
+            pygame.draw.circle(s,(max(0,20-i*3),max(0,28-i*3),max(0,50-i*6)),(cx,cy),108-i*4)
+        glow = (120,220,255)
+        star_c = (255,230,140)
+        skin, skin_d, skin_hi = (210,176,144),(162,124,96),(238,210,182)
+        # Robe
+        pygame.draw.ellipse(s,(52,90,148),(30,84,160,136))
+        pygame.draw.ellipse(s,(72,118,178),(44,82,132,120))
+        # Hood
+        hood = [(cx-58,cy+12),(cx-24,cy-74),(cx,cy-86),(cx+24,cy-74),(cx+58,cy+12)]
+        pygame.draw.polygon(s,(64,100,160),hood)
+        hood2 = [(cx-36,cy),(cx-12,cy-62),(cx,cy-72),(cx+12,cy-62),(cx+36,cy)]
+        pygame.draw.polygon(s,(42,72,120),hood2)
+        # Face
+        self._draw_face(s,cx,cy-8,34,skin,skin_d,skin_hi,
+                        eye_color=(80,160,220),hair_color=(34,50,90),
+                        mouth_color=(160,100,100))
+        # Glowing eyes overwrite
+        for ex_off in (-11,11):
+            pygame.draw.circle(s,glow,(cx+ex_off,cy-10),6)
+            pygame.draw.circle(s,(200,240,255),(cx+ex_off,cy-10),3)
+        # Floating orb in front
+        pygame.draw.circle(s,(*glow,180),(cx,cy+28),18)
+        pygame.draw.circle(s,(*glow,100),(cx,cy+28),26)
+        pygame.draw.circle(s,(200,245,255,200),(cx-5,cy+22),7)
+        # Stars on hood
+        for a in range(0,360,72):
+            sx = cx + int(50*math.cos(math.radians(a)))
+            sy = cy-8 + int(50*math.sin(math.radians(a)))
+            pygame.draw.circle(s,star_c,(sx,sy),3)
+        return s
+
+    def _create_warrior_portrait_icon(self):
+        s = pygame.Surface((220, 220), pygame.SRCALPHA)
+        cx, cy = 110, 110
+        skin, sd, sh = (212,172,138), self._shade((212,172,138),0.72), self._shade((212,172,138),1.22)
+        steel, stD, stH = (172,184,204), self._shade((172,184,204),0.65), self._shade((172,184,204),1.18)
+        tabard = (68,112,188)
+        gold = (218,174,60)
+        for i in range(5):
+            pygame.draw.circle(s, (max(0,28-i*4),max(0,36-i*4),max(0,52-i*6)), (cx,cy), 108-i*4)
+        # Armour chest
+        pygame.draw.ellipse(s, steel, (30,84,160,130))
+        pygame.draw.ellipse(s, stD,   (38,90,144,112))
+        pygame.draw.ellipse(s, stH,   (52,92,62,32))
+        pygame.draw.line(s, gold, (cx,90),(cx,180), 2)
+        pygame.draw.line(s, gold, (44,140),(176,140), 2)
+        # Pauldrons
+        for side,x0 in ((-1,28),(1,152)):
+            pygame.draw.ellipse(s, steel, (x0,76,54,34))
+            pygame.draw.ellipse(s, stH,   (x0+6,80,24,14))
+        # Neck
+        pygame.draw.rect(s, skin, (cx-12,72,24,22))
+        # Helmet
+        pygame.draw.ellipse(s, steel, (56,18,108,76))
+        pygame.draw.ellipse(s, stD,   (64,22,92,62))
+        pygame.draw.ellipse(s, stH,   (72,24,42,26))
+        # Visor opening — face
+        pygame.draw.ellipse(s, skin, (70,44,80,36))
+        self._draw_face(s, cx, 60, 24, skin, sd, sh, eye_color=(72,100,160))
+        # Plume
+        for pi2,pc in enumerate([(200,60,60),(220,80,80),(240,100,60)]):
+            pygame.draw.polygon(s, pc, [(cx-2+pi2*2,22),(cx+pi2,4),(cx+4+pi2*2,22)])
+        return s
+
+    def _create_barbarian_portrait_icon(self):
+        s = pygame.Surface((220, 220), pygame.SRCALPHA)
+        cx, cy = 110, 110
+        skin, sd, sh = (206,156,118), self._shade((206,156,118),0.70), self._shade((206,156,118),1.18)
+        fur = (118,78,42)
+        metal = (176,188,198)
+        for i in range(5):
+            pygame.draw.circle(s, (max(0,44-i*6),max(0,28-i*4),max(0,18-i*3)), (cx,cy), 108-i*4)
+        # Fur chest
+        pygame.draw.ellipse(s, fur, (32,86,156,128))
+        pygame.draw.ellipse(s, self._shade(fur,0.8), (44,92,132,104))
+        pygame.draw.ellipse(s, self._shade(fur,1.2), (56,94,52,28))
+        # Scars
+        pygame.draw.line(s, sd, (78,108),(94,132), 2)
+        pygame.draw.line(s, sd, (110,114),(122,104), 2)
+        # Neck
+        pygame.draw.rect(s, skin, (cx-14,70,28,22))
+        # Wild hair base
+        pygame.draw.ellipse(s, self._shade(fur,0.7), (50,8,120,82))
+        for hxi in range(-4,5):
+            pygame.draw.polygon(s, fur, [(cx+hxi*8-4,28),(cx+hxi*8-6,2),(cx+hxi*8+8,2),(cx+hxi*8+4,28)])
+        # Face
+        self._draw_face(s, cx, 62, 30, skin, sd, sh, eye_color=(160,80,40), hair_color=fur, teeth=True)
+        # War paint
+        pygame.draw.line(s, (200,50,50), (72,50),(90,56), 3)
+        pygame.draw.line(s, (200,50,50), (114,56),(132,50), 3)
+        # Beard
+        pygame.draw.ellipse(s, fur, (76,76,68,34))
+        pygame.draw.ellipse(s, self._shade(fur,0.7), (80,78,60,26))
+        # Axe head peeking top-right
+        pygame.draw.polygon(s, metal, [(178,32),(196,14),(202,46),(184,52)])
+        pygame.draw.ellipse(s, self._shade(metal,1.2), (180,18,14,10))
+        return s
+
+    def _create_battle_mage_portrait_icon(self):
+        s = pygame.Surface((220, 220), pygame.SRCALPHA)
+        cx, cy = 110, 110
+        skin, sd, sh = (204,164,128), self._shade((204,164,128),0.72), self._shade((204,164,128),1.20)
+        robe, robeD = (108,80,172), self._shade((108,80,172),0.55)
+        glow = (100,200,255)
+        steel = (180,192,214)
+        gold = (220,176,56)
+        for i in range(5):
+            pygame.draw.circle(s, (max(0,22-i*3),max(0,18-i*2),max(0,42-i*5)), (cx,cy), 108-i*4)
+        # Robe
+        pygame.draw.ellipse(s, robe,  (28,82,164,132))
+        pygame.draw.ellipse(s, robeD, (38,90,144,112))
+        pygame.draw.ellipse(s, self._shade(robe,1.18), (52,92,60,30))
+        # Arcane rune on chest
+        pygame.draw.circle(s, (*glow,200), (cx,148), 14)
+        pygame.draw.circle(s, (*glow,100), (cx,148), 22)
+        for a in range(0,360,60):
+            rx=cx+int(18*math.cos(math.radians(a)))
+            ry=148+int(18*math.sin(math.radians(a)))
+            pygame.draw.line(s, self._shade(glow,0.7), (cx,148),(rx,ry), 1)
+        # Shoulder pauldrons
+        for side,x0 in ((-1,28),(1,150)):
+            pygame.draw.ellipse(s, steel, (x0,78,52,32))
+            pygame.draw.ellipse(s, self._shade(steel,1.2), (x0+6,82,22,14))
+        # Neck
+        pygame.draw.rect(s, skin, (cx-12,72,24,20))
+        # Hood
+        hood = [(cx-58,cy+12),(cx-22,cy-72),(cx,cy-84),(cx+22,cy-72),(cx+58,cy+12)]
+        pygame.draw.polygon(s, robeD, hood)
+        hood2 = [(cx-34,cy+2),(cx-10,cy-62),(cx,cy-72),(cx+10,cy-62),(cx+34,cy+2)]
+        pygame.draw.polygon(s, self._shade(robe,0.6), hood2)
+        # Face
+        self._draw_face(s, cx, cy-8, 34, skin, sd, sh, eye_color=(100,180,240), hair_color=(40,26,64))
+        # Glowing eyes
+        for ex_off in (-11,11):
+            pygame.draw.circle(s, glow, (cx+ex_off,cy-10), 5)
+            pygame.draw.circle(s, (200,240,255),(cx+ex_off,cy-10), 2)
+        # Staff peeking from side
+        pygame.draw.line(s, (80,54,38), (188,20),(182,200), 6)
+        pygame.draw.circle(s, (*glow,220), (186,24), 9)
+        pygame.draw.circle(s, (*glow,100),(186,24), 16)
+        return s
+
+    def _create_shaman_portrait_icon(self):
+        s = pygame.Surface((220, 220), pygame.SRCALPHA)
+        cx, cy = 110, 110
+        skin, sd, sh = (188,148,114), self._shade((188,148,114),0.70), self._shade((188,148,114),1.20)
+        robe = (238,202,58)
+        robeD = self._shade(robe,0.60)
+        ember = (255,166,44)
+        glow = (80,208,178)
+        bone = (218,212,190)
+        for i in range(5):
+            pygame.draw.circle(s, (max(0,34-i*4),max(0,24-i*3),max(0,14-i*2)), (cx,cy), 108-i*4)
+        # Robe chest
+        pygame.draw.ellipse(s, robe,  (28,82,164,132))
+        pygame.draw.ellipse(s, robeD, (38,90,144,114))
+        pygame.draw.ellipse(s, self._shade(robe,1.2), (52,94,58,28))
+        # Bead necklace
+        for bx2,by2 in [(88,96),(96,100),(cx,102),(cx+14,100),(cx+24,96)]:
+            pygame.draw.circle(s, bone,  (bx2,by2), 5)
+            pygame.draw.circle(s, ember, (bx2,by2), 3)
+        # Totem medallion
+        pygame.draw.circle(s, ember, (cx,144), 14)
+        pygame.draw.circle(s, glow,  (cx,144), 14, 2)
+        for a in range(0,360,45):
+            tx=cx+int(11*math.cos(math.radians(a)))
+            ty=144+int(11*math.sin(math.radians(a)))
+            pygame.draw.circle(s, bone, (tx,ty), 3)
+        # Neck
+        pygame.draw.rect(s, skin, (cx-12,70,24,20))
+        # Hair
+        pygame.draw.ellipse(s, self._shade((90,62,28),0.7), (52,8,116,78))
+        pygame.draw.ellipse(s, (90,62,28), (58,12,104,66))
+        pygame.draw.ellipse(s, self._shade((90,62,28),1.2), (66,14,48,30))
+        # Feathers in hair
+        for fa, fc in ((0.4,ember),(1.1,glow),(1.7,bone)):
+            fhx=cx+int(46*math.cos(fa))-8
+            fhy=20+int(28*math.sin(fa))-18
+            pygame.draw.polygon(s, fc, [(fhx,fhy),(fhx+4,fhy-18),(fhx+8,fhy)])
+        # Face
+        self._draw_face(s, cx, cy-12, 32, skin, sd, sh, eye_color=(80,190,168), hair_color=(60,36,14))
+        # Earrings
+        for side in (-1,1):
+            pygame.draw.circle(s, bone, (cx+side*40,cy-4), 5)
+            pygame.draw.circle(s, ember,(cx+side*40,cy-4), 3)
+        return s
+
+    def _create_elf_portrait_icon(self):
+        s = pygame.Surface((220, 220), pygame.SRCALPHA)
+        cx, cy = 110, 110
+        skin, sd, sh = (220,190,156), self._shade((220,190,156),0.70), self._shade((220,190,156),1.22)
+        hair = (230,226,178)
+        robe = (80,136,90)
+        robeD = self._shade(robe,0.60)
+        gold = (218,178,62)
+        green_glow = (100,220,120)
+        for i in range(5):
+            pygame.draw.circle(s, (max(0,14-i*2),max(0,30-i*4),max(0,18-i*2)), (cx,cy), 108-i*4)
+        # Robe
+        pygame.draw.ellipse(s, robe,  (28,82,164,132))
+        pygame.draw.ellipse(s, robeD, (38,90,144,110))
+        pygame.draw.ellipse(s, self._shade(robe,1.18), (54,92,58,28))
+        # Leaf embroidery belt
+        pygame.draw.line(s, gold, (34,148),(186,148), 2)
+        for lfi in range(5):
+            lfx=52+lfi*20
+            pygame.draw.ellipse(s, gold, (lfx,140,14,6))
+        # Neck
+        pygame.draw.rect(s, skin, (cx-12,70,24,20))
+        # Long hair
+        pygame.draw.ellipse(s, self._shade(hair,0.85), (48,10,124,74))
+        pygame.draw.ellipse(s, hair, (54,14,112,64))
+        pygame.draw.ellipse(s, self._shade(hair,1.12),(68,16,48,28))
+        # Hair cascades past shoulders
+        for side in (-1,1):
+            pygame.draw.polygon(s, self._shade(hair,0.82),
+                [(cx+side*30,34),(cx+side*52,28),(cx+side*56,110),(cx+side*28,114)])
+        # Pointed ears
+        for side in (-1,1):
+            pygame.draw.polygon(s, skin, [(cx+side*24,60),(cx+side*42,34),(cx+side*34,64)])
+            pygame.draw.polygon(s, sd,   [(cx+side*24,60),(cx+side*38,38),(cx+side*32,62)])
+        # Face
+        self._draw_face(s, cx, cy-12, 32, skin, sd, sh, eye_color=(70,160,100),
+                        hair_color=self._shade(hair,0.7))
+        # Circlet
+        pygame.draw.arc(s, gold, (cx-32,20,64,28), 0.1, math.pi-0.1, 3)
+        pygame.draw.circle(s, (180,220,255),(cx,21), 5)
+        # Glowing palm magic
+        pygame.draw.circle(s, (*green_glow,160),(174,162), 10)
+        pygame.draw.circle(s, (*green_glow,80), (174,162), 18)
+        return s
+
+    # ─── NEW SHOWCASE ART ───────────────────────────────────────────────
+    @staticmethod
+    def _shade(col, factor):
+        return tuple(max(0,min(255,int(c*factor))) for c in col)
+
+    def _draw_showcase_bg(self, s, col):
+        w,h = s.get_size()
+        cx,cy = w//2,h//2
+        for i in range(6):
+            f = 1.0-i*0.12
+            c = self._shade(col,f)
+            pygame.draw.ellipse(s,c,(i*4,i*5,w-i*8,h-i*10))
+
+    def _draw_full_face(self, s, cx, cy, r, skin, skin_d, skin_hi,
+                        eye_color=(60,90,160), hair_col=(60,40,20),
+                        mouth_col=(180,90,90), brow_col=None, teeth=False):
+        if brow_col is None: brow_col = hair_col
+        # Neck
+        pygame.draw.rect(s, skin_d, (cx-14, cy+r-4, 28, 28))
+        pygame.draw.rect(s, skin,   (cx-12, cy+r-4, 24, 24))
+        # Head shape
+        pygame.draw.ellipse(s, skin_d, (cx-r-2, cy-r+4, (r+2)*2, r*2))
+        pygame.draw.ellipse(s, skin,   (cx-r,   cy-r,   r*2,     int(r*1.95)))
+        pygame.draw.ellipse(s, skin_hi,(cx-r//2, cy-r+4, r, r//2))
+        # Ears
+        for side in (-1,1):
+            ex = cx+side*r
+            pygame.draw.ellipse(s, skin,   (ex-5,cy-8,12,18))
+            pygame.draw.ellipse(s, skin_d, (ex-3,cy-5,8,12))
+        # Eyes
+        for ex_off in (-r//3, r//3):
+            ex,ey = cx+ex_off, cy-r//8
+            pygame.draw.ellipse(s,(245,245,245),(ex-r//6,ey-r//9,r//3+2,r//5+2))
+            pygame.draw.circle(s,eye_color,(ex,ey+1),r//10)
+            pygame.draw.circle(s,(8,8,8),(ex,ey+1),r//15)
+            pygame.draw.circle(s,(255,255,255),(ex+r//20,ey-r//20),r//25)
+            pygame.draw.arc(s,(70,46,38),(ex-r//6-1,ey-r//9-1,r//3+4,r//5+4),
+                            math.pi*0.05,math.pi*0.95,2)
+        # Brows
+        for ex_off in (-r//3, r//3):
+            ex = cx+ex_off
+            if ex_off<0:
+                pygame.draw.line(s,brow_col,(ex-r//7,cy-r//3-2),(ex+r//9,cy-r//3+3),3)
+            else:
+                pygame.draw.line(s,brow_col,(ex-r//9,cy-r//3+3),(ex+r//7,cy-r//3-2),3)
+        # Nose
+        pygame.draw.ellipse(s,skin_d,(cx-r//7,cy+r//12,r//4+2,r//5))
+        for side in (-1,1):
+            pygame.draw.ellipse(s,skin_d,(cx+side*(r//6)-2,cy+r//8,8,7))
+        pygame.draw.circle(s,skin_hi,(cx-r//10,cy+r//10),r//18)
+        # Mouth
+        lip_y = cy+r//4
+        if teeth:
+            pygame.draw.ellipse(s,(30,20,20),(cx-r//4,lip_y,r//2,r//5+2))
+            pygame.draw.ellipse(s,(230,220,210),(cx-r//4+2,lip_y+2,r//2-4,r//5-2))
+            for tx in range(-int(r//4)+4,int(r//4)-4,int(r//6)):
+                pygame.draw.line(s,(160,140,130),(cx+tx,lip_y+2),(cx+tx,lip_y+r//5+1),1)
+        pygame.draw.arc(s,mouth_col,(cx-r//4,lip_y,r//2,r//5),
+                        math.pi+0.4,math.pi*2-0.4,2)
+        pygame.draw.line(s,mouth_col,(cx-r//4,lip_y+r//11),(cx+r//4,lip_y+r//11),1)
+
+    def _create_warrior_showcase_art(self):
+        s = pygame.Surface((220,300), pygame.SRCALPHA)
+        skin,(sd,sh) = (212,172,138),(self._shade((212,172,138),0.72),self._shade((212,172,138),1.22))
+        steel,stD,stH = (172,184,204),self._shade((172,184,204),0.65),self._shade((172,184,204),1.18)
+        tabard = (68,112,188)
+        leather = (104,72,48)
+        gold = (218,174,60)
+        c = 102
+        # BG
+        self._draw_showcase_bg(s,(28,36,52))
+        # Legs – greaves
+        for lx,dx in ((72,-1),(130,1)):
+            pygame.draw.polygon(s,steel,[(lx,196),(lx+24,196),(lx+28,276),(lx-4,276)])
+            pygame.draw.polygon(s,stD,[(lx+8,196),(lx+20,196),(lx+24,276),(lx+4,276)])
+            pygame.draw.ellipse(s,stH,(lx+2,200,20,16))
+            pygame.draw.ellipse(s,gold,(lx+4,248,16,8))  # knee plate
+        # Boot tips
+        pygame.draw.ellipse(s,leather,(68,272,32,12))
+        pygame.draw.ellipse(s,leather,(126,272,32,12))
+        # Torso – plate
+        pygame.draw.polygon(s,steel,[(58,96),(168,96),(176,196),(50,196)])
+        pygame.draw.polygon(s,stD,[(58,96),(102,136),(168,96),(176,196),(50,196)])
+        pygame.draw.ellipse(s,stH,(70,100,56,30))
+        # Tabard
+        pygame.draw.polygon(s,tabard,[(84,96),(122,96),(128,180),(78,180)])
+        pygame.draw.line(s,self._shade(tabard,0.7),(102,96),(102,180),2)
+        # Silver cross on tabard
+        pygame.draw.line(s,stH,(102,108),(102,172),3)
+        pygame.draw.line(s,stH,(84,138),(120,138),3)
+        # Shoulder pauldrons
+        for sx,dx in ((44,0),(140,20)):
+            pygame.draw.ellipse(s,steel,(sx,80,56,36))
+            pygame.draw.ellipse(s,stD,(sx+4,82,48,28))
+            pygame.draw.ellipse(s,stH,(sx+8,84,22,14))
+        # Arms
+        for ax,ay,bx,by in ((56,110,34,178),(148,110,170,178)):
+            pygame.draw.line(s,skin,(ax,ay),(bx,by),13)
+            pygame.draw.line(s,sd,(ax-2,ay),(bx-2,by),4)
+        # Gauntlets
+        for gx in (22,158):
+            pygame.draw.ellipse(s,steel,(gx,172,24,24))
+            pygame.draw.ellipse(s,stD,(gx+3,174,18,20))
+        # Shield (left) – full kite shield
+        shield = [(10,120),(50,110),(62,204),(10,230)]
+        pygame.draw.polygon(s,steel,shield)
+        pygame.draw.polygon(s,tabard,[(16,130),(46,122),(56,198),(16,222)])
+        pygame.draw.polygon(s,stH,[(26,126),(42,122),(46,148),(26,148)])
+        pygame.draw.line(s,gold,(10,170),(62,170),2)
+        pygame.draw.line(s,gold,(36,115),(36,230),2)
+        # Sword (right)
+        pygame.draw.line(s,leather,(180,106),(184,240),7)
+        pygame.draw.polygon(s,steel,[(168,100),(182,38),(196,38),(186,108)])
+        pygame.draw.polygon(s,gold,[(163,100),(190,100),(185,112),(168,112)])  # guard
+        pygame.draw.ellipse(s,gold,(176,238,16,10))  # pommel
+        pygame.draw.line(s,stD,(175,44),(175,102),2)
+        # Neck + helmet
+        pygame.draw.rect(s,skin,(94,62,24,16))
+        # Helmet base
+        pygame.draw.ellipse(s,steel,(60,30,88,58))
+        pygame.draw.ellipse(s,stD,(68,32,72,50))
+        pygame.draw.ellipse(s,stH,(76,34,36,20))
+        # Visor opening – face
+        pygame.draw.ellipse(s,skin,(75,46,52,28))
+        self._draw_full_face(s,c,52,20,skin,sd,sh,eye_color=(72,100,160))
+        # Plume
+        for pi2,pc in enumerate([(200,60,60),(220,80,80),(240,100,60)]):
+            pygame.draw.polygon(s,pc,[(98+pi2*2,30),(102+pi2,8),(106+pi2*2,30)])
+        return s
+
+    def _create_barbarian_showcase_art(self):
+        s = pygame.Surface((220,300), pygame.SRCALPHA)
+        skin = (206,156,118)
+        sd,sh = self._shade(skin,0.70),self._shade(skin,1.18)
+        fur = (118,78,42)
+        furD = self._shade(fur,0.65)
+        metal = (176,188,198)
+        metD = self._shade(metal,0.65)
+        red = (168,42,42)
+        c = 102
+        self._draw_showcase_bg(s,(44,28,18))
+        # Legs – fur-wrapped
+        for lx,dx in ((68,-1),(128,1)):
+            pygame.draw.polygon(s,skin,[(lx,192),(lx+26,192),(lx+22,278),(lx-4,278)])
+            pygame.draw.polygon(s,furD,[(lx,192),(lx+10,192),(lx+8,278),(lx-2,278)])
+            for fy in range(198,276,10):
+                pygame.draw.line(s,furD,(lx,fy),(lx+10,fy+4),2)
+        pygame.draw.ellipse(s,metal,(64,272,36,12))
+        pygame.draw.ellipse(s,metal,(124,272,36,12))
+        # Torso – leather + fur
+        pygame.draw.polygon(s,fur,[(52,92),(160,92),(168,192),(44,192)])
+        pygame.draw.polygon(s,furD,[(52,92),(102,132),(160,92),(168,192),(44,192)])
+        pygame.draw.ellipse(s,self._shade(fur,1.15),(62,96,56,28))
+        # Battle scars on chest
+        pygame.draw.line(s,sd,(80,110),(96,134),2)
+        pygame.draw.line(s,sd,(106,118),(118,108),2)
+        # Pauldrons – bones
+        for sx in (34,140):
+            pygame.draw.ellipse(s,fur,(sx,80,54,34))
+            pygame.draw.line(s,(228,218,186),(sx+8,80),(sx+46,80),4)
+            pygame.draw.line(s,(228,218,186),(sx+8,88),(sx+46,88),3)
+        # Arms
+        for ax,ay,bx,by in ((54,108,30,178),(152,108,174,178)):
+            pygame.draw.line(s,skin,(ax,ay),(bx,by),15)
+            pygame.draw.line(s,sd,(ax-2,ay),(bx-2,by),4)
+        # Fists
+        for fx in (22,166):
+            pygame.draw.circle(s,skin,(fx,186),13)
+            pygame.draw.circle(s,sd,(fx,186),13,2)
+        # Double axes
+        axe_wc = (106,68,42)
+        for side, hx,hy in ((-1,24,60),(1,182,60)):
+            pygame.draw.line(s,axe_wc,(hx,hy),(hx+side*8,212),10)
+            # Axe head
+            pts = [(hx,hy-4),(hx+side*38,hy-30),(hx+side*44,hy+16),(hx+side*6,hy+8)]
+            pygame.draw.polygon(s,metal,pts)
+            pygame.draw.polygon(s,metD,[(pts[0][0]+side*4,pts[0][1]),
+                                        (pts[1][0]-side*4,pts[1][1]),
+                                        (pts[2][0]-side*4,pts[2][1]),
+                                        (pts[3][0]+side*4,pts[3][1])])
+            pygame.draw.line(s,self._shade(metal,1.2),(pts[0][0]+side*6,pts[0][1]),
+                             (pts[3][0]+side*12,pts[3][1]),2)
+        # Head – wild hair
+        # Hair base
+        pygame.draw.ellipse(s,furD,(58,10,92,66))
+        for hxi in range(-3,4):
+            pygame.draw.polygon(s,fur,[(c+hxi*8,30),(c+hxi*8-6,4),(c+hxi*8+6,4)])
+        # Face
+        self._draw_full_face(s,c,54,28,skin,sd,sh,eye_color=(160,80,40),
+                              hair_col=fur,mouth_col=(160,80,60),teeth=True)
+        # War paint across eyes
+        pygame.draw.line(s,(200,50,50),(72,44),(90,50),3)
+        pygame.draw.line(s,(200,50,50),(114,50),(132,44),3)
+        # Beard
+        pygame.draw.ellipse(s,fur,(74,68,60,36))
+        pygame.draw.ellipse(s,furD,(78,70,52,28))
+        return s
+
+    def _create_battle_mage_showcase_art(self):
+        s = pygame.Surface((220,300), pygame.SRCALPHA)
+        skin = (204,164,128)
+        sd,sh = self._shade(skin,0.72),self._shade(skin,1.20)
+        robe = (108,80,172)
+        robeD = self._shade(robe,0.60)
+        glow,glowD = (100,200,255),(60,140,200)
+        steel = (180,192,214)
+        steelD = self._shade(steel,0.65)
+        leather = (108,70,48)
+        gold = (220,176,56)
+        c = 102
+        self._draw_showcase_bg(s,(22,18,42))
+        # Legs
+        for lx in (72,128):
+            pygame.draw.polygon(s,robeD,[(lx,196),(lx+24,196),(lx+20,280),(lx-4,280)])
+        # Tabard bottom
+        pygame.draw.polygon(s,robeD,[(64,196),(152,196),(148,280),(68,280)])
+        # Torso robe
+        pygame.draw.polygon(s,robe,[(54,92),(162,92),(172,200),(44,200)])
+        pygame.draw.polygon(s,robeD,[(54,92),(102,130),(162,92),(172,200),(44,200)])
+        pygame.draw.ellipse(s,self._shade(robe,1.16),(68,96,52,28))
+        # Arcane rune on chest
+        pygame.draw.circle(s,glow,(102,138),16)
+        pygame.draw.circle(s,(*glow,120),(102,138),24)
+        for a in range(0,360,60):
+            rx=102+int(20*math.cos(math.radians(a)))
+            ry=138+int(20*math.sin(math.radians(a)))
+            pygame.draw.line(s,glowD,(102,138),(rx,ry),2)
+        # Shoulder pauldrons
+        for sx in (40,140):
+            pygame.draw.ellipse(s,steel,(sx,80,52,32))
+            pygame.draw.ellipse(s,steelD,(sx+4,82,44,24))
+            pygame.draw.ellipse(s,self._shade(steel,1.2),(sx+8,84,20,12))
+        # Arms
+        for ax,ay,bx,by in ((56,108,38,176),(150,108,168,172)):
+            pygame.draw.line(s,skin,(ax,ay),(bx,by),12)
+            pygame.draw.line(s,sd,(ax-2,ay),(bx-2,by),3)
+        # Left hand – orb
+        pygame.draw.circle(s,(*glow,200),(36,180),16)
+        pygame.draw.circle(s,(*glow,100),(36,180),26)
+        pygame.draw.circle(s,(220,240,255),(30,174),6)
+        for a in range(0,360,45):
+            ox=36+int(22*math.cos(math.radians(a)))
+            oy=180+int(22*math.sin(math.radians(a)))
+            pygame.draw.line(s,(*glowD,160),(36,180),(ox,oy),1)
+        # Staff (right)
+        pygame.draw.line(s,leather,(176,104),(182,244),7)
+        sty = 40
+        pygame.draw.ellipse(s,self._shade(glow,0.9),(168,sty,20,22))
+        for a in range(0,360,40):
+            ox=178+int(18*math.cos(math.radians(a)))
+            oy=(sty+11)+int(18*math.sin(math.radians(a)))
+            pygame.draw.line(s,(*glow,180),(178,sty+11),(ox,oy),2)
+        pygame.draw.circle(s,(255,240,200),(178,sty+10),8)
+        pygame.draw.ellipse(s,gold,(168,sty+18,20,8))
+        # Face
+        pygame.draw.rect(s,skin,(90,60,28,18))
+        self._draw_full_face(s,c,52,26,skin,sd,sh,eye_color=(100,180,240),
+                              hair_col=(40,26,64),mouth_col=(170,100,100))
+        # Hair – swept back with arcane blue sheen
+        pygame.draw.ellipse(s,(50,34,76),(60,26,88,44))
+        pygame.draw.ellipse(s,(84,60,120),(64,26,78,36))
+        pygame.draw.ellipse(s,self._shade((84,60,120),1.2),(70,28,34,20))
+        return s
+
+    def _create_shaman_showcase_art(self):
+        s = pygame.Surface((220,300), pygame.SRCALPHA)
+        skin = (188,148,114)
+        sd,sh = self._shade(skin,0.70),self._shade(skin,1.20)
+        robe = (238,202,58)
+        robeD = self._shade(robe,0.60)
+        ember = (255,166,44)
+        glow = (80,208,178)
+        bone = (218,212,190)
+        staff_c = (114,78,50)
+        c = 102
+        self._draw_showcase_bg(s,(34,24,14))
+        # Legs
+        for lx in (72,128):
+            pygame.draw.polygon(s,robeD,[(lx,196),(lx+24,196),(lx+20,278),(lx-4,278)])
+        pygame.draw.polygon(s,robe,[(60,196),(156,196),(150,278),(66,278)])
+        # Torso
+        pygame.draw.polygon(s,robe,[(54,90),(162,90),(170,202),(46,202)])
+        pygame.draw.polygon(s,robeD,[(54,90),(102,130),(162,90),(170,202),(46,202)])
+        pygame.draw.ellipse(s,self._shade(robe,1.2),(64,94,60,32))
+        # Bead necklace
+        for bx,by in [(90,96),(96,100),(102,102),(108,100),(114,96)]:
+            pygame.draw.circle(s,bone,(bx,by),4)
+            pygame.draw.circle(s,ember,(bx,by),2)
+        # Spirit totem medallion
+        pygame.draw.circle(s,ember,(102,140),14)
+        pygame.draw.circle(s,glow,(102,140),14,2)
+        for a in range(0,360,45):
+            tx=102+int(12*math.cos(math.radians(a)))
+            ty=140+int(12*math.sin(math.radians(a)))
+            pygame.draw.circle(s,bone,(tx,ty),3)
+        # Shoulders – feathers
+        for side in (-1,1):
+            fx0= c + side*50
+            for fi in range(5):
+                fa = math.radians(80+side*fi*20+side*10)
+                fx1 = fx0+int(28*math.cos(fa))
+                fy1 = 90+int(28*math.sin(fa))
+                col2 = [(ember),(glow),(bone),(robe),(robeD)][fi]
+                pygame.draw.line(s,col2,(fx0,90),(fx1,fy1),4)
+        # Arms
+        for ax,ay,bx,by in ((54,106,36,174),(152,106,174,172)):
+            pygame.draw.line(s,skin,(ax,ay),(bx,by),12)
+            pygame.draw.line(s,sd,(ax-2,ay),(bx-2,by),3)
+        # Bracelet
+        for bwx,bwy in ((32,180),(172,178)):
+            pygame.draw.circle(s,bone,(bwx,bwy),8,3)
+        # Staff (right)
+        pygame.draw.line(s,staff_c,(174,106),(180,258),8)
+        pygame.draw.circle(s,bone,(174,90),12)
+        pygame.draw.circle(s,robeD,(174,90),12,2)
+        for fa in ((0.3,glow),(1.2,ember),(2.1,bone),(3.0,glow)):
+            hx=174+int(17*math.cos(fa[0]))
+            hy=90+int(17*math.sin(fa[0]))
+            pygame.draw.circle(s,fa[1],(hx,hy),5)
+        pygame.draw.polygon(s,bone,[(162,30),(174,6),(186,30)])
+        pygame.draw.polygon(s,ember,[(168,28),(174,10),(180,28)])
+        # Glowing wisps floating
+        for wx,wy in ((44,122),(166,140),(58,168),(148,118)):
+            pygame.draw.circle(s,(*glow,160),(wx,wy),7)
+            pygame.draw.circle(s,(*glow,80),(wx,wy),13)
+        # Face
+        pygame.draw.rect(s,skin,(90,60,28,18))
+        self._draw_full_face(s,c,52,26,skin,sd,sh,eye_color=(80,190,168),
+                              hair_col=(60,36,14),mouth_col=(170,100,80))
+        # Wild hair with feathers
+        pygame.draw.ellipse(s,(64,40,18),(58,18,92,50))
+        pygame.draw.ellipse(s,(90,62,28),(62,22,80,42))
+        pygame.draw.ellipse(s,self._shade((90,62,28),1.2),(68,24,36,22))
+        # Feathers in hair
+        for hf,hfa in ((0.5,ember),(1.2,glow),(1.8,bone)):
+            hfx=c+int(44*math.cos(hf))-10
+            hfy=26+int(30*math.sin(hf))-20
+            pygame.draw.polygon(s,hfa,[(hfx,hfy),(hfx+4,hfy-18),(hfx+8,hfy)])
+        return s
+
+    def _create_assassin_showcase_art(self):
+        s = pygame.Surface((220,300), pygame.SRCALPHA)
+        skin = (196,158,128)
+        sd,sh = self._shade(skin,0.70),self._shade(skin,1.20)
+        hood = (64,38,96)
+        hoodD = self._shade(hood,0.55)
+        steel = (186,192,216)
+        steelD = self._shade(steel,0.65)
+        leather = (94,62,42)
+        c = 102
+        self._draw_showcase_bg(s,(18,12,28))
+        # Legs
+        for lx in (72,128):
+            pygame.draw.polygon(s,hoodD,[(lx,194),(lx+24,194),(lx+20,278),(lx-4,278)])
+        # Torso
+        pygame.draw.polygon(s,hood,[(54,90),(162,90),(168,198),(48,198)])
+        pygame.draw.polygon(s,hoodD,[(54,90),(102,128),(162,90),(168,198),(48,198)])
+        pygame.draw.ellipse(s,self._shade(hood,1.15),(66,94,54,28))
+        # Buckles / belts
+        for by2 in (120,148):
+            pygame.draw.line(s,(180,150,60),(54,by2),(168,by2),2)
+            pygame.draw.rect(s,(180,150,60),(94,by2-4,20,8))
+        # Shoulder pads
+        for sx in (40,140):
+            pygame.draw.ellipse(s,leather,(sx,80,50,30))
+            pygame.draw.ellipse(s,self._shade(leather,0.7),(sx+4,82,42,22))
+        # Arms
+        for ax,ay,bx,by in ((56,108,34,172),(150,108,172,172)):
+            pygame.draw.line(s,skin,(ax,ay),(bx,by),11)
+            pygame.draw.line(s,sd,(ax-2,ay),(bx-2,by),3)
+        # Daggers (both hands)
+        for dx,dy,angle in ((18,168,-0.3),(180,168,0.3)):
+            ca,sa=math.cos(angle),math.sin(angle)
+            tip=(dx+int(sa*64),dy-int(ca*64))
+            guard1=(dx-int(ca*8)-int(sa*4),dy-int(sa*8)+int(ca*4))
+            guard2=(dx+int(ca*8)-int(sa*4),dy+int(sa*8)+int(ca*4))
+            pygame.draw.line(s,leather,(dx,dy),(dx,-8+dy//3),5)
+            pygame.draw.polygon(s,steel,[guard1,guard2,tip])
+            pygame.draw.line(s,steelD,(dx,dy),tip,1)
+            pygame.draw.polygon(s,(200,160,60),[guard1,guard2,(dx,dy)])
+        # Hood
+        hpts=[(c-62,cy2+14) for cy2 in [102]] + [(c-26,16),(c,4),(c+26,16),(c+62,102+14)]
+        hpts=[(c-62,116),(c-26,16),(c,4),(c+26,16),(c+62,116)]
+        pygame.draw.polygon(s,hood,hpts)
+        hpts2=[(c-38,106),(c-12,26),(c,18),(c+12,26),(c+38,106)]
+        pygame.draw.polygon(s,hoodD,hpts2)
+        # Face in shadow
+        self._draw_full_face(s,c,56,27,skin,sd,sh,eye_color=(90,60,130),
+                              hair_col=hoodD,mouth_col=(150,80,80))
+        # Shadow across lower face
+        pygame.draw.ellipse(s,(*hoodD,180),(c-28,56+12,56,22))
+        # Glowing eyes in shadow
+        for ex_off in (-9,9):
+            pygame.draw.circle(s,(160,100,240),(c+ex_off,49),4)
+        return s
+
+    def _create_plut_showcase_art(self):
+        s = pygame.Surface((220,300), pygame.SRCALPHA)
+        skin = (204,166,132)
+        sd,sh = self._shade(skin,0.70),self._shade(skin,1.20)
+        coat = (120,86,34)
+        coatD = self._shade(coat,0.60)
+        leather = (108,70,40)
+        gold = (255,210,70)
+        violet = (160,110,230)
+        steel = (192,194,210)
+        c = 102
+        self._draw_showcase_bg(s,(34,26,14))
+        # Boots
+        for lx in (70,126):
+            pygame.draw.polygon(s,leather,[(lx,196),(lx+28,196),(lx+24,280),(lx-4,280)])
+            pygame.draw.ellipse(s,self._shade(leather,1.2),(lx+2,194,24,14))
+        # Coat body
+        pygame.draw.polygon(s,coat,[(50,92),(162,92),(170,200),(46,200)])
+        pygame.draw.polygon(s,coatD,[(50,92),(102,130),(162,92),(170,200),(46,200)])
+        pygame.draw.ellipse(s,self._shade(coat,1.2),(64,96,58,30))
+        # Gold trim on coat
+        pygame.draw.line(s,gold,(50,92),(46,200),2)
+        pygame.draw.line(s,gold,(162,92),(170,200),2)
+        pygame.draw.line(s,gold,(46,155),(170,155),2)
+        # Diamond gem on chest
+        pygame.draw.polygon(s,violet,[(102,112),(114,128),(102,144),(90,128)])
+        pygame.draw.polygon(s,self._shade(violet,1.4),[(102,112),(114,128),(102,126),(90,128)])
+        pygame.draw.line(s,self._shade(violet,1.6),(102,112),(108,120),2)
+        # Shoulder – decorative
+        for sx in (38,142):
+            pygame.draw.ellipse(s,coatD,(sx,82,52,32))
+            pygame.draw.ellipse(s,coat,(sx+4,84,44,24))
+            pygame.draw.ellipse(s,self._shade(coat,1.2),(sx+8,86,22,12))
+        # Arms
+        for ax,ay,bx,by in ((52,108,32,176),(154,108,174,174)):
+            pygame.draw.line(s,skin,(ax,ay),(bx,by),12)
+            pygame.draw.line(s,sd,(ax-2,ay),(bx-2,by),3)
+        # Left hand – coin
+        pygame.draw.circle(s,gold,(34,182),12)
+        pygame.draw.circle(s,self._shade(gold,0.8),(34,182),12,2)
+        pygame.draw.line(s,self._shade(gold,0.7),(27,182),(41,182),2)
+        # Right – rapier
+        pygame.draw.line(s,leather,(172,110),(178,248),6)
+        pygame.draw.polygon(s,steel,[(162,104),(178,40),(192,40),(182,112)])
+        pygame.draw.polygon(s,gold,[(157,104),(186,104),(182,116),(162,116)])
+        pygame.draw.ellipse(s,gold,(174,246,14,10))
+        # Wide-brim hat
+        pygame.draw.ellipse(s,coatD,(34,56,160,22))
+        pygame.draw.polygon(s,coat,[(c-38,68),(c-26,18),(c+26,18),(c+40,68)])
+        pygame.draw.ellipse(s,self._shade(coat,0.9),(c-32,14,64,28))
+        # Plume
+        for pi2,(pa,pc) in enumerate([(0.4,(200,80,240)),(0.6,(180,60,220)),(0.8,(220,100,255))]):
+            pygame.draw.polygon(s,pc,[
+                (c+28,60),(c+28+int(36*math.cos(pa+0.1)),60-int(36*math.sin(pa+0.1))),
+                (c+28+2+int(34*math.cos(pa+pi2*0.1)),60-int(34*math.sin(pa-0.2)))
+            ])
+        # Face
+        pygame.draw.rect(s,skin,(90,64,28,18))
+        self._draw_full_face(s,c,54,26,skin,sd,sh,eye_color=(100,78,48),
+                              hair_col=(80,54,16),mouth_col=(170,90,80))
+        # Moustache
+        pygame.draw.arc(s,(80,54,16),(c-22,60,20,12),3.4,6.0,3)
+        pygame.draw.arc(s,(80,54,16),(c+2,60,20,12),3.4,6.0,3)
+        return s
+
+    def _create_elf_showcase_art(self):
+        s = pygame.Surface((220,300), pygame.SRCALPHA)
+        skin = (220,190,156)
+        sd,sh = self._shade(skin,0.70),self._shade(skin,1.22)
+        hair = (230,226,178)
+        robe = (80,136,90)
+        robeD = self._shade(robe,0.60)
+        gold = (218,178,62)
+        steel = (196,204,222)
+        steelD = self._shade(steel,0.65)
+        wood = (116,80,46)
+        c = 102
+        self._draw_showcase_bg(s,(14,30,18))
+        # Legs
+        for lx in (72,128):
+            pygame.draw.polygon(s,robeD,[(lx,196),(lx+24,196),(lx+20,278),(lx-4,278)])
+        pygame.draw.polygon(s,robe,[(60,196),(152,196),(148,278),(64,278)])
+        # Torso robe
+        pygame.draw.polygon(s,robe,[(52,90),(162,90),(170,200),(44,200)])
+        pygame.draw.polygon(s,robeD,[(52,90),(102,130),(162,90),(170,200),(44,200)])
+        pygame.draw.ellipse(s,self._shade(robe,1.18),(64,94,60,32))
+        # Leaf embroidery
+        for lfi in range(5):
+            lfx=70+lfi*16
+            pygame.draw.ellipse(s,gold,(lfx,140,12,6))
+        # Elvish belt
+        pygame.draw.line(s,gold,(44,158),(170,158),3)
+        pygame.draw.ellipse(s,gold,(94,152,20,12))
+        # Shoulders – leaf spaulders
+        for sx,flip in ((36,-1),(144,1)):
+            pts=[(sx,90),(sx+flip*2,70),(sx+flip*46,72),(sx+flip*36,94)]
+            pygame.draw.polygon(s,robe,pts)
+            pygame.draw.polygon(s,robeD,[(sx+flip*10,88),(sx+flip*12,74),(sx+flip*36,76),(sx+flip*28,92)])
+        # Arms
+        for ax,ay,bx,by in ((56,106,38,174),(150,106,170,170)):
+            pygame.draw.line(s,skin,(ax,ay),(bx,by),11)
+            pygame.draw.line(s,sd,(ax-2,ay),(bx-2,by),3)
+        # Bow (right, held at side)
+        bx0=170
+        pygame.draw.arc(s,wood,(bx0-4,22,28,248),math.radians(75),math.radians(285),5)
+        pygame.draw.line(s,(220,200,180),(bx0+10,38),(bx0+10,256),1)
+        # Arrow
+        pygame.draw.line(s,wood,(bx0+2,80),(bx0+2,200),3)
+        pygame.draw.polygon(s,steel,[(bx0-2,80),(bx0+6,80),(bx0+2,64)])
+        pygame.draw.line(s,(210,60,60),(bx0-4,196),(bx0+8,204),3)
+        # Left hand – glowing palm (nature magic)
+        pygame.draw.circle(s,(100,220,120,180),(38,178),12)
+        pygame.draw.circle(s,(140,255,160,100),(38,178),20)
+        # Pointed ears (extra distinctive)
+        for side in (-1,1):
+            pygame.draw.polygon(s,skin,[(c+side*28,46),(c+side*44,16),(c+side*36,50)])
+            pygame.draw.polygon(s,sd,[(c+side*28,46),(c+side*40,20),(c+side*34,48)])
+        # Face
+        pygame.draw.rect(s,skin,(90,58,28,20))
+        self._draw_full_face(s,c,52,26,skin,sd,sh,eye_color=(70,160,100),
+                              hair_col=(self._shade(hair,0.7)),mouth_col=(175,105,90))
+        # Long hair
+        pygame.draw.ellipse(s,self._shade(hair,0.85),(56,20,96,52))
+        pygame.draw.ellipse(s,hair,(60,22,88,44))
+        pygame.draw.ellipse(s,self._shade(hair,1.1),(66,24,38,24))
+        # Hair falls past shoulders
+        for side in (-1,1):
+            pygame.draw.polygon(s,self._shade(hair,0.8),
+                                [(c+side*32,42),(c+side*54,36),(c+side*56,100),(c+side*30,110)])
+        # Circlet
+        pygame.draw.arc(s,gold,(c-34,26,68,28),0.1,math.pi-0.1,3)
+        pygame.draw.circle(s,(180,220,255),(c,27),5)
+        return s
+
+    def _create_orc_showcase_art(self):
+        s = pygame.Surface((220,300), pygame.SRCALPHA)
+        skin = (100,150,68)
+        sd,sh = self._shade(skin,0.65),self._shade(skin,1.25)
+        fur = (94,66,38)
+        furD = self._shade(fur,0.65)
+        bone = (224,216,182)
+        metal = (172,182,196)
+        metD = self._shade(metal,0.65)
+        tusk_c = (228,218,184)
+        amber = (255,192,72)
+        c = 102
+        self._draw_showcase_bg(s,(22,30,14))
+        # Legs – heavy armored
+        for lx in (66,130):
+            pygame.draw.polygon(s,metD,[(lx,192),(lx+26,192),(lx+22,278),(lx-4,278)])
+            pygame.draw.polygon(s,metal,[(lx+2,196),(lx+22,196),(lx+18,276),(lx,276)])
+            pygame.draw.ellipse(s,self._shade(metal,1.2),(lx+4,200,16,12))
+        # Bone knee guards
+        pygame.draw.ellipse(s,bone,(68,244,28,16))
+        pygame.draw.ellipse(s,bone,(128,244,28,16))
+        # Torso – bone plate armour
+        pygame.draw.polygon(s,skin,[(48,90),(162,90),(166,194),(44,194)])
+        pygame.draw.polygon(s,sd,[(48,90),(102,130),(162,90),(166,194),(44,194)])
+        # Rib-cage bone vest
+        for ri in range(5):
+            ry=104+ri*16
+            pygame.draw.arc(s,bone,(64,ry,78,14),0.2,math.pi-0.2,3)
+        pygame.draw.ellipse(s,bone,(78,102,50,18))
+        # Shoulder spikes
+        for sx,dx in ((32,-1),(148,1)):
+            pygame.draw.ellipse(s,furD,(sx,82,58,36))
+            for si in range(3):
+                spy=82+si*10
+                pygame.draw.polygon(s,bone,[(sx+dx*16,spy),(sx+dx*28,spy-14),(sx+dx*22,spy+8)])
+        # Huge arms
+        for ax,ay,bx,by in ((50,108,18,188),(156,108,188,186)):
+            pygame.draw.line(s,sd,(ax,ay),(bx,by),18)
+            pygame.draw.line(s,skin,(ax,ay),(bx,by),14)
+            pygame.draw.line(s,sh,(ax-2,ay),(bx-2,by),4)
+        # Fists
+        for fx,fy in ((16,192),(186,190)):
+            pygame.draw.circle(s,skin,(fx,fy),15)
+            pygame.draw.circle(s,sd,(fx,fy),15,3)
+        # Great-axe
+        pygame.draw.line(s,(100,66,40),(186,96),(182,252),10)
+        for side,ahx,ahy in ((-1,148,50),(1,220,50)):
+            pts=[(186,96),(ahx+side*38,ahy-28),(ahx+side*44,ahy+30),(186,120)]
+            pygame.draw.polygon(s,metal,pts)
+            pygame.draw.polygon(s,metD,[(186,96+4),(ahx+side*34,ahy-24),(ahx+side*38,ahy+24),(186,120-4)])
+            pygame.draw.line(s,self._shade(metal,1.3),(186,98),(ahx+side*40,ahy),(2))
+        pygame.draw.ellipse(s,self._shade(metal,0.9),(178,246,16,12))
+        # Head – massive
+        pygame.draw.ellipse(s,sd,(56,12,98,90))
+        pygame.draw.ellipse(s,skin,(58,10,94,88))
+        pygame.draw.ellipse(s,sh,(72,14,44,30))
+        # Brow ridge
+        pygame.draw.ellipse(s,sd,(62,34,80,20))
+        # Eyes
+        for ex_off in (-14,14):
+            ex,ey=c+ex_off,40
+            pygame.draw.ellipse(s,(200,180,180),(ex-8,ey-5,16,10))
+            pygame.draw.circle(s,amber,(ex,ey+1),5)
+            pygame.draw.circle(s,(8,8,8),(ex,ey+1),3)
+            pygame.draw.circle(s,(255,255,255),(ex+2,ey-1),1)
+        # Flat nose
+        pygame.draw.ellipse(s,sd,(c-14,48,28,18))
+        pygame.draw.ellipse(s,(80,50,30),(c-6,52,6,6))
+        pygame.draw.ellipse(s,(80,50,30),(c+2,52,6,6))
+        # Tusks
+        pygame.draw.polygon(s,tusk_c,[(c-18,60),(c-10,58),(c-14,82),(c-20,80)])
+        pygame.draw.polygon(s,tusk_c,[(c+18,60),(c+10,58),(c+14,82),(c+20,80)])
+        # Mouth
+        pygame.draw.arc(s,(30,16,10),(c-20,58,40,22),math.pi+0.5,math.pi*2-0.5,3)
+        # War paint
+        for wy,wc in [(30,(220,60,60)),(40,(200,50,50))]:
+            pygame.draw.line(s,wc,(c-30,wy),(c-12,wy+4),3)
+            pygame.draw.line(s,wc,(c+12,wy+4),(c+30,wy),3)
+        # Ears
+        for side in (-1,1):
+            pygame.draw.polygon(s,skin,[(c+side*48,32),(c+side*66,18),(c+side*52,52)])
+            pygame.draw.polygon(s,sd,[(c+side*50,34),(c+side*62,22),(c+side*52,46)])
+        return s
+
+    def _create_necromancer_showcase_art(self):
+        s = pygame.Surface((220,300), pygame.SRCALPHA)
+        skin = (204,192,176)
+        sd,sh = self._shade(skin,0.70),self._shade(skin,1.15)
+        hood = (90,62,124)
+        hoodD = self._shade(hood,0.55)
+        bone = (222,216,188)
+        ghost = (100,206,188)
+        staff_c = (88,60,44)
+        c = 102
+        self._draw_showcase_bg(s,(14,8,24))
+        # Legs
+        for lx in (72,128):
+            pygame.draw.polygon(s,hoodD,[(lx,196),(lx+24,196),(lx+20,278),(lx-4,278)])
+        # Robe
+        pygame.draw.polygon(s,hood,[(50,90),(162,90),(172,200),(44,200)])
+        pygame.draw.polygon(s,hoodD,[(50,90),(102,130),(162,90),(172,200),(44,200)])
+        pygame.draw.ellipse(s,self._shade(hood,1.15),(64,94,58,30))
+        # Skull pattern on robe
+        for ri,(rx,ry) in enumerate([(82,130),(120,130),(82,162),(120,162)]):
+            pygame.draw.circle(s,bone,(rx,ry),8)
+            pygame.draw.circle(s,hoodD,(rx,ry),5)
+            for a in range(0,360,90):
+                dx2=int(6*math.cos(math.radians(a)))
+                dy2=int(6*math.sin(math.radians(a)))
+                pygame.draw.circle(s,bone,(rx+dx2,ry+dy2),2)
+        # Arms – bony
+        for ax,ay,bx,by in ((56,108,36,176),(150,108,172,174)):
+            # Bone-like arms
+            pygame.draw.line(s,hoodD,(ax,ay),(bx,by),10)
+            pygame.draw.line(s,bone,(ax,ay),(bx,by),6)
+            # Knuckle markings
+            for seg in range(3):
+                t=seg/3.0+0.1
+                mx2=int(ax+(bx-ax)*t)
+                my2=int(ay+(by-ay)*t)
+                pygame.draw.circle(s,hoodD,(mx2,my2),4)
+        # Skeletal hands
+        for fx,fy in ((30,180),(172,178)):
+            for fi in range(3):
+                fax=fx+fi*5-5
+                pygame.draw.line(s,bone,(fax,fy),(fax+1,fy-14),3)
+                pygame.draw.circle(s,hoodD,(fax+1,fy-5),2)
+        # Necromancer staff
+        pygame.draw.line(s,staff_c,(172,108),(180,256),8)
+        # Skull on staff
+        pygame.draw.circle(s,bone,(172,88),14)
+        pygame.draw.circle(s,hoodD,(172,88),10)
+        pygame.draw.circle(s,(*ghost,200),(166,84),4)
+        pygame.draw.circle(s,(*ghost,200),(178,84),4)
+        for a in range(0,360,40):
+            gx=172+int(20*math.cos(math.radians(a)))
+            gy=88+int(20*math.sin(math.radians(a)))
+            pygame.draw.line(s,(*ghost,100),(172,88),(gx,gy),1)
+        # Ghost orbs floating
+        for gox,goy,gr in ((38,130,10),(168,148,8),(44,200,6),(176,210,7)):
+            pygame.draw.circle(s,(*ghost,160),(gox,goy),gr)
+            pygame.draw.circle(s,(*ghost,80),(gox,goy),gr+6)
+        # Hood
+        hpts=[(c-62,108),(c-28,12),(c,0),(c+28,12),(c+62,108)]
+        pygame.draw.polygon(s,hood,hpts)
+        hpts2=[(c-40,104),(c-14,22),(c,12),(c+14,22),(c+40,104)]
+        pygame.draw.polygon(s,hoodD,hpts2)
+        # Pale undead face
+        pygame.draw.ellipse(s,skin,(c-28,26,56,64))
+        pygame.draw.ellipse(s,self._shade(skin,1.1),(c-20,28,40,44))
+        # Sunken cheeks
+        pygame.draw.ellipse(s,sd,(c-22,52,16,12))
+        pygame.draw.ellipse(s,sd,(c+6,52,16,12))
+        # Eyes – glowing
+        for ex_off in (-10,10):
+            pygame.draw.ellipse(s,(40,28,54),(c+ex_off-8,36,16,12))
+            pygame.draw.circle(s,ghost,(c+ex_off,42),5)
+            pygame.draw.circle(s,(200,240,230),(c+ex_off,42),2)
+        # Nose holes
+        pygame.draw.ellipse(s,hoodD,(c-8,54,6,9))
+        pygame.draw.ellipse(s,hoodD,(c+2,54,6,9))
+        # Rictus expression
+        pygame.draw.arc(s,(30,18,40),(c-18,60,36,18),
+                        math.pi+0.5,math.pi*2-0.5,3)
+        for tx in range(-14,16,7):
+            pygame.draw.line(s,(30,18,40),(c+tx,63),(c+tx,70),2)
+        return s
+
+    def _create_mystic_showcase_art(self):
+        s = pygame.Surface((220,300), pygame.SRCALPHA)
+        skin = (212,178,146)
+        sd,sh = self._shade(skin,0.70),self._shade(skin,1.22)
+        robe = (72,126,186)
+        robeD = self._shade(robe,0.60)
+        glow = (130,226,255)
+        glowD = self._shade(glow,0.7)
+        gold = (228,186,68)
+        star_c = (255,234,156)
+        c = 102
+        self._draw_showcase_bg(s,(12,18,38))
+        # Legs
+        for lx in (72,128):
+            pygame.draw.polygon(s,robeD,[(lx,196),(lx+24,196),(lx+20,278),(lx-4,278)])
+        pygame.draw.polygon(s,robe,[(58,196),(150,196),(146,278),(62,278)])
+        # Robe
+        pygame.draw.polygon(s,robe,[(52,90),(162,90),(172,202),(44,202)])
+        pygame.draw.polygon(s,robeD,[(52,90),(102,130),(162,90),(172,202),(44,202)])
+        pygame.draw.ellipse(s,self._shade(robe,1.2),(64,94,60,32))
+        # Constellation pattern on robe
+        stars_pos=[(82,110),(96,124),(118,114),(110,140),(90,148),(124,152)]
+        for i,(sx2,sy2) in enumerate(stars_pos):
+            pygame.draw.circle(s,star_c,(sx2,sy2),3)
+            if i>0:
+                pygame.draw.line(s,(*star_c,80),stars_pos[i-1],(sx2,sy2),1)
+        # Belt + orb holder
+        pygame.draw.line(s,gold,(44,162),(172,162),3)
+        pygame.draw.circle(s,(*glow,200),(102,162),12)
+        pygame.draw.circle(s,(*glow,100),(102,162),20)
+        # Shoulder capes – starry
+        for sx,flip in ((34,-1),(142,1)):
+            pygame.draw.polygon(s,robeD,[(sx,90),(sx+flip*2,70),(sx+flip*52,74),(sx+flip*42,98)])
+            pygame.draw.ellipse(s,self._shade(robe,1.1),(sx+flip*4,72,36,18))
+        # Arms
+        for ax,ay,bx,by in ((56,106,38,174),(150,106,172,172)):
+            pygame.draw.line(s,skin,(ax,ay),(bx,by),11)
+            pygame.draw.line(s,sd,(ax-2,ay),(bx-2,by),3)
+        # Left hand – large arcane orb
+        pygame.draw.circle(s,(*glow,220),(38,180),18)
+        pygame.draw.circle(s,(*glow,100),(38,180),30)
+        pygame.draw.circle(s,(230,248,255),(30,172),7)
+        for a in range(0,360,30):
+            ox=38+int(26*math.cos(math.radians(a)))
+            oy=180+int(26*math.sin(math.radians(a)))
+            pygame.draw.line(s,(*glowD,140),(38,180),(ox,oy),1)
+        # Right – crystalline staff
+        staff_col=(160,200,240)
+        pygame.draw.line(s,(180,140,60),(174,108),(180,248),6)
+        # Crystal facets
+        crystal=[(170,100),(176,80),(184,100),(178,116)]
+        pygame.draw.polygon(s,staff_col,crystal)
+        pygame.draw.polygon(s,self._shade(staff_col,1.3),[(170,100),(176,80),(176,100)])
+        pygame.draw.circle(s,(*glow,200),(176,92),7)
+        pygame.draw.circle(s,(*glow,120),(176,92),14)
+        for a in range(0,360,45):
+            cx3=176+int(12*math.cos(math.radians(a)))
+            cy3=92+int(12*math.sin(math.radians(a)))
+            pygame.draw.line(s,(*glow,160),(176,92),(cx3,cy3),1)
+        # Stars floating
+        for sa2,sr in [(0.4,60),(1.7,68),(2.8,58),(4.2,72),(5.5,64)]:
+            sx3=c+int(sr*math.cos(sa2))
+            sy3=78+int(sr*math.sin(sa2))
+            pygame.draw.circle(s,star_c,(sx3,sy3),3)
+            pygame.draw.circle(s,(*star_c,100),(sx3,sy3),6)
+        # Hood
+        hpts=[(c-58,110),(c-24,14),(c,4),(c+24,14),(c+58,110)]
+        pygame.draw.polygon(s,robe,hpts)
+        hpts2=[(c-36,102),(c-12,24),(c,14),(c+12,24),(c+36,102)]
+        pygame.draw.polygon(s,robeD,hpts2)
+        # Celestial symbol on hood
+        pygame.draw.circle(s,(*gold,160),(c,30),8)
+        pygame.draw.circle(s,(*gold,80),(c,30),16)
+        for a in range(0,360,45):
+            sx4=c+int(14*math.cos(math.radians(a)))
+            sy4=30+int(14*math.sin(math.radians(a)))
+            pygame.draw.circle(s,(*star_c,180),(sx4,sy4),2)
+        # Face
+        pygame.draw.rect(s,skin,(90,60,28,20))
+        self._draw_full_face(s,c,54,27,skin,sd,sh,eye_color=(80,170,230),
+                              hair_col=(34,48,86),mouth_col=(170,105,105))
+        # Glowing star eyes
+        for ex_off in (-9,9):
+            pygame.draw.circle(s,glow,(c+ex_off,50),5)
+            pygame.draw.circle(s,(220,245,255),(c+ex_off,50),3)
+        # Hair – dark with star-sheen
+        pygame.draw.ellipse(s,(38,52,90),(58,20,92,50))
+        pygame.draw.ellipse(s,(58,78,126),(62,22,82,42))
+        pygame.draw.ellipse(s,self._shade((58,78,126),1.3),(70,24,38,22))
+        # Crystal circlet
+        pygame.draw.arc(s,gold,(c-34,22,68,30),0.1,math.pi-0.1,3)
+        pygame.draw.circle(s,(*glow,220),(c,23),6)
+        pygame.draw.circle(s,(230,248,255),(c,23),3)
+        return s
+
     def create_subclass_showcase_art(self):
-        return {
-            "Воин": self._create_warrior_showcase_art(),
-            "Боевой маг": self._create_battle_mage_showcase_art(),
-            "Варвар": self._create_barbarian_showcase_art(),
-            "Ассасин": self._create_assassin_showcase_art(),
-            "Плут": self._create_plut_showcase_art(),
-            "Эльф": self._create_elf_showcase_art(),
-            "Орк": self._create_orc_showcase_art(),
-            "Некромант": self._create_necromancer_showcase_art(),
-            "Мистик": self._create_mystic_showcase_art(),
-            "Шаман": self._create_shaman_showcase_art(),
-        }
+        if self.use_new_art:
+            return {
+                "Воин": self._create_warrior_showcase_art(),
+                "Боевой маг": self._create_battle_mage_showcase_art(),
+                "Варвар": self._create_barbarian_showcase_art(),
+                "Ассасин": self._create_assassin_showcase_art(),
+                "Плут": self._create_plut_showcase_art(),
+                "Эльф": self._create_elf_showcase_art(),
+                "Орк": self._create_orc_showcase_art(),
+                "Некромант": self._create_necromancer_showcase_art(),
+                "Мистик": self._create_mystic_showcase_art(),
+                "Шаман": self._create_shaman_showcase_art(),
+            }
+        else:
+            return {
+                "Воин": self._create_warrior_showcase_art_legacy(),
+                "Боевой маг": self._create_battle_mage_showcase_art_legacy(),
+                "Варвар": self._create_barbarian_showcase_art_legacy(),
+                "Ассасин": self._create_assassin_showcase_art_legacy(),
+                "Плут": self._create_plut_showcase_art_legacy(),
+                "Эльф": self._create_elf_showcase_art_legacy(),
+                "Орк": self._create_orc_showcase_art_legacy(),
+                "Некромант": self._create_necromancer_showcase_art_legacy(),
+                "Мистик": self._create_mystic_showcase_art_legacy(),
+                "Шаман": self._create_shaman_showcase_art_legacy(),
+            }
+
+    def _reload_art(self):
+        """Reload portrait icons and showcase art after art style change."""
+        self.icons = self.load_class_icons()
+        self.subclass_showcase_art = self.create_subclass_showcase_art()
 
     def set_state(self, new_state):
         self.state = new_state
@@ -1958,7 +3209,6 @@ class ArenaGame:
         border_color = (180, 180, 220) if not self.settings_open else (130, 220, 140)
         pygame.draw.rect(self.screen, border_color, r, 3, border_radius=16)
         # Gear icon: outer ring + teeth + center hole
-        import math
         gx, gy = r.centerx, r.centery
         outer_r, inner_r, hole_r = 22, 16, 8
         teeth = 8
@@ -1983,7 +3233,7 @@ class ArenaGame:
         pygame.draw.circle(self.screen, border_color, (gx, gy), hole_r, 2)
 
     def _render_settings_panel(self):
-        panel_w, panel_h = 500, 420
+        panel_w, panel_h = 500, 540
         panel_x = WIDTH - panel_w - 20
         panel_y = HEIGHT - 98 - 82 * 2 - panel_h - 14
         panel_rect = pygame.Rect(panel_x, panel_y, panel_w, panel_h)
@@ -2040,10 +3290,30 @@ class ArenaGame:
             t = self.font.render(label, True, WHITE)
             self.screen.blit(t, t.get_rect(center=rect.center))
 
-        # Apply button
+        # Art style toggle
         pygame.draw.line(self.screen, (90, 90, 120),
                          (panel_x + 18, panel_y + 290), (panel_x + panel_w - 18, panel_y + 290), 1)
-        self.settings_apply_rect = pygame.Rect(panel_x + 20, panel_y + 306, panel_w - 40, 52)
+        art_label = self.font.render("Стиль персонажей:", True, (200, 210, 255))
+        self.screen.blit(art_label, (panel_x + 20, panel_y + 302))
+
+        self.settings_art_new_rect = pygame.Rect(panel_x + 20, panel_y + 342, 215, 50)
+        self.settings_art_old_rect = pygame.Rect(panel_x + 255, panel_y + 342, 215, 50)
+        for rect, label, active in [
+            (self.settings_art_new_rect, "Новый стиль", self.use_new_art),
+            (self.settings_art_old_rect, "Классический", not self.use_new_art),
+        ]:
+            hov = rect.collidepoint(mouse)
+            col = (60, 140, 60) if active else ((80, 80, 130) if hov else (50, 50, 90))
+            pygame.draw.rect(self.screen, col, rect, border_radius=10)
+            border_col = (130, 220, 130) if active else (160, 160, 220)
+            pygame.draw.rect(self.screen, border_col, rect, 2, border_radius=10)
+            t = self.font.render(label, True, WHITE)
+            self.screen.blit(t, t.get_rect(center=rect.center))
+
+        # Apply button
+        pygame.draw.line(self.screen, (90, 90, 120),
+                         (panel_x + 18, panel_y + 406), (panel_x + panel_w - 18, panel_y + 406), 1)
+        self.settings_apply_rect = pygame.Rect(panel_x + 20, panel_y + 422, panel_w - 40, 52)
         mouse = pygame.mouse.get_pos()
         hov = self.settings_apply_rect.collidepoint(mouse)
         pygame.draw.rect(self.screen, (80, 150, 80) if hov else (55, 110, 55), self.settings_apply_rect, border_radius=12)
@@ -2052,7 +3322,7 @@ class ArenaGame:
         self.screen.blit(apply_t, apply_t.get_rect(center=self.settings_apply_rect.center))
 
         note = self.small_font.render("Изменение разрешения вступит в силу при перезапуске.", True, (170, 170, 190))
-        self.screen.blit(note, note.get_rect(centerx=panel_rect.centerx, y=panel_y + 372))
+        self.screen.blit(note, note.get_rect(centerx=panel_rect.centerx, y=panel_y + 490))
 
     def apply_settings(self):
         import os, sys
@@ -2079,6 +3349,16 @@ class ArenaGame:
             return
         if hasattr(self, "settings_win_rect") and self.settings_win_rect.collidepoint(pos):
             self.settings_fullscreen = False
+            return
+        if hasattr(self, "settings_art_new_rect") and self.settings_art_new_rect.collidepoint(pos):
+            if not self.use_new_art:
+                self.use_new_art = True
+                self._reload_art()
+            return
+        if hasattr(self, "settings_art_old_rect") and self.settings_art_old_rect.collidepoint(pos):
+            if self.use_new_art:
+                self.use_new_art = False
+                self._reload_art()
             return
         if hasattr(self, "settings_apply_rect") and self.settings_apply_rect.collidepoint(pos):
             self.apply_settings()
