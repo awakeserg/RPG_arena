@@ -61,6 +61,7 @@ class ArenaGame:
     CLASS_SELECT = "class_select"
     MAGIC_SELECT = "magic_select"
     STAT_SELECT = "stat_select"
+    ARENA_SELECT = "arena_select"
     BATTLE = "battle"
     POST_BATTLE = "post_battle"
 
@@ -439,11 +440,25 @@ class ArenaGame:
             },
         }
         self.arena_data = [
-            ("Колизей", "hp"),
-            ("Лес", "dodge"),
-            ("Вулкан", "damage"),
-            ("Ледяная пустошь", "crit"),
+            ("Колизей", "colosseum"),
+            ("Вулкан", "volcano"),
+            ("Ледяная пустошь", "frozen"),
+            ("Лес", "forest"),
+            ("Земля мёртвых", "deadlands"),
+            ("Горный пик", "mountain"),
+            ("Арена теней", "shadows"),
+            ("Небесная цитадель", "citadel"),
         ]
+        self.arena_backgrounds = {
+            "Колизей": self._gen_arena_bg_colosseum(),
+            "Вулкан": self._gen_arena_bg_volcano(),
+            "Ледяная пустошь": self._gen_arena_bg_frozen(),
+            "Лес": self._gen_arena_bg_forest(),
+            "Земля мёртвых": self._gen_arena_bg_deadlands(),
+            "Горный пик": self._gen_arena_bg_mountain(),
+            "Арена теней": self._gen_arena_bg_shadows(),
+            "Небесная цитадель": self._gen_arena_bg_citadel(),
+        }
 
         self.menu_buttons = [
             UIButton("1 игрок", 760, 240, 280, 70),
@@ -468,10 +483,10 @@ class ArenaGame:
         self.rebuild_name_key_buttons()
 
         self.class_buttons = []
-        y = 220
+        y = 165
         for name in self.class_groups:
             self.class_buttons.append(UIButton(name, 120, y, 280, 65))
-            y += 95
+            y += 78
         self.class_confirm_button = UIButton("Выбрать", 120, 700, 280, 65)
         self.class_back_button = UIButton("Назад", 120, 615, 280, 65)
 
@@ -490,6 +505,18 @@ class ArenaGame:
             y += 72
         self.stat_confirm_button = UIButton("Продолжить", 120, 730, 280, 65)
         self.stat_back_button = UIButton("←", 420, 730, 65, 65)
+
+        # Arena selection
+        self.arena_select_buttons = []
+        _ay = 125
+        for _an, _ in self.arena_data:
+            self.arena_select_buttons.append(UIButton(_an, 120, _ay, 280, 50))
+            _ay += 66
+        self.arena_select_buttons.append(UIButton("🎲 Случайная", 120, _ay, 280, 50))
+        _ay += 66
+        self.arena_confirm_button = UIButton("В бой!", 120, _ay + 20, 280, 60)
+        self.arena_back_button = UIButton("Назад", 120, _ay + 20 + 72, 280, 60)
+        self.selected_arena = None  # None = random, else arena name string
 
         self.battle_buttons = [
             UIButton("Атака", 70, 600, 220, 100),
@@ -1117,6 +1144,8 @@ class ArenaGame:
             self.handle_magic_events(events)
         elif self.state == self.STAT_SELECT:
             self.handle_stat_events(events)
+        elif self.state == self.ARENA_SELECT:
+            self.handle_arena_select_events(events)
         elif self.state == self.BATTLE:
             self.handle_battle_events(events)
         elif self.state == self.POST_BATTLE:
@@ -1143,6 +1172,8 @@ class ArenaGame:
             self.render_magic_select()
         elif self.state == self.STAT_SELECT:
             self.render_stat_select()
+        elif self.state == self.ARENA_SELECT:
+            self.render_arena_select()
         elif self.state == self.BATTLE:
             self.render_battle()
         elif self.state == self.POST_BATTLE:
@@ -1270,9 +1301,20 @@ class ArenaGame:
 
     def handle_class_events(self, events):
         for event in events:
+            if self.help_open:
+                self.handle_help_overlay_events(events)
+                return
+
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 self.back_from_class_select()
                 return
+
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if self.help_button_rect.collidepoint(event.pos):
+                    self.help_open = True
+                    self.help_active_tab = self.help_tabs[0]
+                    self.help_scroll = 0
+                    return
 
             for button in self.class_buttons:
                 if button.clicked(event):
@@ -1311,35 +1353,35 @@ class ArenaGame:
         if len(subclasses) == 2:
             if group_name == "Боец":
                 return [
-                    (pygame.Rect(1270, 185, 185, 185), subclasses[0]),
-                    (pygame.Rect(1518, 185, 185, 185), subclasses[1]),
+                    (pygame.Rect(1270, 118, 185, 185), subclasses[0]),
+                    (pygame.Rect(1518, 118, 185, 185), subclasses[1]),
                 ]
             if group_name == "Дикарь":
                 return [
-                    (pygame.Rect(1270, 185, 185, 185), subclasses[0]),
-                    (pygame.Rect(1518, 185, 185, 185), subclasses[1]),
+                    (pygame.Rect(1270, 118, 185, 185), subclasses[0]),
+                    (pygame.Rect(1518, 118, 185, 185), subclasses[1]),
                 ]
             if group_name == "Разбойник":
                 return [
-                    (pygame.Rect(1270, 185, 185, 185), subclasses[0]),
-                    (pygame.Rect(1518, 185, 185, 185), subclasses[1]),
+                    (pygame.Rect(1270, 118, 185, 185), subclasses[0]),
+                    (pygame.Rect(1518, 118, 185, 185), subclasses[1]),
                 ]
             if group_name == "Нелюди":
                 return [
-                    (pygame.Rect(1270, 185, 185, 185), subclasses[0]),
-                    (pygame.Rect(1518, 185, 185, 185), subclasses[1]),
+                    (pygame.Rect(1270, 118, 185, 185), subclasses[0]),
+                    (pygame.Rect(1518, 118, 185, 185), subclasses[1]),
                 ]
             if group_name == "Маг":
                 return [
-                    (pygame.Rect(1270, 185, 185, 185), subclasses[0]),
-                    (pygame.Rect(1518, 185, 185, 185), subclasses[1]),
+                    (pygame.Rect(1270, 118, 185, 185), subclasses[0]),
+                    (pygame.Rect(1518, 118, 185, 185), subclasses[1]),
                 ]
             return [
-                (pygame.Rect(1285, 185, 185, 185), subclasses[0]),
-                (pygame.Rect(1498, 185, 185, 185), subclasses[1]),
+                (pygame.Rect(1285, 118, 185, 185), subclasses[0]),
+                (pygame.Rect(1498, 118, 185, 185), subclasses[1]),
             ]
         elif len(subclasses) == 1:
-            return [(pygame.Rect(1320, 170, 220, 220), subclasses[0])]
+            return [(pygame.Rect(1320, 103, 220, 220), subclasses[0])]
         return []
 
     def back_from_class_select(self):
@@ -1354,9 +1396,20 @@ class ArenaGame:
 
     def handle_magic_events(self, events):
         for event in events:
+            if self.help_open:
+                self.handle_help_overlay_events(events)
+                return
+
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 self.set_state(self.CLASS_SELECT)
                 return
+
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if self.help_button_rect.collidepoint(event.pos):
+                    self.help_open = True
+                    self.help_active_tab = self.help_tabs[0]
+                    self.help_scroll = 0
+                    return
 
             for button in self.magic_buttons:
                 if button.clicked(event):
@@ -1373,9 +1426,20 @@ class ArenaGame:
 
     def handle_stat_events(self, events):
         for event in events:
+            if self.help_open:
+                self.handle_help_overlay_events(events)
+                return
+
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 self.set_state(self.CLASS_SELECT if self.selected_class == "Орк" else self.MAGIC_SELECT)
                 return
+
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if self.help_button_rect.collidepoint(event.pos):
+                    self.help_open = True
+                    self.help_active_tab = self.help_tabs[0]
+                    self.help_scroll = 0
+                    return
 
             for button in self.stat_buttons:
                 if button.clicked(event):
@@ -1393,6 +1457,220 @@ class ArenaGame:
                 self.confirm_player_build()
                 return
 
+    def handle_arena_select_events(self, events):
+        for event in events:
+            if self.help_open:
+                self.handle_help_overlay_events(events)
+                return
+
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                self.setup_index = self.player_count - 1
+                self.load_setup_state(self.setup_index)
+                self.set_state(self.STAT_SELECT)
+                return
+
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if self.help_button_rect.collidepoint(event.pos):
+                    self.help_open = True
+                    self.help_active_tab = self.help_tabs[0]
+                    self.help_scroll = 0
+                    return
+
+            for btn in self.arena_select_buttons:
+                if btn.clicked(event):
+                    name = btn.text
+                    if name.startswith("🎲"):
+                        self.selected_arena = None  # random
+                    else:
+                        self.selected_arena = name
+                    return
+
+            if self.arena_back_button.clicked(event):
+                # Go back to last player's stat select
+                self.setup_index = self.player_count - 1
+                self.load_setup_state(self.setup_index)
+                self.set_state(self.STAT_SELECT)
+                return
+
+            if self.arena_confirm_button.clicked(event):
+                self.start_battle()
+                return
+
+    def get_arena_bonus_lines(self, arena_name):
+        """Returns list of (text, color) for display in arena_select."""
+        data = {
+            "Колизей": [
+                ("Бойцы — Бонус:", GOLD),
+                ("  Воин, Боевой маг", WHITE),
+                ("  +30% к физическому урону", (100, 220, 100)),
+                ("Дикари — Дебаф:", (220, 100, 100)),
+                ("  Варвар, Шаман", WHITE),
+                ("  −10 ловкости (−20% уклонения)", (220, 90, 90)),
+                ("Остальные:", GRAY),
+                ("  Без бонусов", GRAY),
+            ],
+            "Вулкан": [
+                ("Адепты огня и земли — Бонус:", GOLD),
+                ("  Путь огня, Путь земли", WHITE),
+                ("  +10 мудрости, +10 интеллекта", (100, 220, 100)),
+                ("Остальные:", GRAY),
+                ("  Без бонусов", GRAY),
+            ],
+            "Ледяная пустошь": [
+                ("Адепты воды — Бонус:", GOLD),
+                ("  +10 мудрости, +10 интеллекта", (100, 220, 100)),
+                ("Некромант — Бонус:", GOLD),
+                ("  +5 мудрости, +5 интеллекта", (100, 200, 100)),
+                ("Адепты огня — Дебаф:", (220, 100, 100)),
+                ("  −10 мудрости, −10 интеллекта", (220, 90, 90)),
+                ("Остальные:", GRAY),
+                ("  Без бонусов", GRAY),
+            ],
+            "Лес": [
+                ("Нелюди и Дикари — Бонус:", GOLD),
+                ("  Эльф, Орк, Варвар, Шаман", WHITE),
+                ("  +10 ловкости, +10 удачи", (100, 220, 100)),
+                ("Мистик — Бонус:", GOLD),
+                ("  +15 мудрости", (100, 220, 100)),
+                ("Остальные:", GRAY),
+                ("  Без бонусов", GRAY),
+            ],
+            "Земля мёртвых": [
+                ("Некромант — Бонус:", GOLD),
+                ("  +5 ко всем характеристикам", (100, 220, 100)),
+                ("Шаман и Мистик — Без эффекта:", GRAY),
+                ("  Между миром живых и мёртвых", GRAY),
+                ("Все остальные — Дебаф:", (220, 100, 100)),
+                ("  −5 ко всем характеристикам", (220, 90, 90)),
+            ],
+            "Горный пик": [
+                ("Адепты земли и воздуха — Бонус:", GOLD),
+                ("  Путь земли, Путь воздуха", WHITE),
+                ("  +10 мудрости, +10 удачи (+20% крит)", (100, 220, 100)),
+                ("Остальные:", GRAY),
+                ("  Без бонусов", GRAY),
+            ],
+            "Арена теней": [
+                ("Теневые бойцы — Бонус:", GOLD),
+                ("  Ассасин, Плут", WHITE),
+                ("  Тёмный путь, Путь непознаваемого", WHITE),
+                ("  +10 ловкости, +10 интеллекта", (100, 220, 100)),
+                ("Воин — Дебаф:", (220, 100, 100)),
+                ("  −10 ловкости (броня мешает)", (220, 90, 90)),
+                ("Остальные:", GRAY),
+                ("  Без бонусов", GRAY),
+            ],
+            "Небесная цитадель": [
+                ("Адепты воздуха — Бонус:", GOLD),
+                ("  +15 интеллекта, +5 мудрости", (100, 220, 100)),
+                ("Эльф — Бонус:", GOLD),
+                ("  +10 ловкости, +10 мудрости", (100, 220, 100)),
+                ("Орк — Дебаф:", (220, 100, 100)),
+                ("  −10 мудрости, −10 интеллекта", (220, 90, 90)),
+                ("Остальные:", GRAY),
+                ("  Без бонусов", GRAY),
+            ],
+        }
+        return data.get(arena_name, [])
+
+    def render_arena_select(self):
+        # Show arena background if one is selected
+        bg = self.arena_backgrounds.get(self.selected_arena) if self.selected_arena else None
+        if bg:
+            # Darken slightly for UI readability
+            dark_bg = bg.copy()
+            overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+            overlay.fill((0, 0, 0, 80))
+            dark_bg.blit(overlay, (0, 0))
+            self.screen.blit(dark_bg, (0, 0))
+        else:
+            self.screen.fill(DARK)
+
+        left_panel = pygame.Rect(70, 100, 400, 710)
+        right_panel = pygame.Rect(520, 100, 1210, 710)
+        pygame.draw.rect(self.screen, PANEL, left_panel, border_radius=20)
+        pygame.draw.rect(self.screen, WHITE, left_panel, 3, border_radius=20)
+        if not bg:
+            pygame.draw.rect(self.screen, PANEL, right_panel, border_radius=20)
+        else:
+            panel_surf = pygame.Surface((right_panel.width, right_panel.height), pygame.SRCALPHA)
+            panel_surf.fill((30, 30, 42, 195))
+            self.screen.blit(panel_surf, right_panel.topleft)
+        pygame.draw.rect(self.screen, WHITE, right_panel, 3, border_radius=20)
+
+        title = self.big_font.render("Выбор арены", True, WHITE)
+        self.screen.blit(title, (610, 22))
+
+        # Left: arena buttons
+        for btn in self.arena_select_buttons:
+            is_active = (btn.text == self.selected_arena) or (btn.text.startswith("🎲") and self.selected_arena is None)
+            btn.draw(self.screen, self.font, active=is_active)
+
+        self.arena_back_button.draw(self.screen, self.font)
+        self.arena_confirm_button.draw(self.screen, self.font)
+
+        # Right panel content
+        rx = 545
+        ry = 125
+
+        if self.selected_arena:
+            # Arena name big
+            a_color = (220, 200, 120) if self.selected_arena == "Вулкан" else \
+                      (130, 195, 240) if self.selected_arena == "Ледяная пустошь" else \
+                      (120, 210, 130) if self.selected_arena == "Лес" else \
+                      (80, 200, 100) if self.selected_arena == "Земля мёртвых" else \
+                      (185, 195, 215) if self.selected_arena == "Горный пик" else \
+                      (160, 90, 220) if self.selected_arena == "Арена теней" else \
+                      (190, 215, 255) if self.selected_arena == "Небесная цитадель" else \
+                      (240, 200, 130)
+            a_title = self.class_name_font.render(self.selected_arena.upper(), True, a_color)
+            self.screen.blit(a_title, (rx, ry))
+            ry += 52
+
+            # Preview image scaled
+            prev_bg = self.arena_backgrounds.get(self.selected_arena)
+            if prev_bg:
+                prev_w, prev_h = 680, 340
+                preview = pygame.transform.smoothscale(prev_bg, (prev_w, prev_h))
+                prev_rect = preview.get_rect(topleft=(rx, ry))
+                self.screen.blit(preview, prev_rect)
+                # Frame
+                pygame.draw.rect(self.screen, (160, 160, 180), prev_rect, 2, border_radius=10)
+                ry += prev_h + 22
+
+            # Bonus lines
+            bonus_title = self.font.render("Бонусы арены:", True, WHITE)
+            self.screen.blit(bonus_title, (rx, ry))
+            ry += 36
+            for line_text, line_color in self.get_arena_bonus_lines(self.selected_arena):
+                surf = self.font.render(line_text, True, line_color)
+                self.screen.blit(surf, (rx, ry))
+                ry += 34
+        else:
+            # Random mode
+            rand_title = self.class_name_font.render("СЛУЧАЙНАЯ", True, GOLD)
+            self.screen.blit(rand_title, (rx, ry))
+            ry += 60
+            rand_lines = [
+                ("Арена будет выбрана случайно", WHITE),
+                ("перед началом боя", WHITE),
+                ("", None),
+                ("Доступные арены:", (190, 190, 210)),
+            ]
+            for _an, _ in self.arena_data:
+                rand_lines.append((f"  • {_an}", (160, 210, 160)))
+            for line_text, line_color in rand_lines:
+                if line_color is None:
+                    ry += 14
+                    continue
+                s = self.font.render(line_text, True, line_color)
+                self.screen.blit(s, (rx, ry))
+                ry += 36
+
+        self.draw_help_button()
+        if self.help_open:
+            self.render_help_overlay()
+
     def confirm_player_build(self):
         self.player_builds[self.setup_index] = {
             "name": self.human_names[self.setup_index],
@@ -1407,14 +1685,21 @@ class ArenaGame:
             self.set_state(self.CLASS_SELECT)
             return
 
-        self.start_battle()
+        # All players configured — go to arena selection
+        self.selected_arena = None
+        self.set_state(self.ARENA_SELECT)
 
     def start_battle(self):
         self.players = [self.build_human_player(build) for build in self.player_builds]
         if self.player_count == 1:
             self.players.append(self.create_ai_player())
 
-        self.arena_name = self.apply_random_arena(self.players)
+        # Use selected arena or pick a random one (re-seed for true randomness)
+        if self.selected_arena:
+            self.arena_name, arena_messages = self.apply_random_arena(self.players, forced_name=self.selected_arena)
+        else:
+            random.seed()  # Re-seed from OS entropy to avoid correlated picks
+            self.arena_name, arena_messages = self.apply_random_arena(self.players)
         self.players = self.order_players_for_battle(self.players)
         order_text = " → ".join(player.name for player in self.players)
 
@@ -1427,6 +1712,8 @@ class ArenaGame:
             self.make_log_entry(f"🏟 Арена: {self.arena_name}", category="arena"),
             self.make_log_entry(f"🎲 Порядок ходов: {order_text}", category="arena"),
         ]
+        for _am in arena_messages:
+            self.log.append(self.make_log_entry(_am, category="arena"))
         self.info_rects = [None] * len(self.players)
         self.show_info_idx = None
         self.close_popup_rect = None
@@ -1697,11 +1984,15 @@ class ArenaGame:
 
         arenas = [
             ("title", "Арены, предметы и дополнительные числа"),
-            ("subtitle", "Случайные арены"),
-            ("bullet", "Колизей — всем бойцам +10 максимального HP и +10 текущего HP перед стартом боя."),
-            ("bullet", "Лес — всем бойцам +10% уклонения."),
-            ("bullet", "Вулкан — всем бойцам +5 урона."),
-            ("bullet", "Ледяная пустошь — всем бойцам +10% критического шанса."),
+            ("subtitle", "Случайные арены (8 штук)"),
+            ("bullet", "Колизей — Бойцы (Воин, Боевой маг): +30% к физическому урону. Дикари (Варвар, Шаман): −10 ловкости."),
+            ("bullet", "Вулкан — Адепты Пути огня и Пути земли: +10 мудрости, +10 интеллекта."),
+            ("bullet", "Ледяная пустошь — Адепты Пути воды: +10 мудрости, +10 интеллекта. Некромант: +5 мудрости, +5 интеллекта. Адепты Пути огня: −10 мудрости, −10 интеллекта."),
+            ("bullet", "Лес — Нелюди (Эльф, Орк) и Дикари (Варвар, Шаман): +10 ловкости, +10 удачи. Мистик: +15 мудрости."),
+            ("bullet", "Земля мёртвых — Некромант: +5 ко всем характеристикам. Шаман и Мистик: без эффекта. Все остальные: −5 ко всем характеристикам."),
+            ("bullet", "Горный пик — Адепты Пути земли и Пути воздуха: +10 мудрости, +10 удачи (+20% крит)."),
+            ("bullet", "Арена теней — Ассасин, Плут, Тёмный путь, Путь непознаваемого: +10 ловкости, +10 интеллекта. Воин: −10 ловкости."),
+            ("bullet", "Небесная цитадель — Адепты Пути воздуха: +15 интеллекта, +5 мудрости. Эльф: +10 ловкости, +10 мудрости. Орк: −10 мудрости, −10 интеллекта."),
             ("subtitle", "Лут и находки"),
             ("bullet", "Базовый поиск предмета: 50% + удача. При обезоруживании итоговый шанс дополнительно снижается на 20%."),
         ]
@@ -2030,15 +2321,8 @@ class ArenaGame:
 
     def render_log_entry(self, entry, x, y, max_width):
         if isinstance(entry, dict) and entry.get("category") == "separator":
-            label = entry.get("text", "Конец хода")
             center_y = y + 14
             pygame.draw.line(self.screen, (205, 205, 220), (x, center_y), (x + max_width, center_y), 2)
-            tag_surface = self.small_font.render(f" {label} ", True, (250, 240, 200))
-            tag_rect = tag_surface.get_rect(center=(x + max_width // 2, center_y))
-            tag_bg = tag_rect.inflate(16, 8)
-            pygame.draw.rect(self.screen, (48, 48, 60), tag_bg, border_radius=10)
-            pygame.draw.rect(self.screen, (205, 205, 220), tag_bg, 1, border_radius=10)
-            self.screen.blit(tag_surface, tag_rect)
             return y + 28
 
         if isinstance(entry, dict) and (entry.get("category") == "action" or str(entry.get("category", "")).startswith("magic_")):
@@ -2584,19 +2868,527 @@ class ArenaGame:
         random.shuffle(ordered_players)
         return ordered_players
 
-    def apply_random_arena(self, players):
-        arena_name, arena_effect = random.choice(self.arena_data)
+    # ─── Arena background generation ────────────────────────────────────────────
+
+    def _arena_dark_overlay(self, surf, alpha=145):
+        overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, alpha))
+        surf.blit(overlay, (0, 0))
+
+    def _gen_arena_bg_colosseum(self):
+        surf = pygame.Surface((WIDTH, HEIGHT))
+        rng = random.Random(1)
+        # Sky
+        for y in range(380):
+            t = y / 380
+            surf.fill((int(110 + t * 60), int(155 + t * 55), int(210 - t * 30)), (0, y, WIDTH, 1))
+        # Sand floor gradient
+        for y in range(380, HEIGHT):
+            t = (y - 380) / (HEIGHT - 380)
+            surf.fill((int(195 + t * 18), int(162 + t * 12), int(95 + t * 10)), (0, y, WIDTH, 1))
+        # Stone wall band at top (crowd gallery)
+        pygame.draw.rect(surf, (115, 108, 96), (0, 0, WIDTH, 90))
+        for ax in range(-30, WIDTH + 50, 180):
+            # arch opening (dark)
+            pygame.draw.rect(surf, (38, 32, 26), (ax + 20, 0, 120, 80))
+            pygame.draw.ellipse(surf, (38, 32, 26), (ax + 20, -30, 120, 80))
+            # arch stone border
+            pygame.draw.rect(surf, (140, 128, 110), (ax + 18, 0, 4, 82))
+            pygame.draw.rect(surf, (140, 128, 110), (ax + 138, 0, 4, 82))
+        # Pillars on both sides
+        for px in [0, 185, 1580, 1765]:
+            pygame.draw.rect(surf, (145, 138, 122), (px, 85, 55, 560))
+            pygame.draw.rect(surf, (165, 158, 142), (px, 80, 70, 18))  # capital
+            pygame.draw.rect(surf, (165, 158, 142), (px, 635, 70, 14))  # base
+            pygame.draw.rect(surf, (100, 94, 82), (px + 48, 98, 7, 544))  # shadow
+        # Sand perspective grid
+        horizon_y = 390
+        for px_src in range(0, WIDTH + 200, 200):
+            pygame.draw.line(surf, (175, 148, 88), (px_src, horizon_y), (px_src, HEIGHT), 1)
+        for sep_y in range(horizon_y, HEIGHT, 70):
+            pygame.draw.line(surf, (185, 155, 90), (0, sep_y), (WIDTH, sep_y), 1)
+        # Sand texture dots
+        for _ in range(2400):
+            surf.set_at((rng.randint(0, WIDTH - 1), rng.randint(390, HEIGHT - 1)), (170 + rng.randint(-12, 12), 142 + rng.randint(-10, 10), 88 + rng.randint(-8, 8)))
+        self._arena_dark_overlay(surf, 148)
+        return surf
+
+    def _gen_arena_bg_volcano(self):
+        surf = pygame.Surface((WIDTH, HEIGHT))
+        rng = random.Random(2)
+        # Sky – dark reddish
+        for y in range(HEIGHT):
+            t = y / HEIGHT
+            surf.fill((int(80 - t * 30), int(18 - t * 8), int(8)), (0, y, WIDTH, 1))
+        # Distant glow behind volcano (orange halo)
+        glow_cx, glow_cy = WIDTH // 2, 490
+        for r in range(270, 0, -1):
+            alpha_f = (270 - r) / 270
+            c = int(alpha_f * 200)
+            col = (min(255, 160 + c), min(255, int(c * 0.55)), 0)
+            pygame.draw.circle(surf, col, (glow_cx, glow_cy), r, 1)
+        # Volcano silhouette
+        vx = WIDTH // 2
+        pts = [(vx - 540, HEIGHT), (vx - 210, 340), (vx, 210), (vx + 210, 340), (vx + 540, HEIGHT)]
+        pygame.draw.polygon(surf, (28, 20, 18), pts)
+        # Crater glow
+        pygame.draw.ellipse(surf, (255, 130, 0), (vx - 55, 185, 110, 55))
+        pygame.draw.ellipse(surf, (255, 220, 80), (vx - 28, 195, 56, 28))
+        # Lava rivers
+        for lx_base in [vx - 160, vx - 60, vx + 40, vx + 120]:
+            py = 340
+            lx = lx_base
+            while py < HEIGHT:
+                w = rng.randint(4, 14)
+                pygame.draw.line(surf, (240, rng.randint(80, 140), 0), (lx, py), (lx + rng.randint(-18, 18), py + 35), w)
+                lx += rng.randint(-10, 10)
+                py += 35
+        # Rocky ground bottom
+        for _ in range(180):
+            rx = rng.randint(0, WIDTH)
+            ry = rng.randint(int(HEIGHT * 0.78), HEIGHT - 1)
+            rw = rng.randint(20, 90)
+            rh = rng.randint(10, 38)
+            shade = rng.randint(32, 56)
+            pygame.draw.ellipse(surf, (shade, shade - 5, shade - 8), (rx, ry, rw, rh))
+        # Ash particles
+        for _ in range(700):
+            ax = rng.randint(0, WIDTH)
+            ay = rng.randint(0, HEIGHT // 2)
+            col = rng.randint(70, 130)
+            pygame.draw.circle(surf, (col, col - 10, col - 15), (ax, ay), rng.randint(1, 3))
+        self._arena_dark_overlay(surf, 130)
+        return surf
+
+    def _gen_arena_bg_frozen(self):
+        surf = pygame.Surface((WIDTH, HEIGHT))
+        rng = random.Random(3)
+        # Sky – pale icy blue
+        for y in range(HEIGHT):
+            t = y / HEIGHT
+            r_c = int(155 + t * 30)
+            g_c = int(190 + t * 25)
+            b_c = int(220 + t * 15)
+            surf.fill((min(255, r_c), min(255, g_c), min(255, b_c)), (0, y, WIDTH, 1))
+        # Distant ice mountains
+        mountain_color = (175, 205, 228)
+        mountain_shadow = (145, 178, 208)
+        for mx, mh, mw in [(0, 340, 420), (320, 290, 330), (580, 370, 380), (860, 250, 310), (1100, 330, 360), (1380, 280, 400), (1600, 360, 380)]:
+            pts = [(mx, HEIGHT - 250), (mx + mw // 2, HEIGHT - 250 - mh), (mx + mw, HEIGHT - 250)]
+            pygame.draw.polygon(surf, mountain_color, pts)
+            # snow cap
+            cap_h = mh // 3
+            cap_pts = [(mx + mw // 2 - cap_h // 2, HEIGHT - 250 - mh + cap_h), (mx + mw // 2, HEIGHT - 250 - mh), (mx + mw // 2 + cap_h // 2, HEIGHT - 250 - mh + cap_h)]
+            pygame.draw.polygon(surf, (240, 248, 255), cap_pts)
+            # shadow flank
+            pygame.draw.polygon(surf, mountain_shadow, [(mx + mw // 2, HEIGHT - 250 - mh), (mx + mw, HEIGHT - 250), (mx + mw // 2 + 20, HEIGHT - 250)])
+        # Ice plain floor
+        for y in range(int(HEIGHT * 0.72), HEIGHT):
+            t = (y - HEIGHT * 0.72) / (HEIGHT - HEIGHT * 0.72)
+            b_v = int(230 + t * 10)
+            surf.fill((b_v - 20, b_v - 8, b_v), (0, y, WIDTH, 1))
+        # Ice crack lines on floor
+        for _ in range(22):
+            cx = rng.randint(0, WIDTH)
+            cy = rng.randint(int(HEIGHT * 0.72), HEIGHT)
+            length = rng.randint(60, 220)
+            ang_x = rng.randint(-length, length)
+            pygame.draw.line(surf, (160, 190, 220), (cx, cy), (cx + ang_x, cy + rng.randint(10, 50)), rng.randint(1, 2))
+        # Ice spires at ground level
+        for sx in range(0, WIDTH + 100, rng.randint(55, 110)):
+            sh = rng.randint(30, 110)
+            sw = rng.randint(10, 30)
+            sy_base = int(HEIGHT * 0.72) + rng.randint(-18, 18)
+            pygame.draw.polygon(surf, (195, 220, 242), [(sx, sy_base), (sx + sw // 2, sy_base - sh), (sx + sw, sy_base)])
+            pygame.draw.polygon(surf, (215, 235, 250), [(sx + sw // 2 - 4, sy_base), (sx + sw // 2, sy_base - sh), (sx + sw // 2 + 4, sy_base)])
+        # Snowflakes
+        for _ in range(900):
+            sx = rng.randint(0, WIDTH)
+            sy = rng.randint(0, HEIGHT)
+            pygame.draw.circle(surf, (235, 242, 255), (sx, sy), rng.randint(1, 2))
+        self._arena_dark_overlay(surf, 138)
+        return surf
+
+    def _gen_arena_bg_forest(self):
+        surf = pygame.Surface((WIDTH, HEIGHT))
+        rng = random.Random(4)
+        # Background sky glimpses (dark blue-green)
+        surf.fill((18, 28, 22))
+        # Sky patches visible through canopy top
+        for _ in range(18):
+            sx = rng.randint(0, WIDTH)
+            sy = rng.randint(0, 140)
+            sw = rng.randint(40, 160)
+            sh = rng.randint(20, 70)
+            pygame.draw.ellipse(surf, (38, 68, 95), (sx, sy, sw, sh))
+        # Deep background trees (far layer)
+        for tx in range(0, WIDTH + 80, rng.randint(55, 90)):
+            th = rng.randint(280, 470)
+            tw = rng.randint(60, 100)
+            ty = HEIGHT - th
+            pygame.draw.rect(surf, (22, 38, 22), (tx - tw // 4, ty + th // 2, tw // 2, th // 2))  # trunk
+            pygame.draw.ellipse(surf, (28, 52, 28), (tx - tw, ty, tw * 2, th // 2))  # foliage
+        # Mid-foreground forest floor
+        for y in range(int(HEIGHT * 0.65), HEIGHT):
+            t = (y - HEIGHT * 0.65) / (HEIGHT - HEIGHT * 0.65)
+            surf.fill((int(18 + t * 12), int(34 + t * 8), int(18)), (0, y, WIDTH, 1))
+        # Foreground trees (close layer)
+        for tx in range(-80, WIDTH + 120, rng.randint(130, 230)):
+            th = rng.randint(560, 800)
+            tw = rng.randint(28, 52)
+            ty = HEIGHT - th
+            # trunk
+            pygame.draw.rect(surf, (52, 36, 20), (tx - tw // 2, ty + th // 3, tw, th * 2 // 3))
+            # bark texture
+            for bk in range(th // 3, th, 40):
+                pygame.draw.line(surf, (40, 28, 14), (tx - tw // 2, ty + bk), (tx - tw // 2 + rng.randint(4, tw - 4), ty + bk + rng.randint(8, 18)), 2)
+            # foliage cluster
+            for layer in range(3):
+                fsz = rng.randint(160 - layer * 28, 230 - layer * 28)
+                pygame.draw.ellipse(surf, (28 + layer * 10, 60 + layer * 12, 28 + layer * 6), (tx - fsz // 2, ty + th // 3 - fsz // 2 + layer * 40, fsz, fsz * 3 // 4))
+        # Roots / undergrowth
+        for _ in range(30):
+            rx = rng.randint(0, WIDTH)
+            ry = rng.randint(int(HEIGHT * 0.7), HEIGHT)
+            pygame.draw.line(surf, (42, 28, 16), (rx, ry), (rx + rng.randint(-55, 55), ry + rng.randint(10, 55)), rng.randint(2, 5))
+        # Light shafts
+        for _ in range(7):
+            lx = rng.randint(0, WIDTH)
+            light_surf = pygame.Surface((60, HEIGHT), pygame.SRCALPHA)
+            light_surf.fill((180, 210, 160, 18))
+            surf.blit(light_surf, (lx - 30, 0))
+        # Forest floor foliage dots
+        for _ in range(1200):
+            fx = rng.randint(0, WIDTH)
+            fy = rng.randint(int(HEIGHT * 0.67), HEIGHT)
+            shade = rng.randint(28, 62)
+            pygame.draw.circle(surf, (shade, shade + 22, shade - 2), (fx, fy), rng.randint(2, 6))
+        self._arena_dark_overlay(surf, 135)
+        return surf
+
+    def _gen_arena_bg_deadlands(self):
+        surf = pygame.Surface((WIDTH, HEIGHT))
+        rng = random.Random(5)
+        # Sickly green-grey sky
+        for y in range(HEIGHT):
+            t = y / HEIGHT
+            surf.fill((int(18 + t * 10), int(28 + t * 15), int(12 + t * 8)), (0, y, WIDTH, 1))
+        # Dead tree silhouettes
+        for tx in range(0, WIDTH + 80, rng.randint(80, 160)):
+            th = rng.randint(180, 380)
+            bw = rng.randint(6, 14)
+            ty = int(HEIGHT * 0.55) - rng.randint(0, 60)
+            pygame.draw.line(surf, (28, 22, 18), (tx, ty + th), (tx, ty), bw)
+            # Bare branches
+            for _ in range(rng.randint(4, 8)):
+                bx = tx + rng.randint(-12, 12)
+                by = ty + rng.randint(0, th // 2)
+                bl = rng.randint(30, 100)
+                ang_x = rng.randint(-bl, bl)
+                ang_y = rng.randint(-bl // 2, 0)
+                pygame.draw.line(surf, (28, 22, 18), (bx, by), (bx + ang_x, by + ang_y), rng.randint(1, 3))
+        # Cracked earth floor
+        for y in range(int(HEIGHT * 0.55), HEIGHT):
+            t = (y - HEIGHT * 0.55) / (HEIGHT - HEIGHT * 0.55)
+            r_v = int(38 + t * 18)
+            surf.fill((r_v, r_v - 8, r_v - 12), (0, y, WIDTH, 1))
+        for _ in range(35):
+            cx = rng.randint(0, WIDTH)
+            cy = rng.randint(int(HEIGHT * 0.55), HEIGHT)
+            for _ in range(rng.randint(3, 6)):
+                ex = cx + rng.randint(-80, 80)
+                ey = cy + rng.randint(-30, 30)
+                pygame.draw.line(surf, (22, 15, 12), (cx, cy), (ex, ey), 1)
+        # Skulls / bones (simple ellipses)
+        for _ in range(28):
+            bx = rng.randint(0, WIDTH)
+            by = rng.randint(int(HEIGHT * 0.6), HEIGHT - 10)
+            pygame.draw.ellipse(surf, (168, 158, 140), (bx, by, rng.randint(12, 26), rng.randint(10, 18)))
+        # Green fog wisps
+        for _ in range(22):
+            wx = rng.randint(0, WIDTH)
+            wy = rng.randint(int(HEIGHT * 0.48), int(HEIGHT * 0.72))
+            ww = rng.randint(60, 180)
+            wh = rng.randint(18, 40)
+            wisp = pygame.Surface((ww, wh), pygame.SRCALPHA)
+            wisp.fill((40, 120, 55, rng.randint(35, 75)))
+            surf.blit(wisp, (wx, wy))
+        # Pale moon
+        pygame.draw.circle(surf, (180, 200, 175), (WIDTH - 250, 80), 55)
+        pygame.draw.circle(surf, (155, 175, 150), (WIDTH - 250, 80), 55, 3)
+        self._arena_dark_overlay(surf, 140)
+        return surf
+
+    def _gen_arena_bg_mountain(self):
+        surf = pygame.Surface((WIDTH, HEIGHT))
+        rng = random.Random(6)
+        # Cold clear sky gradient
+        for y in range(HEIGHT):
+            t = y / HEIGHT
+            surf.fill((int(48 + t * 80), int(82 + t * 82), int(155 + t * 45)), (0, y, WIDTH, 1))
+        # Far mountain ridges
+        for layer, shade in [(0, (130, 148, 172)), (1, (105, 125, 152)), (2, (80, 102, 132))]:
+            pts = [(0, HEIGHT)]
+            x = 0
+            y_base = int(HEIGHT * (0.52 - layer * 0.07))
+            while x < WIDTH + 200:
+                step = rng.randint(60, 160)
+                peak_h = rng.randint(80, 240 + layer * 40)
+                pts.append((x + step // 2, y_base - peak_h))
+                pts.append((x + step, y_base))
+                x += step
+            pts.append((WIDTH, HEIGHT))
+            pygame.draw.polygon(surf, shade, pts)
+        # Main foreground peak
+        peak_x = WIDTH // 2
+        peak_pts = [
+            (peak_x - 520, HEIGHT),
+            (peak_x - 150, int(HEIGHT * 0.38)),
+            (peak_x, int(HEIGHT * 0.12)),
+            (peak_x + 150, int(HEIGHT * 0.38)),
+            (peak_x + 520, HEIGHT),
+        ]
+        pygame.draw.polygon(surf, (72, 88, 108), peak_pts)
+        # Snow cap
+        snow_pts = [
+            (peak_x - 145, int(HEIGHT * 0.39)),
+            (peak_x - 60, int(HEIGHT * 0.25)),
+            (peak_x, int(HEIGHT * 0.12)),
+            (peak_x + 60, int(HEIGHT * 0.25)),
+            (peak_x + 145, int(HEIGHT * 0.39)),
+            (peak_x + 55, int(HEIGHT * 0.42)),
+            (peak_x, int(HEIGHT * 0.32)),
+            (peak_x - 55, int(HEIGHT * 0.42)),
+        ]
+        pygame.draw.polygon(surf, (235, 240, 252), snow_pts)
+        # Rocky ledge at bottom
+        for sx in range(0, WIDTH, rng.randint(90, 180)):
+            sh = rng.randint(20, 70)
+            sw = rng.randint(80, 200)
+            shade = rng.randint(55, 85)
+            pygame.draw.polygon(surf, (shade, shade + 4, shade + 10), [(sx, HEIGHT), (sx + sw // 2, HEIGHT - sh), (sx + sw, HEIGHT)])
+        # Wind streaks
+        for _ in range(18):
+            wy = rng.randint(60, int(HEIGHT * 0.55))
+            wx = rng.randint(0, WIDTH - 200)
+            wl = rng.randint(80, 220)
+            pygame.draw.line(surf, (200, 210, 230), (wx, wy), (wx + wl, wy + rng.randint(-6, 6)), rng.randint(1, 2))
+        # Eagle silhouettes
+        for _ in range(4):
+            ex = rng.randint(100, WIDTH - 100)
+            ey = rng.randint(50, 200)
+            pygame.draw.arc(surf, (25, 25, 30), (ex - 22, ey, 22, 10), 0, 3.14, 2)
+            pygame.draw.arc(surf, (25, 25, 30), (ex, ey, 22, 10), 0, 3.14, 2)
+        self._arena_dark_overlay(surf, 130)
+        return surf
+
+    def _gen_arena_bg_shadows(self):
+        surf = pygame.Surface((WIDTH, HEIGHT))
+        rng = random.Random(7)
+        # Near-black void sky
+        for y in range(HEIGHT):
+            t = y / HEIGHT
+            surf.fill((int(8 + t * 12), int(5 + t * 10), int(18 + t * 14)), (0, y, WIDTH, 1))
+        # Ruined stone platforms
+        for px in range(0, WIDTH + 100, rng.randint(120, 220)):
+            ph = rng.randint(20, 60)
+            pw = rng.randint(80, 220)
+            py = int(HEIGHT * 0.6) + rng.randint(-40, 60)
+            shade = rng.randint(28, 52)
+            pygame.draw.rect(surf, (shade, shade - 2, shade + 5), (px, py, pw, ph))
+            pygame.draw.rect(surf, (shade + 18, shade + 16, shade + 22), (px, py, pw, 5))
+        # Shadowy pillars
+        for px in [120, 380, 680, 980, 1280, 1540, 1700]:
+            ph = rng.randint(220, 440)
+            pygame.draw.rect(surf, (20, 16, 32), (px - 18, HEIGHT - ph, 36, ph))
+            pygame.draw.rect(surf, (32, 26, 50), (px - 22, HEIGHT - ph, 44, 12))
+        # Shadow tendrils / wisps from ground
+        for _ in range(30):
+            tx = rng.randint(0, WIDTH)
+            ty_base = int(HEIGHT * 0.7) + rng.randint(-30, 60)
+            t_surf = pygame.Surface((30, 80), pygame.SRCALPHA)
+            t_surf.fill((60, 20, 90, rng.randint(40, 100)))
+            surf.blit(t_surf, (tx - 15, ty_base - 80))
+        # Glowing rune circles
+        for _ in range(5):
+            rx = rng.randint(100, WIDTH - 100)
+            ry = rng.randint(int(HEIGHT * 0.55), HEIGHT - 80)
+            rr = rng.randint(30, 70)
+            pygame.draw.circle(surf, (80, 30, 120), (rx, ry), rr, 2)
+            pygame.draw.circle(surf, (110, 50, 160), (rx, ry), rr - 8, 1)
+        # Floating shadow orbs
+        for _ in range(14):
+            ox = rng.randint(0, WIDTH)
+            oy = rng.randint(0, int(HEIGHT * 0.5))
+            orb_surf = pygame.Surface((40, 40), pygame.SRCALPHA)
+            alpha = rng.randint(60, 130)
+            pygame.draw.circle(orb_surf, (90, 40, 140, alpha), (20, 20), rng.randint(8, 18))
+            surf.blit(orb_surf, (ox - 20, oy - 20))
+        # Dim stars
+        for _ in range(350):
+            surf.set_at((rng.randint(0, WIDTH - 1), rng.randint(0, HEIGHT // 2)), (rng.randint(80, 180),) * 3)
+        self._arena_dark_overlay(surf, 120)
+        return surf
+
+    def _gen_arena_bg_citadel(self):
+        surf = pygame.Surface((WIDTH, HEIGHT))
+        rng = random.Random(8)
+        # Luminous heaven sky
+        for y in range(HEIGHT):
+            t = y / HEIGHT
+            surf.fill((int(110 + t * 60), int(155 + t * 65), int(240 - t * 30)), (0, y, WIDTH, 1))
+        # Sun glow
+        for r in range(120, 0, -1):
+            alpha_f = (120 - r) / 120
+            val = int(alpha_f * 180)
+            pygame.draw.circle(surf, (255, min(255, 220 + val // 3), min(255, 160 + val // 2)), (WIDTH // 2, 60), r, 1)
+        # Cloud layers
+        for _ in range(32):
+            cx = rng.randint(-80, WIDTH + 80)
+            cy = rng.randint(40, int(HEIGHT * 0.5))
+            cw = rng.randint(100, 300)
+            ch = rng.randint(30, 80)
+            for ci in range(4):
+                cr = rng.randint(ch // 3, ch // 2)
+                c_surf = pygame.Surface((cr * 2, cr * 2), pygame.SRCALPHA)
+                pygame.draw.circle(c_surf, (255, 255, 255, rng.randint(140, 200)), (cr, cr), cr)
+                surf.blit(c_surf, (cx + ci * cw // 4 - cr, cy - cr))
+        # Floating citadel stones (large platform)
+        base_y = int(HEIGHT * 0.58)
+        pygame.draw.ellipse(surf, (195, 188, 210), (WIDTH // 2 - 460, base_y - 40, 920, 80))
+        pygame.draw.ellipse(surf, (175, 168, 192), (WIDTH // 2 - 460, base_y - 10, 920, 50))
+        # Tower spires
+        for spire_x, spire_h in [(WIDTH//2 - 320, 280), (WIDTH//2 - 120, 380), (WIDTH//2, 440), (WIDTH//2 + 120, 380), (WIDTH//2 + 320, 280)]:
+            sw = 55 if spire_h > 350 else 40
+            pygame.draw.rect(surf, (178, 170, 205), (spire_x - sw // 2, base_y - spire_h, sw, spire_h))
+            pygame.draw.polygon(surf, (210, 200, 230), [(spire_x - sw // 2 - 8, base_y - spire_h), (spire_x, base_y - spire_h - spire_h // 4), (spire_x + sw // 2 + 8, base_y - spire_h)])
+            # Windows
+            for wy in range(base_y - spire_h + 30, base_y - 20, 55):
+                pygame.draw.rect(surf, (220, 240, 255), (spire_x - 8, wy, 16, 22))
+                pygame.draw.ellipse(surf, (220, 240, 255), (spire_x - 8, wy - 8, 16, 16))
+        # Light rays from sun
+        for _ in range(8):
+            angle_offset = rng.randint(-60, 60)
+            ray_surf = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+            ray_surf.fill((255, 245, 200, 12))
+            surf.blit(ray_surf, (0, 0))
+        # Floating crystal shards
+        for _ in range(22):
+            fx = rng.randint(50, WIDTH - 50)
+            fy = rng.randint(int(HEIGHT * 0.62), HEIGHT - 40)
+            fs = rng.randint(8, 22)
+            pygame.draw.polygon(surf, (180, 210, 255), [(fx, fy - fs), (fx + fs // 2, fy), (fx, fy + fs // 3), (fx - fs // 2, fy)])
+        self._arena_dark_overlay(surf, 115)
+        return surf
+
+    # ─── Arena effects ───────────────────────────────────────────────────────────
+
+    def apply_random_arena(self, players, forced_name=None):
+        if forced_name:
+            arena_name = forced_name
+            arena_key = next((k for n, k in self.arena_data if n == forced_name), None)
+        else:
+            arena_name, arena_key = random.choice(self.arena_data)
+        messages = []
         for player in players:
-            if arena_effect == "hp":
-                player.max_hp += 10
-                player.hp += 10
-            elif arena_effect == "dodge":
-                player.dodge += 10
-            elif arena_effect == "damage":
-                player.damage += 5
-            elif arena_effect == "crit":
-                player.crit += 10
-        return arena_name
+            role = player.role
+            path = player.magic_path or ""
+            if arena_key == "colosseum":
+                if role in ("Воин", "Боевой маг"):
+                    bonus = max(1, int(player.damage * 0.3))
+                    player.damage += bonus
+                    messages.append(f"⚔ Колизей: {player.name} +{bonus} физ. урона (боец)")
+                elif role in ("Варвар", "Шаман"):
+                    player.agility = max(0, player.agility - 10)
+                    player.dodge = max(0, player.dodge - 20)
+                    messages.append(f"🏙 Колизей: {player.name} −10 ловкости (дикарь, дебаф)")
+            elif arena_key == "volcano":
+                if path in ("Путь огня", "Путь земли"):
+                    player.wisdom += 10
+                    player.intellect += 10
+                    messages.append(f"🍋 Вулкан: {player.name} +10 мудрости, +10 интеллекта ({path})")
+            elif arena_key == "frozen":
+                if path == "Путь воды":
+                    player.wisdom += 10
+                    player.intellect += 10
+                    messages.append(f"❄ Пустошь: {player.name} +10 мудрости, +10 интеллекта (вода)")
+                elif role == "Некромант":
+                    player.wisdom += 5
+                    player.intellect += 5
+                    messages.append(f"❄ Пустошь: {player.name} +5 мудрости, +5 интеллекта (некромант)")
+                if path == "Путь огня":
+                    player.wisdom = max(0, player.wisdom - 10)
+                    player.intellect = max(0, player.intellect - 10)
+                    messages.append(f"❄ Пустошь: {player.name} −10 мудрости, −10 интеллекта (огонь)")
+            elif arena_key == "forest":
+                if role in ("Эльф", "Орк", "Варвар", "Шаман"):
+                    player.agility += 10
+                    player.luck += 10
+                    player.dodge += 20
+                    player.crit += 20
+                    messages.append(f"🌿 Лес: {player.name} +10 ловкости, +10 удачи")
+                elif role == "Мистик":
+                    player.wisdom += 15
+                    messages.append(f"🌿 Лес: {player.name} +15 мудрости (мистик)")
+            elif arena_key == "deadlands":
+                EXEMPT_FROM_DEBUFF = {"Шаман", "Мистик"}
+                if role == "Некромант":
+                    player.strength += 5
+                    player.stamina += 5
+                    player.agility += 5
+                    player.luck += 5
+                    player.wisdom += 5
+                    player.intellect += 5
+                    player.damage += 5
+                    player.max_hp += 40
+                    player.hp += 40
+                    player.dodge += 10
+                    player.crit += 10
+                    messages.append(f"💧 Земля мёртвых: {player.name} +5 ко всем характеристикам (некромант)")
+                elif role not in EXEMPT_FROM_DEBUFF:
+                    player.strength = max(1, player.strength - 5)
+                    player.stamina = max(1, player.stamina - 5)
+                    player.agility = max(1, player.agility - 5)
+                    player.luck = max(1, player.luck - 5)
+                    player.wisdom = max(1, player.wisdom - 5)
+                    player.intellect = max(1, player.intellect - 5)
+                    player.damage = max(1, player.damage - 5)
+                    player.max_hp = max(8, player.max_hp - 40)
+                    player.hp = min(player.hp, player.max_hp)
+                    player.dodge = max(0, player.dodge - 10)
+                    player.crit = max(0, player.crit - 10)
+                    messages.append(f"💧 Земля мёртвых: {player.name} −5 ко всем характеристикам (дебаф)")
+            elif arena_key == "mountain":
+                if path in ("Путь земли", "Путь воздуха"):
+                    player.wisdom += 10
+                    player.luck += 10
+                    player.crit += 20
+                    messages.append(f"⛰ Горный пик: {player.name} +10 мудрости, +10 удачи ({path})")
+            elif arena_key == "shadows":
+                if role in ("Ассасин", "Плут") or path in ("Тёмный путь", "Путь непознаваемого"):
+                    player.agility += 10
+                    player.intellect += 10
+                    player.dodge += 20
+                    messages.append(f"🔮 Ар. теней: {player.name} +10 ловкости, +10 интеллекта")
+                elif role == "Воин":
+                    player.agility = max(1, player.agility - 10)
+                    player.dodge = max(0, player.dodge - 20)
+                    messages.append(f"🔮 Ар. теней: {player.name} −10 ловкости (Воин, дебаф)")
+            elif arena_key == "citadel":
+                if path == "Путь воздуха":
+                    player.intellect += 15
+                    player.wisdom += 5
+                    messages.append(f"✨ Неб. цитадель: {player.name} +15 интеллекта, +5 мудрости (воздух)")
+                elif role == "Эльф":
+                    player.agility += 10
+                    player.wisdom += 10
+                    player.dodge += 20
+                    messages.append(f"✨ Неб. цитадель: {player.name} +10 ловкости, +10 мудрости (эльф)")
+                elif role == "Орк":
+                    player.wisdom = max(1, player.wisdom - 10)
+                    player.intellect = max(1, player.intellect - 10)
+                    messages.append(f"✨ Неб. цитадель: {player.name} −10 мудрости, −10 интеллекта (Орк, дебаф)")
+        return arena_name, messages
 
     def prepare_current_turn(self):
         while True:
@@ -3835,6 +4627,17 @@ class ArenaGame:
 
     def handle_post_battle_events(self, events):
         for event in events:
+            if self.help_open:
+                self.handle_help_overlay_events(events)
+                return
+
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if self.help_button_rect.collidepoint(event.pos):
+                    self.help_open = True
+                    self.help_active_tab = self.help_tabs[0]
+                    self.help_scroll = 0
+                    return
+
             if not self.champion and self.post_rematch_button.clicked(event):
                 self.rematch_mode = True
                 self.start_setup_flow(allow_back_to_names=False)
@@ -3858,6 +4661,7 @@ class ArenaGame:
         self.selected_group = None
         self.selected_magic_path = None
         self.selected_stats = []
+        self.selected_arena = None
         self.players = []
         self.log = []
         self.selected_target = None
@@ -3915,14 +4719,14 @@ class ArenaGame:
     def render_class_select(self):
         self.screen.fill(DARK)
 
-        left_panel = pygame.Rect(70, 120, 400, 690)
+        left_panel = pygame.Rect(70, 100, 400, 710)
         right_panel = pygame.Rect(520, 120, 1210, 690)
         pygame.draw.rect(self.screen, PANEL, left_panel, border_radius=20)
         pygame.draw.rect(self.screen, WHITE, left_panel, 3, border_radius=20)
 
         player_name = self.human_names[self.setup_index]
         title = self.big_font.render(f"Выбор класса: {player_name}", True, WHITE)
-        self.screen.blit(title, (610, 50))
+        self.screen.blit(title, (610, 20))
 
         for button in self.class_buttons:
             button.draw(self.screen, self.font, active=(button.text == self.selected_group))
@@ -3970,7 +4774,7 @@ class ArenaGame:
 
                 showcase = self.subclass_showcase_art.get(sub_name)
                 if showcase:
-                    art_rect = showcase.get_rect(midtop=(center[0], rect.y + rect.height + 48))
+                    art_rect = showcase.get_rect(midtop=(center[0], rect.y + rect.height + 44))
                     self.screen.blit(showcase, art_rect)
 
             # Описание выбранного подкласса
@@ -3980,9 +4784,9 @@ class ArenaGame:
                 preview = self.get_class_preview_stats(display_class)
                 class_color = self.get_class_color(display_class)
 
-                y_text = 190
+                y_text = 142
                 class_title = self.class_name_font.render(display_class.upper(), True, class_color)
-                self.screen.blit(class_title, (620, 125))
+                self.screen.blit(class_title, (620, 92))
 
                 lines = [
                     f"Сила: {preview['strength']} ({preview['damage']} урона)",
@@ -4013,11 +4817,11 @@ class ArenaGame:
                 # Подкласс не выбран — подсказка
                 group_color = self.get_class_color(subclasses[0])
                 group_title = self.class_name_font.render(self.selected_group.upper(), True, group_color)
-                self.screen.blit(group_title, (620, 125))
+                self.screen.blit(group_title, (620, 92))
                 hint = self.font.render("← Выбери подкласс, нажав на портрет", True, (170, 170, 190))
-                self.screen.blit(hint, (620, 200))
+                self.screen.blit(hint, (620, 150))
                 if self.selected_group == "Дикарь":
-                    y_text = 270
+                    y_text = 210
                     group_lines = self.wrap_text(
                         "Люди диких племён живут по заветам предков. В бою они яростны и опасны: одни крушат врага грубой силой, другие шепчут духам и зовут древние обряды.",
                         self.font,
@@ -4028,7 +4832,7 @@ class ArenaGame:
                         self.screen.blit(txt, (620, y_text))
                         y_text += 40
                 elif self.selected_group == "Боец":
-                    y_text = 270
+                    y_text = 210
                     group_lines = self.wrap_text(
                         "Бойцы идут напролом и держат строй до конца. Одни побеждают сталью и щитом, другие сплавляют воинское мастерство с тайной боевой магией.",
                         self.font,
@@ -4039,7 +4843,7 @@ class ArenaGame:
                         self.screen.blit(txt, (620, y_text))
                         y_text += 40
                 elif self.selected_group == "Разбойник":
-                    y_text = 270
+                    y_text = 210
                     group_lines = self.wrap_text(
                         "Разбойники побеждают не честной силой, а скоростью, хитростью и грязными уловками. Один режет из тени, другой выворачивает удачу врага и крадёт лучший шанс себе.",
                         self.font,
@@ -4050,7 +4854,7 @@ class ArenaGame:
                         self.screen.blit(txt, (620, y_text))
                         y_text += 40
                 elif self.selected_group == "Нелюди":
-                    y_text = 270
+                    y_text = 210
                     group_lines = self.wrap_text(
                         "Нелюди сражаются иначе, чем люди. Эльф полагается на точность и дистанцию, а орк — на ярость и звериную ликантропию, жертвуя доступом к мистическим путям.",
                         self.font,
@@ -4061,7 +4865,7 @@ class ArenaGame:
                         self.screen.blit(txt, (620, y_text))
                         y_text += 40
                 elif self.selected_group == "Маг":
-                    y_text = 270
+                    y_text = 210
                     group_lines = self.wrap_text(
                         "Маги властвуют не сталью, а знанием. Некромант вытягивает жизнь из чужой боли, а Мистик ломает саму возможность врага колдовать и пользоваться силами вовремя.",
                         self.font,
@@ -4073,6 +4877,10 @@ class ArenaGame:
                         y_text += 40
 
         self.class_confirm_button.draw(self.screen, self.font, enabled=bool(self.selected_class))
+
+        self.draw_help_button()
+        if self.help_open:
+            self.render_help_overlay()
 
     def render_magic_select(self):
         self.screen.fill(DARK)
@@ -4093,10 +4901,10 @@ class ArenaGame:
 
         if self.selected_magic_path:
             data = self.magic_data[self.selected_magic_path]
-            y_text = 208
+            y_text = 188
             path_color, normal_color, exalted_color = self.get_magic_tier_colors(self.selected_magic_path)
             path_title = self.class_name_font.render(self.selected_magic_path.upper(), True, path_color)
-            self.screen.blit(path_title, (620, 145))
+            self.screen.blit(path_title, (620, 128))
 
             lines = [
                 data["desc"],
@@ -4111,21 +4919,25 @@ class ArenaGame:
 
             for line in lines:
                 if not line:
-                    y_text += 18
+                    y_text += 14
                     continue
                 color = WHITE
                 if line == "Обычные заклинания:":
                     color = normal_color
                 elif line == "Возвышенные заклинания:":
                     color = exalted_color
-                wrapped = self.wrap_text(line, self.font, 980)
+                wrapped = self.wrap_text(line, self.font, 1060)
                 for part in wrapped:
                     txt = self.font.render(part, True, color)
                     self.screen.blit(txt, (620, y_text))
-                    y_text += 38
+                    y_text += 36
 
         self.magic_back_button.draw(self.screen, self.font)
         self.magic_confirm_button.draw(self.screen, self.font, enabled=bool(self.selected_magic_path))
+
+        self.draw_help_button()
+        if self.help_open:
+            self.render_help_overlay()
 
     def render_stat_select(self):
         self.screen.fill(DARK)
@@ -4200,6 +5012,10 @@ class ArenaGame:
         self.stat_back_button.draw(self.screen, self.font)
         self.stat_confirm_button.draw(self.screen, self.font, enabled=len(self.selected_stats) == 2)
 
+        self.draw_help_button()
+        if self.help_open:
+            self.render_help_overlay()
+
     def get_target_rects(self):
         rects = []
         for i, player in enumerate(self.players):
@@ -4245,7 +5061,11 @@ class ArenaGame:
         self.screen.blit(hp_text, (x + 60, y + 54))
 
     def render_battle(self):
-        self.screen.fill(DARK)
+        bg = self.arena_backgrounds.get(self.arena_name)
+        if bg:
+            self.screen.blit(bg, (0, 0))
+        else:
+            self.screen.fill(DARK)
 
         arena_title = self.big_font.render(f"Арена: {self.arena_name}", True, WHITE)
         self.screen.blit(arena_title, (650, 20))
@@ -4604,6 +5424,10 @@ class ArenaGame:
         self.post_rematch_button.draw(self.screen, self.font, enabled=not self.champion)
         self.post_restart_button.draw(self.screen, self.font)
         self.post_quit_button.draw(self.screen, self.font)
+
+        self.draw_help_button()
+        if self.help_open:
+            self.render_help_overlay()
 
 
 def run_game():
