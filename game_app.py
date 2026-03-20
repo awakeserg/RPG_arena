@@ -8,7 +8,7 @@ from engine.combat import attack
 from engine.player import Player
 
 
-WIDTH, HEIGHT = 1800, 900
+WIDTH, HEIGHT = 1920, 1080
 
 WHITE = (255, 255, 255)
 GRAY = (120, 120, 120)
@@ -67,7 +67,7 @@ class ArenaGame:
 
     def __init__(self):
         pygame.init()
-        self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
+        self.screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
         pygame.display.set_caption("RPG Arena")
         self.clock = pygame.time.Clock()
         self.running = True
@@ -473,11 +473,11 @@ class ArenaGame:
         self.name_clear_button = UIButton("Очистить", 1080, 560, 180, 70)
         self.name_space_button = UIButton("Пробел", 640, 760, 220, 60)
         self.name_delete_button = UIButton("Стереть", 890, 760, 220, 60)
-        self.name_space_button.rect = pygame.Rect(520, 648, 220, 56)
-        self.name_delete_button.rect = pygame.Rect(790, 648, 220, 56)
-        self.name_clear_button.rect = pygame.Rect(1060, 648, 220, 56)
-        self.name_confirm_button.rect = pygame.Rect(610, 730, 260, 64)
-        self.name_back_button.rect = pygame.Rect(930, 730, 260, 64)
+        self.name_space_button.rect = pygame.Rect(580, 648, 220, 56)
+        self.name_delete_button.rect = pygame.Rect(850, 648, 220, 56)
+        self.name_clear_button.rect = pygame.Rect(1120, 648, 220, 56)
+        self.name_confirm_button.rect = pygame.Rect(670, 730, 260, 64)
+        self.name_back_button.rect = pygame.Rect(990, 730, 260, 64)
 
         self.name_key_buttons = []
         self.rebuild_name_key_buttons()
@@ -519,15 +519,15 @@ class ArenaGame:
         self.selected_arena = None  # None = random, else arena name string
 
         self.battle_buttons = [
-            UIButton("Атака", 70, 600, 220, 100),
-            UIButton("Осторожно", 320, 600, 220, 100),
-            UIButton("Спец", 570, 600, 220, 100),
-            UIButton("Лут", 820, 600, 220, 100),
-            UIButton("Колдовать", 1070, 600, 220, 100),
+            UIButton("Атака", 70, 800, 220, 110),
+            UIButton("Осторожно", 320, 800, 220, 110),
+            UIButton("Спец", 570, 800, 220, 110),
+            UIButton("Лут", 820, 800, 220, 110),
+            UIButton("Колдовать", 1070, 800, 220, 110),
         ]
         self.spell_buttons = [
-            UIButton("", 1360, 590, 330, 70),
-            UIButton("", 1360, 675, 330, 70),
+            UIButton("", 1360, 738, 330, 80),
+            UIButton("", 1360, 830, 330, 80),
         ]
         self.loot_choice_open = False
         self.loot_choice_items = []
@@ -569,6 +569,12 @@ class ArenaGame:
         self.close_popup_rect = None
         self.help_button_rect = pygame.Rect(WIDTH - 98, HEIGHT - 98, 72, 72)
         self.help_open = False
+        self.arena_info_open = False
+        self.arena_info_btn_rect = pygame.Rect(WIDTH - 98, HEIGHT - 98 - 82 * 2, 72, 72)
+        self.settings_open = False
+        self.settings_btn_rect = pygame.Rect(WIDTH - 98, HEIGHT - 98 - 82, 72, 72)
+        self.settings_resolutions = [(1280, 720), (1600, 900), (1920, 1080)]
+        self.settings_fullscreen = True
         self.help_tabs = ["Правила", "Характеристики", "Эффекты", "Классы", "Магия", "Арены и лут"]
         self.help_active_tab = self.help_tabs[0]
         self.help_tab_rects = []
@@ -1315,6 +1321,12 @@ class ArenaGame:
                     self.help_active_tab = self.help_tabs[0]
                     self.help_scroll = 0
                     return
+                if self.settings_btn_rect.collidepoint(event.pos):
+                    self.settings_open = not self.settings_open
+                    return
+                if self.settings_open:
+                    self.handle_settings_click(event.pos)
+                    return
 
             for button in self.class_buttons:
                 if button.clicked(event):
@@ -1410,6 +1422,12 @@ class ArenaGame:
                     self.help_active_tab = self.help_tabs[0]
                     self.help_scroll = 0
                     return
+                if self.settings_btn_rect.collidepoint(event.pos):
+                    self.settings_open = not self.settings_open
+                    return
+                if self.settings_open:
+                    self.handle_settings_click(event.pos)
+                    return
 
             for button in self.magic_buttons:
                 if button.clicked(event):
@@ -1439,6 +1457,12 @@ class ArenaGame:
                     self.help_open = True
                     self.help_active_tab = self.help_tabs[0]
                     self.help_scroll = 0
+                    return
+                if self.settings_btn_rect.collidepoint(event.pos):
+                    self.settings_open = not self.settings_open
+                    return
+                if self.settings_open:
+                    self.handle_settings_click(event.pos)
                     return
 
             for button in self.stat_buttons:
@@ -1474,6 +1498,12 @@ class ArenaGame:
                     self.help_open = True
                     self.help_active_tab = self.help_tabs[0]
                     self.help_scroll = 0
+                    return
+                if self.settings_btn_rect.collidepoint(event.pos):
+                    self.settings_open = not self.settings_open
+                    return
+                if self.settings_open:
+                    self.handle_settings_click(event.pos)
                     return
 
             for btn in self.arena_select_buttons:
@@ -1586,8 +1616,8 @@ class ArenaGame:
         else:
             self.screen.fill(DARK)
 
-        left_panel = pygame.Rect(70, 100, 400, 710)
-        right_panel = pygame.Rect(520, 100, 1210, 710)
+        left_panel = pygame.Rect(70, 100, 400, 870)
+        right_panel = pygame.Rect(520, 100, 1210, 870)
         pygame.draw.rect(self.screen, PANEL, left_panel, border_radius=20)
         pygame.draw.rect(self.screen, WHITE, left_panel, 3, border_radius=20)
         if not bg:
@@ -1668,6 +1698,9 @@ class ArenaGame:
                 ry += 36
 
         self.draw_help_button()
+        self.draw_settings_button()
+        if self.settings_open:
+            self._render_settings_panel()
         if self.help_open:
             self.render_help_overlay()
 
@@ -1724,6 +1757,8 @@ class ArenaGame:
         self.close_loot_choice()
         self.close_form_menu()
         self.reset_spell_state()
+        self.arena_info_open = False
+        self.settings_open = False
         self.set_state(self.BATTLE)
         self.prepare_current_turn()
 
@@ -1880,6 +1915,175 @@ class ArenaGame:
         for offset in (8, 18, 28):
             pygame.draw.line(self.screen, (190, 175, 138), (left_page.x + 4, left_page.y + offset), (left_page.right - 4, left_page.y + offset), 2)
             pygame.draw.line(self.screen, (190, 175, 138), (right_page.x + 4, right_page.y + offset), (right_page.right - 4, right_page.y + offset), 2)
+
+    def draw_arena_info_button(self):
+        mouse = pygame.mouse.get_pos()
+        r = self.arena_info_btn_rect
+        hovered = r.collidepoint(mouse)
+        base = (42, 80, 110) if not self.arena_info_open else (56, 108, 72)
+        color = (62, 110, 148) if hovered else base
+        pygame.draw.rect(self.screen, color, r, border_radius=16)
+        border_color = (130, 200, 255) if not self.arena_info_open else (130, 220, 140)
+        pygame.draw.rect(self.screen, border_color, r, 3, border_radius=16)
+        # Draw a simple map: parchment background + grid lines + compass rose
+        mx, my = r.x + 11, r.y + 11
+        mw, mh = 50, 50
+        # Parchment
+        pygame.draw.rect(self.screen, (210, 188, 140), (mx, my, mw, mh), border_radius=4)
+        pygame.draw.rect(self.screen, (160, 130, 80), (mx, my, mw, mh), 1, border_radius=4)
+        # Grid lines on map
+        for gx in (mx + 16, mx + 33):
+            pygame.draw.line(self.screen, (150, 118, 70), (gx, my + 2), (gx, my + mh - 2), 1)
+        for gy in (my + 16, my + 33):
+            pygame.draw.line(self.screen, (150, 118, 70), (mx + 2, gy), (mx + mw - 2, gy), 1)
+        # Compass rose (small cross)
+        cx2, cy2 = mx + 40, my + 10
+        pygame.draw.line(self.screen, (180, 60, 60), (cx2, cy2 - 7), (cx2, cy2 + 7), 2)
+        pygame.draw.line(self.screen, (180, 60, 60), (cx2 - 7, cy2), (cx2 + 7, cy2), 2)
+        pygame.draw.circle(self.screen, (220, 90, 90), (cx2, cy2), 2)
+        # Path line
+        pts = [(mx + 6, my + 38), (mx + 18, my + 28), (mx + 30, my + 32), (mx + 42, my + 22)]
+        for i in range(len(pts) - 1):
+            pygame.draw.line(self.screen, (60, 140, 80), pts[i], pts[i+1], 2)
+        # Location dot
+        pygame.draw.circle(self.screen, (220, 60, 60), pts[-1], 3)
+
+    def draw_settings_button(self):
+        mouse = pygame.mouse.get_pos()
+        r = self.settings_btn_rect
+        hovered = r.collidepoint(mouse)
+        base = (58, 58, 80) if not self.settings_open else (72, 100, 72)
+        color = (88, 88, 118) if hovered else base
+        pygame.draw.rect(self.screen, color, r, border_radius=16)
+        border_color = (180, 180, 220) if not self.settings_open else (130, 220, 140)
+        pygame.draw.rect(self.screen, border_color, r, 3, border_radius=16)
+        # Gear icon: outer ring + teeth + center hole
+        import math
+        gx, gy = r.centerx, r.centery
+        outer_r, inner_r, hole_r = 22, 16, 8
+        teeth = 8
+        for i in range(teeth):
+            angle = math.radians(i * 360 / teeth)
+            ax = gx + int(outer_r * math.cos(angle))
+            ay = gy + int(outer_r * math.sin(angle))
+            bx = gx + int((outer_r - 8) * math.cos(angle + math.radians(14)))
+            by = gy + int((outer_r - 8) * math.sin(angle + math.radians(14)))
+            pygame.draw.polygon(self.screen, (200, 200, 220), [
+                (gx + int(inner_r * math.cos(angle - math.radians(13))),
+                 gy + int(inner_r * math.sin(angle - math.radians(13)))),
+                (gx + int(inner_r * math.cos(angle + math.radians(13))),
+                 gy + int(inner_r * math.sin(angle + math.radians(13)))),
+                (gx + int(outer_r * math.cos(angle + math.radians(12))),
+                 gy + int(outer_r * math.sin(angle + math.radians(12)))),
+                (gx + int(outer_r * math.cos(angle - math.radians(12))),
+                 gy + int(outer_r * math.sin(angle - math.radians(12)))),
+            ])
+        pygame.draw.circle(self.screen, (200, 200, 220), (gx, gy), inner_r)
+        pygame.draw.circle(self.screen, color, (gx, gy), hole_r)
+        pygame.draw.circle(self.screen, border_color, (gx, gy), hole_r, 2)
+
+    def _render_settings_panel(self):
+        panel_w, panel_h = 500, 420
+        panel_x = WIDTH - panel_w - 20
+        panel_y = HEIGHT - 98 - 82 * 2 - panel_h - 14
+        panel_rect = pygame.Rect(panel_x, panel_y, panel_w, panel_h)
+
+        surf = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
+        surf.fill((22, 24, 44, 240))
+        self.screen.blit(surf, (panel_x, panel_y))
+        pygame.draw.rect(self.screen, (160, 160, 220), panel_rect, 2, border_radius=16)
+
+        title = self.medium_font.render("Настройки", True, WHITE)
+        self.screen.blit(title, title.get_rect(centerx=panel_rect.centerx, y=panel_y + 14))
+        pygame.draw.line(self.screen, (110, 110, 160),
+                         (panel_x + 18, panel_y + 58), (panel_x + panel_w - 18, panel_y + 58), 1)
+
+        # Resolution section
+        res_label = self.font.render("Разрешение:", True, (200, 210, 255))
+        self.screen.blit(res_label, (panel_x + 20, panel_y + 70))
+
+        self.settings_res_rects = []
+        for idx, (rw, rh) in enumerate(self.settings_resolutions):
+            bx = panel_x + 20 + idx * 156
+            by = panel_y + 108
+            brect = pygame.Rect(bx, by, 145, 48)
+            self.settings_res_rects.append(brect)
+            is_current = (rw == WIDTH and rh == HEIGHT)
+            mouse = pygame.mouse.get_pos()
+            hov = brect.collidepoint(mouse)
+            col = (60, 140, 60) if is_current else ((80, 80, 130) if hov else (50, 50, 90))
+            pygame.draw.rect(self.screen, col, brect, border_radius=10)
+            pygame.draw.rect(self.screen, (160, 160, 220), brect, 2 if not is_current else 0, border_radius=10)
+            if is_current:
+                pygame.draw.rect(self.screen, (130, 220, 130), brect, 2, border_radius=10)
+            lbl = self.font.render(f"{rw}×{rh}", True, WHITE)
+            self.screen.blit(lbl, lbl.get_rect(center=brect.center))
+
+        # Fullscreen toggle
+        pygame.draw.line(self.screen, (90, 90, 120),
+                         (panel_x + 18, panel_y + 172), (panel_x + panel_w - 18, panel_y + 172), 1)
+        fs_label = self.font.render("Режим отображения:", True, (200, 210, 255))
+        self.screen.blit(fs_label, (panel_x + 20, panel_y + 184))
+
+        self.settings_fs_rect = pygame.Rect(panel_x + 20, panel_y + 224, 215, 50)
+        self.settings_win_rect = pygame.Rect(panel_x + 255, panel_y + 224, 215, 50)
+        mouse = pygame.mouse.get_pos()
+        for rect, label, active in [
+            (self.settings_fs_rect, "Полный экран", self.settings_fullscreen),
+            (self.settings_win_rect, "Оконный", not self.settings_fullscreen),
+        ]:
+            hov = rect.collidepoint(mouse)
+            col = (60, 140, 60) if active else ((80, 80, 130) if hov else (50, 50, 90))
+            pygame.draw.rect(self.screen, col, rect, border_radius=10)
+            border_col = (130, 220, 130) if active else (160, 160, 220)
+            pygame.draw.rect(self.screen, border_col, rect, 2, border_radius=10)
+            t = self.font.render(label, True, WHITE)
+            self.screen.blit(t, t.get_rect(center=rect.center))
+
+        # Apply button
+        pygame.draw.line(self.screen, (90, 90, 120),
+                         (panel_x + 18, panel_y + 290), (panel_x + panel_w - 18, panel_y + 290), 1)
+        self.settings_apply_rect = pygame.Rect(panel_x + 20, panel_y + 306, panel_w - 40, 52)
+        mouse = pygame.mouse.get_pos()
+        hov = self.settings_apply_rect.collidepoint(mouse)
+        pygame.draw.rect(self.screen, (80, 150, 80) if hov else (55, 110, 55), self.settings_apply_rect, border_radius=12)
+        pygame.draw.rect(self.screen, (130, 220, 130), self.settings_apply_rect, 2, border_radius=12)
+        apply_t = self.font.render("Применить", True, WHITE)
+        self.screen.blit(apply_t, apply_t.get_rect(center=self.settings_apply_rect.center))
+
+        note = self.small_font.render("Изменение разрешения вступит в силу при перезапуске.", True, (170, 170, 190))
+        self.screen.blit(note, note.get_rect(centerx=panel_rect.centerx, y=panel_y + 372))
+
+    def apply_settings(self):
+        import os, sys
+        flags = pygame.FULLSCREEN if self.settings_fullscreen else 0
+        self.screen = pygame.display.set_mode((WIDTH, HEIGHT), flags)
+
+    def save_settings_to_file(self, rw, rh):
+        try:
+            with open("settings.cfg", "w") as f:
+                f.write(f"resolution={rw}x{rh}\n")
+                f.write(f"fullscreen={int(self.settings_fullscreen)}\n")
+        except Exception:
+            pass
+
+    def handle_settings_click(self, pos):
+        if hasattr(self, "settings_res_rects"):
+            for idx, brect in enumerate(self.settings_res_rects):
+                if brect.collidepoint(pos):
+                    rw, rh = self.settings_resolutions[idx]
+                    self.save_settings_to_file(rw, rh)
+                    return
+        if hasattr(self, "settings_fs_rect") and self.settings_fs_rect.collidepoint(pos):
+            self.settings_fullscreen = True
+            return
+        if hasattr(self, "settings_win_rect") and self.settings_win_rect.collidepoint(pos):
+            self.settings_fullscreen = False
+            return
+        if hasattr(self, "settings_apply_rect") and self.settings_apply_rect.collidepoint(pos):
+            self.apply_settings()
+            self.settings_open = False
+            return
 
     def get_help_tab_content(self, tab_name):
         sections = {}
@@ -4304,12 +4508,34 @@ class ArenaGame:
                         return
                 continue
 
+            if self.arena_info_open:
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                    self.arena_info_open = False
+                    return
+
+            if self.settings_open:
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                    self.settings_open = False
+                    return
+                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    if not self.settings_btn_rect.collidepoint(event.pos):
+                        self.handle_settings_click(event.pos)
+                        return
+
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if self.help_button_rect.collidepoint(event.pos):
                     self.help_open = True
                     self.help_active_tab = self.help_tabs[0]
                     self.help_scroll = 0
                     self.show_info_idx = None
+                    return
+                if self.arena_info_btn_rect.collidepoint(event.pos):
+                    self.arena_info_open = not self.arena_info_open
+                    self.settings_open = False
+                    return
+                if self.settings_btn_rect.collidepoint(event.pos):
+                    self.settings_open = not self.settings_open
+                    self.arena_info_open = False
                     return
 
             if current.is_ai:
@@ -4637,6 +4863,12 @@ class ArenaGame:
                     self.help_active_tab = self.help_tabs[0]
                     self.help_scroll = 0
                     return
+                if self.settings_btn_rect.collidepoint(event.pos):
+                    self.settings_open = not self.settings_open
+                    return
+                if self.settings_open:
+                    self.handle_settings_click(event.pos)
+                    return
 
             if not self.champion and self.post_rematch_button.clicked(event):
                 self.rematch_mode = True
@@ -4689,22 +4921,24 @@ class ArenaGame:
     def render_name_input(self):
         self.screen.fill(DARK)
 
-        panel = pygame.Rect(330, 110, 1140, 760)
+        cx = WIDTH // 2
+        panel = pygame.Rect(cx - 570, 110, 1140, 760)
         pygame.draw.rect(self.screen, PANEL, panel, border_radius=24)
         pygame.draw.rect(self.screen, WHITE, panel, 3, border_radius=24)
 
         title = self.big_font.render(f"Игрок {self.name_index + 1}: введи имя", True, WHITE)
-        self.screen.blit(title, (560, 160))
+        self.screen.blit(title, title.get_rect(centerx=cx, y=160))
 
         hint = self.small_font.render("Безопасный режим: ввод имени только экранной клавиатурой, чтобы окно не зависало.", True, (200, 200, 200))
-        self.screen.blit(hint, (445, 245))
+        self.screen.blit(hint, hint.get_rect(centerx=cx, y=245))
 
-        pygame.draw.rect(self.screen, GRAY, (510, 300, 780, 90), border_radius=12)
+        field_x = cx - 390
+        pygame.draw.rect(self.screen, GRAY, (field_x, 300, 780, 90), border_radius=12)
         txt_surface = self.medium_font.render(self.name_buffer, True, WHITE)
-        self.screen.blit(txt_surface, (535, 324))
+        self.screen.blit(txt_surface, (field_x + 25, 324))
 
         if pygame.time.get_ticks() % 1000 < 500 and len(self.name_buffer) < 12:
-            cursor_x = 535 + txt_surface.get_width() + 4
+            cursor_x = field_x + 25 + txt_surface.get_width() + 4
             pygame.draw.line(self.screen, WHITE, (cursor_x, 322), (cursor_x, 368), 3)
 
         for _, button in self.name_key_buttons:
@@ -4879,6 +5113,9 @@ class ArenaGame:
         self.class_confirm_button.draw(self.screen, self.font, enabled=bool(self.selected_class))
 
         self.draw_help_button()
+        self.draw_settings_button()
+        if self.settings_open:
+            self._render_settings_panel()
         if self.help_open:
             self.render_help_overlay()
 
@@ -4936,6 +5173,9 @@ class ArenaGame:
         self.magic_confirm_button.draw(self.screen, self.font, enabled=bool(self.selected_magic_path))
 
         self.draw_help_button()
+        self.draw_settings_button()
+        if self.settings_open:
+            self._render_settings_panel()
         if self.help_open:
             self.render_help_overlay()
 
@@ -5013,6 +5253,9 @@ class ArenaGame:
         self.stat_confirm_button.draw(self.screen, self.font, enabled=len(self.selected_stats) == 2)
 
         self.draw_help_button()
+        self.draw_settings_button()
+        if self.settings_open:
+            self._render_settings_panel()
         if self.help_open:
             self.render_help_overlay()
 
@@ -5070,6 +5313,8 @@ class ArenaGame:
         arena_title = self.big_font.render(f"Арена: {self.arena_name}", True, WHITE)
         self.screen.blit(arena_title, (650, 20))
 
+        self.draw_arena_info_button()
+
         self.info_rects = [None] * len(self.players)
         for i, player in enumerate(self.players):
             x, y = 50, 50 + i * 120
@@ -5120,7 +5365,7 @@ class ArenaGame:
 
             if self.form_menu_open:
                 title_surface = self.font.render("Ликантропия", True, (170, 225, 110))
-                self.screen.blit(title_surface, (1408, 545))
+                self.screen.blit(title_surface, (1408, 702))
                 hovered_form = None
                 options = self.get_orc_form_options(current_player)
                 for index, button in enumerate(self.spell_buttons):
@@ -5141,7 +5386,7 @@ class ArenaGame:
                 if hovered_form:
                     wrapped = self.wrap_text(hovered_form["desc"], self.small_font, 340)
                     box_h = min(len(wrapped), 5) * 22 + 18
-                    box_rect = pygame.Rect(1338, 758, 360, box_h)
+                    box_rect = pygame.Rect(1338, 920, 360, box_h)
                     tooltip_surf = pygame.Surface((box_rect.width, box_rect.height), pygame.SRCALPHA)
                     tooltip_surf.fill((25, 25, 45, 210))
                     self.screen.blit(tooltip_surf, (box_rect.x, box_rect.y))
@@ -5151,7 +5396,7 @@ class ArenaGame:
                         self.screen.blit(txt, (box_rect.x + 10, box_rect.y + 9 + row * 22))
             elif self.loot_choice_open:
                 title_surface = self.font.render("Выбор добычи", True, GOLD)
-                self.screen.blit(title_surface, (1400, 545))
+                self.screen.blit(title_surface, (1400, 702))
                 hovered_item = None
                 for index, button in enumerate(self.spell_buttons):
                     if index < len(self.loot_choice_items):
@@ -5172,11 +5417,11 @@ class ArenaGame:
                 if negative_target:
                     note_text = f"Негативные находки полетят в {negative_target.name}"
                 note_surface = self.small_font.render(note_text, True, (220, 220, 220))
-                self.screen.blit(note_surface, (1338, 730))
+                self.screen.blit(note_surface, (1338, 918))
                 if hovered_item:
                     wrapped = self.wrap_text(hovered_item["desc"], self.small_font, 340)
                     box_h = min(len(wrapped), 5) * 22 + 18
-                    box_rect = pygame.Rect(1338, 758, 360, box_h)
+                    box_rect = pygame.Rect(1338, 920, 360, box_h)
                     tooltip_surf = pygame.Surface((box_rect.width, box_rect.height), pygame.SRCALPHA)
                     tooltip_surf.fill((25, 25, 45, 210))
                     self.screen.blit(tooltip_surf, (box_rect.x, box_rect.y))
@@ -5188,7 +5433,7 @@ class ArenaGame:
                 spell_title = "Возвышенная магия" if self.spell_tier == "exalted" else "Обычная магия"
                 _, normal_color, exalted_color = self.get_magic_tier_colors(current_player.magic_path)
                 title_surface = self.font.render(spell_title, True, exalted_color if self.spell_tier == "exalted" else normal_color)
-                self.screen.blit(title_surface, (1375, 545))
+                self.screen.blit(title_surface, (1375, 702))
                 spells = self.get_spells_for_player(self.players[self.current_turn], self.spell_tier)
                 hovered_spell = None
                 for index, button in enumerate(self.spell_buttons):
@@ -5200,7 +5445,7 @@ class ArenaGame:
                 if hovered_spell:
                     wrapped = self.wrap_text(hovered_spell["desc"], self.small_font, 340)
                     box_h = min(len(wrapped), 5) * 22 + 18
-                    box_rect = pygame.Rect(1338, 758, 360, box_h)
+                    box_rect = pygame.Rect(1338, 920, 360, box_h)
                     tooltip_surf = pygame.Surface((box_rect.width, box_rect.height), pygame.SRCALPHA)
                     tooltip_surf.fill((25, 25, 45, 210))
                     self.screen.blit(tooltip_surf, (box_rect.x, box_rect.y))
@@ -5210,9 +5455,16 @@ class ArenaGame:
                         self.screen.blit(txt, (box_rect.x + 10, box_rect.y + 9 + row * 22))
         else:
             thinking = self.medium_font.render("AI обдумывает ход...", True, WHITE)
-            self.screen.blit(thinking, (120, 620))
+            self.screen.blit(thinking, (120, 820))
 
         self.draw_help_button()
+        self.draw_settings_button()
+
+        if self.arena_info_open:
+            self._render_arena_info_popup()
+
+        if self.settings_open:
+            self._render_settings_panel()
 
         if self.show_info_idx is not None:
             self.close_popup_rect = self.draw_info_popup(self.players[self.show_info_idx])
@@ -5222,17 +5474,53 @@ class ArenaGame:
         if self.help_open:
             self.render_help_overlay()
 
+    def _render_arena_info_popup(self):
+        popup_w, popup_h = 440, 520
+        popup_x = WIDTH - popup_w - 30
+        popup_y = 60
+        popup_rect = pygame.Rect(popup_x, popup_y, popup_w, popup_h)
+
+        # Background
+        surf = pygame.Surface((popup_w, popup_h), pygame.SRCALPHA)
+        surf.fill((20, 22, 45, 235))
+        self.screen.blit(surf, (popup_x, popup_y))
+        pygame.draw.rect(self.screen, (140, 170, 230), popup_rect, 2, border_radius=14)
+
+        # Arena name
+        name_surf = self.medium_font.render(self.arena_name, True, GOLD)
+        self.screen.blit(name_surf, name_surf.get_rect(centerx=popup_rect.centerx, y=popup_y + 14))
+
+        # Divider
+        pygame.draw.line(self.screen, (130, 130, 170),
+                         (popup_x + 16, popup_y + 60), (popup_x + popup_w - 16, popup_y + 60), 1)
+
+        # Bonus lines
+        ry = popup_y + 74
+        bonus_label = self.font.render("Бонусы арены:", True, (200, 210, 255))
+        self.screen.blit(bonus_label, (popup_x + 18, ry))
+        ry += 36
+        for line_text, line_color in self.get_arena_bonus_lines(self.arena_name):
+            if ry > popup_y + popup_h - 24:
+                break
+            s = self.small_font.render(line_text, True, line_color)
+            self.screen.blit(s, (popup_x + 18, ry))
+            ry += 28
+
+        # Close hint
+        close_hint = self.small_font.render("Нажмите 🗺 ещё раз чтобы закрыть", True, (170, 170, 190))
+        self.screen.blit(close_hint, close_hint.get_rect(centerx=popup_rect.centerx, y=popup_y + popup_h - 26))
+
     def render_log(self):
         y_log = 30
         log_x = WIDTH - 600
         log_width = 550
-        log_height = 520
+        log_height = 666
         pygame.draw.rect(self.screen, (40, 40, 40), (log_x - 10, y_log - 10, log_width + 20, log_height), border_radius=12)
 
         max_log_width = log_width - 20
-        for entry in self.log[-10:]:
+        for entry in self.log[-12:]:
             y_log = self.render_log_entry(entry, log_x, y_log, max_log_width)
-            if y_log > 475:
+            if y_log > 648:
                 break
 
     def render_battle_descriptions(self):
@@ -5244,7 +5532,7 @@ class ArenaGame:
             "Попытаться найти предмет.",
             ("Суть скована: магия и обращения временно недоступны." if self.has_essence_lock(current) else ("Выбрать звериную форму ликантропии." if self.is_orc(current) and current.lycan_cooldown == 0 and not self.is_beast_form_active(current) else ("Вернуть обычный облик." if self.is_orc(current) and self.is_beast_form_active(current) else (f"Ликантропия на откате: {current.lycan_cooldown} ход." if self.is_orc(current) else (f"Обычная магия на откате: {current.spell_cooldown} ход." if current.spell_cooldown > 0 else "Открыть выбор заклинаний мистического пути."))))),
         ]
-        desc_y = 710
+        desc_y = 924
         for i, text in enumerate(descriptions):
             x = [70, 320, 570, 820, 1070][i]
             words = text.split(" ")
@@ -5426,6 +5714,9 @@ class ArenaGame:
         self.post_quit_button.draw(self.screen, self.font)
 
         self.draw_help_button()
+        self.draw_settings_button()
+        if self.settings_open:
+            self._render_settings_panel()
         if self.help_open:
             self.render_help_overlay()
 
