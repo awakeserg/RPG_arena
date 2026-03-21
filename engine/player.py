@@ -24,6 +24,8 @@ class Player:
         self.crit=0
 
         self.temp_dodge=0
+        self.arena_buff=False
+        self.arena_debuff=False
         self.stunned=0
         self.disarmed_turns=0
         self.essence_locked_turns=0

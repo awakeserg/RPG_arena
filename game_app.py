@@ -7,6 +7,7 @@ import pygame
 
 from engine.combat import attack
 from engine.player import Player
+from sounds import SoundManager
 
 
 WIDTH, HEIGHT = 1920, 1080
@@ -32,11 +33,15 @@ class UIButton:
         self.text = text
         self.rect = pygame.Rect(x, y, w, h)
 
-    def draw(self, screen, font, enabled=True, active=False):
+    def draw(self, screen, font, enabled=True, active=False, accent=None):
         mouse = pygame.mouse.get_pos()
         if not enabled:
             color = (85, 85, 85)
             text_color = (170, 170, 170)
+        elif accent:
+            bc, hc, tc = accent
+            color = tuple(min(255, int(c * 1.3)) for c in bc) if active else (hc if self.rect.collidepoint(mouse) else bc)
+            text_color = tc
         elif active:
             color = (0, 180, 0)
             text_color = WHITE
@@ -48,9 +53,17 @@ class UIButton:
             text_color = WHITE
 
         pygame.draw.rect(screen, color, self.rect, border_radius=12)
-        txt = font.render(self.text, True, text_color)
-        txt_rect = txt.get_rect(center=self.rect.center)
-        screen.blit(txt, txt_rect)
+        lines = self.text.split('\n')
+        if len(lines) == 1:
+            txt = font.render(self.text, True, text_color)
+            screen.blit(txt, txt.get_rect(center=self.rect.center))
+        else:
+            lh = font.get_linesize()
+            total_h = lh * len(lines)
+            start_y = self.rect.centery - total_h // 2
+            for i, ln in enumerate(lines):
+                t = font.render(ln, True, text_color)
+                screen.blit(t, t.get_rect(centerx=self.rect.centerx, y=start_y + i * lh))
 
     def clicked(self, event, enabled=True):
         return enabled and event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and self.rect.collidepoint(event.pos)
@@ -67,6 +80,7 @@ class ArenaGame:
     POST_BATTLE = "post_battle"
 
     def __init__(self):
+        pygame.mixer.pre_init(44100, -16, 2, 512)
         pygame.init()
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
         pygame.display.set_caption("RPG Arena")
@@ -80,6 +94,7 @@ class ArenaGame:
         self.title_font = pygame.font.SysFont("arial", 72, bold=True)
         self.hero_font = pygame.font.SysFont("arial", 88, bold=True)
         self.small_font = pygame.font.SysFont("arial", 24)
+        self.small_bold_font = pygame.font.SysFont("arial", 24, bold=True)
         self.log_font = pygame.font.SysFont("arial", 22)
         self.class_name_font = pygame.font.SysFont("arial", 38, bold=True)
 
@@ -449,6 +464,11 @@ class ArenaGame:
             ("Горный пик", "mountain"),
             ("Арена теней", "shadows"),
             ("Небесная цитадель", "citadel"),
+            ("Светлый лес", "light_forest"),
+            ("Запределье", "beyond"),
+            ("Кровавые топи", "blood_swamp"),
+            ("Хруст. пещеры", "crystal_caves"),
+            ("Призрачный замок", "ghost_castle"),
         ]
         self.arena_backgrounds = {
             "Колизей": self._gen_arena_bg_colosseum(),
@@ -459,6 +479,11 @@ class ArenaGame:
             "Горный пик": self._gen_arena_bg_mountain(),
             "Арена теней": self._gen_arena_bg_shadows(),
             "Небесная цитадель": self._gen_arena_bg_citadel(),
+            "Светлый лес": self._gen_arena_bg_light_forest(),
+            "Запределье": self._gen_arena_bg_beyond(),
+            "Кровавые топи": self._gen_arena_bg_blood_swamp(),
+            "Хруст. пещеры": self._gen_arena_bg_crystal_caves(),
+            "Призрачный замок": self._gen_arena_bg_ghost_castle(),
         }
 
         self.menu_buttons = [
@@ -507,23 +532,31 @@ class ArenaGame:
         self.stat_confirm_button = UIButton("Продолжить", 120, 730, 280, 65)
         self.stat_back_button = UIButton("←", 420, 730, 65, 65)
 
-        # Arena selection
+        # Arena selection — 2-column layout
         self.arena_select_buttons = []
-        _ay = 125
-        for _an, _ in self.arena_data:
-            self.arena_select_buttons.append(UIButton(_an, 120, _ay, 280, 50))
-            _ay += 66
-        self.arena_select_buttons.append(UIButton("🎲 Случайная", 120, _ay, 280, 50))
-        _ay += 66
-        self.arena_confirm_button = UIButton("В бой!", 120, _ay + 20, 280, 60)
-        self.arena_back_button = UIButton("Назад", 120, _ay + 20 + 72, 280, 60)
+        _col1_x, _col2_x, _btn_w, _btn_h, _step_y = 90, 400, 280, 44, 56
+        for _i, (_an, _) in enumerate(self.arena_data):
+            _row, _col = _i // 2, _i % 2
+            _bx = _col1_x if _col == 0 else _col2_x
+            _by = 125 + _row * _step_y
+            self.arena_select_buttons.append(UIButton(_an, _bx, _by, _btn_w, _btn_h))
+        _n_rows = (len(self.arena_data) + 1) // 2
+        _bot_y = 125 + _n_rows * _step_y + 16
+        # Кнопки "В бой!" и "Назад" стоят друг над другом в первом столбце
+        self.arena_confirm_button = UIButton("В бой!", _col1_x, _bot_y, _btn_w, 58)
+        self.arena_back_button    = UIButton("Назад", _col1_x, _bot_y + 70, _btn_w, 58)
+        # Высокая золо႐ая кнопка во 2-м столбце, расположена напротив обеих
+        self.arena_lucky_random_button = UIButton(
+            "🎲 Случайный\nвыбор  ×1.5", _col2_x, _bot_y, _btn_w, 128
+        )
         self.selected_arena = None  # None = random, else arena name string
+        self.arena_lucky = False
 
         self.battle_buttons = [
             UIButton("Атака", 70, 800, 220, 110),
             UIButton("Осторожно", 320, 800, 220, 110),
-            UIButton("Спец", 570, 800, 220, 110),
-            UIButton("Лут", 820, 800, 220, 110),
+            UIButton("Навык", 820, 800, 220, 110),     # [2] активная способность класса
+            UIButton("Лут", 570, 800, 220, 110),        # [3] лут (позиции с навыком поменяны)
             UIButton("Колдовать", 1070, 800, 220, 110),
         ]
         self.spell_buttons = [
@@ -539,7 +572,12 @@ class ArenaGame:
         self.post_restart_button = UIButton("Начать заново", 770, 720, 320, 75)
         self.post_quit_button = UIButton("Закрыть игру", 1180, 720, 300, 75)
 
-        self.use_new_art = True
+        self.pending_post_battle = False
+        self.battle_end_button = UIButton("Смотреть итоги боя  ▶", 610, 490, 700, 80)
+
+        self.sounds = SoundManager(enabled=True)
+
+        self.use_new_art = False
         self.icons = self.load_class_icons()
         self.subclass_showcase_art = self.create_subclass_showcase_art()
 
@@ -567,6 +605,9 @@ class ArenaGame:
         self.hit_timer = 0
         self.log = []
         self.info_rects = []
+        self.battle_figure_rects = []
+        self.effect_popup_rects = []   # list of (Rect, label, turns, color, positive, player_idx)
+        self.effect_popup        = None  # (label, turns, color, positive, player_idx) when open
         self.show_info_idx = None
         self.close_popup_rect = None
         self.help_button_rect = pygame.Rect(WIDTH - 98, HEIGHT - 98, 72, 72)
@@ -619,11 +660,22 @@ class ArenaGame:
             "Некромант": self._create_necromancer_portrait_icon,
             "Мистик":    self._create_mystic_portrait_icon,
         }
+        # These 4 classes have no PNG — always use procedural legacy icons
+        legacy_procedural = {
+            "Плут":     self._create_plut_portrait_icon_legacy,
+            "Орк":      self._create_orc_portrait_icon_legacy,
+            "Некромант":self._create_necromancer_portrait_icon_legacy,
+            "Мистик":   self._create_mystic_portrait_icon_legacy,
+        }
         for name, data in self.class_data.items():
             if self.use_new_art and name in new_icon_creators:
                 icons[name] = new_icon_creators[name]()
                 continue
-            # Legacy path: try PNG, fallback to letter icon
+            # Legacy path: Плут/Орк/Некромант/Мистик — своя процедурная иконка
+            if name in legacy_procedural:
+                icons[name] = legacy_procedural[name]()
+                continue
+            # For the rest — try PNG
             path = os.path.join(base_dir, data["image"])
             try:
                 image = pygame.image.load(path)
@@ -633,17 +685,7 @@ class ArenaGame:
                     scaled = self._tint_surface(scaled, (64, 168, 150), 10)
                 icons[name] = scaled
             except Exception:
-                # Use legacy procedural icons for the 4 that have them
-                legacy = {
-                    "Плут":     self._create_plut_portrait_icon_legacy,
-                    "Орк":      self._create_orc_portrait_icon_legacy,
-                    "Некромант":self._create_necromancer_portrait_icon_legacy,
-                    "Мистик":   self._create_mystic_portrait_icon_legacy,
-                }
-                if name in legacy:
-                    icons[name] = legacy[name]()
-                else:
-                    icons[name] = self._create_fallback_icon(name)
+                icons[name] = self._create_fallback_icon(name)
         return icons
 
     def _tint_surface(self, surface, color, alpha=40):
@@ -2413,7 +2455,7 @@ class ArenaGame:
             if self.hit_timer > 0:
                 self.hit_timer -= 1
 
-            if self.show_info_idx is None and not self.help_open and self.players:
+            if self.show_info_idx is None and not self.help_open and self.players and not self.pending_post_battle:
                 current_player = self.players[self.current_turn]
                 if current_player.is_ai and pygame.time.get_ticks() >= self.ai_action_due:
                     self.perform_ai_turn(current_player)
@@ -2759,12 +2801,13 @@ class ArenaGame:
 
             for btn in self.arena_select_buttons:
                 if btn.clicked(event):
-                    name = btn.text
-                    if name.startswith("🎲"):
-                        self.selected_arena = None  # random
-                    else:
-                        self.selected_arena = name
+                    self.selected_arena = btn.text
+                    self.arena_lucky = False
                     return
+            if self.arena_lucky_random_button.clicked(event):
+                self.selected_arena = None
+                self.arena_lucky = True
+                return
 
             if self.arena_back_button.clicked(event):
                 # Go back to last player's stat select
@@ -2783,73 +2826,133 @@ class ArenaGame:
             "Колизей": [
                 ("Бойцы — Бонус:", GOLD),
                 ("  Воин, Боевой маг", WHITE),
-                ("  +30% к физическому урону", (100, 220, 100)),
+                ("  +30% к физ. урону (классическая арена — их стихия)", (100, 220, 100)),
                 ("Дикари — Дебаф:", (220, 100, 100)),
                 ("  Варвар, Шаман", WHITE),
-                ("  −10 ловкости (−20% уклонения)", (220, 90, 90)),
+                ("  −10 ловкости (тесные трибуны сковывают маневр)", (220, 90, 90)),
                 ("Остальные:", GRAY),
-                ("  Без бонусов", GRAY),
+                ("  Без эффектов — обычная арена", GRAY),
             ],
             "Вулкан": [
                 ("Адепты огня и земли — Бонус:", GOLD),
                 ("  Путь огня, Путь земли", WHITE),
-                ("  +10 мудрости, +10 интеллекта", (100, 220, 100)),
+                ("  +10 мудрости, +10 интеллекта (первозданный огонь питает стихийную магию)", (100, 220, 100)),
+                ("Адепты воды и воздуха — Дебаф:", (220, 100, 100)),
+                ("  −10 мудрости (жар подавляет холодную стихию)", (220, 90, 90)),
                 ("Остальные:", GRAY),
-                ("  Без бонусов", GRAY),
+                ("  Без эффектов", GRAY),
             ],
             "Ледяная пустошь": [
                 ("Адепты воды — Бонус:", GOLD),
-                ("  +10 мудрости, +10 интеллекта", (100, 220, 100)),
+                ("  +10 мудрости, +10 интеллекта (вода — родная стихия льда)", (100, 220, 100)),
                 ("Некромант — Бонус:", GOLD),
-                ("  +5 мудрости, +5 интеллекта", (100, 200, 100)),
+                ("  +5 мудрости, +5 интеллекта (смерть холодна как лёд)", (100, 200, 100)),
                 ("Адепты огня — Дебаф:", (220, 100, 100)),
-                ("  −10 мудрости, −10 интеллекта", (220, 90, 90)),
+                ("  −10 мудрости, −10 интеллекта (холод гасит пламя)", (220, 90, 90)),
                 ("Остальные:", GRAY),
-                ("  Без бонусов", GRAY),
+                ("  Без эффектов", GRAY),
             ],
             "Лес": [
                 ("Нелюди и Дикари — Бонус:", GOLD),
                 ("  Эльф, Орк, Варвар, Шаман", WHITE),
-                ("  +10 ловкости, +10 удачи", (100, 220, 100)),
+                ("  +10 ловкости, +10 удачи (лес — родная среда)", (100, 220, 100)),
                 ("Мистик — Бонус:", GOLD),
-                ("  +15 мудрости", (100, 220, 100)),
+                ("  +15 мудрости (в лесной тиши слышны духи)", (100, 220, 100)),
                 ("Остальные:", GRAY),
-                ("  Без бонусов", GRAY),
+                ("  Без эффектов", GRAY),
             ],
             "Земля мёртвых": [
                 ("Некромант — Бонус:", GOLD),
-                ("  +5 ко всем характеристикам", (100, 220, 100)),
+                ("  +5 ко всем характеристикам (мёртвая земля — источник силы)", (100, 220, 100)),
                 ("Шаман и Мистик — Без эффекта:", GRAY),
-                ("  Между миром живых и мёртвых", GRAY),
+                ("  Они между мирами — равновесие", GRAY),
                 ("Все остальные — Дебаф:", (220, 100, 100)),
-                ("  −5 ко всем характеристикам", (220, 90, 90)),
+                ("  −5 ко всем (мёртвая земля высасывает жизнь)", (220, 90, 90)),
             ],
             "Горный пик": [
                 ("Адепты земли и воздуха — Бонус:", GOLD),
                 ("  Путь земли, Путь воздуха", WHITE),
-                ("  +10 мудрости, +10 удачи (+20% крит)", (100, 220, 100)),
+                ("  +10 мудрости, +10 удачи (первозданные стихии сильнее в высоте)", (100, 220, 100)),
+                ("Воин и Варвар — Дебаф:", (220, 100, 100)),
+                ("  −10 выносливости (разреженный воздух давит)", (220, 90, 90)),
                 ("Остальные:", GRAY),
-                ("  Без бонусов", GRAY),
+                ("  Без эффектов", GRAY),
             ],
             "Арена теней": [
                 ("Теневые бойцы — Бонус:", GOLD),
                 ("  Ассасин, Плут", WHITE),
                 ("  Тёмный путь, Путь непознаваемого", WHITE),
-                ("  +10 ловкости, +10 интеллекта", (100, 220, 100)),
+                ("  +10 ловкости, +10 интеллекта (тьма даёт силу)", (100, 220, 100)),
                 ("Воин — Дебаф:", (220, 100, 100)),
-                ("  −10 ловкости (броня мешает)", (220, 90, 90)),
+                ("  −10 ловкости (броня — обуза в темноте)", (220, 90, 90)),
+                ("Некромант — Бонус:", GOLD),
+                ("  +5 мудрости (тени послушны воле некроманта)", (100, 210, 100)),
                 ("Остальные:", GRAY),
-                ("  Без бонусов", GRAY),
+                ("  Без эффектов", GRAY),
             ],
             "Небесная цитадель": [
                 ("Адепты воздуха — Бонус:", GOLD),
-                ("  +15 интеллекта, +5 мудрости", (100, 220, 100)),
+                ("  +15 интеллекта, +5 мудрости (небо — родная стихия воздуха)", (100, 220, 100)),
                 ("Эльф — Бонус:", GOLD),
-                ("  +10 ловкости, +10 мудрости", (100, 220, 100)),
+                ("  +10 ловкости, +10 мудрости (эльф расцветает на высоте)", (100, 220, 100)),
                 ("Орк — Дебаф:", (220, 100, 100)),
-                ("  −10 мудрости, −10 интеллекта", (220, 90, 90)),
+                ("  −10 мудрости, −10 интеллекта (высота дезориентирует)", (220, 90, 90)),
+                ("Варвар — Дебаф:", (220, 100, 100)),
+                ("  −10 силы (тяжёлое тело тянет вниз)", (220, 90, 90)),
                 ("Остальные:", GRAY),
-                ("  Без бонусов", GRAY),
+                ("  Без эффектов", GRAY),
+            ],
+            "Светлый лес": [
+                ("Природные классы — Бонус:", GOLD),
+                ("  Эльф, Мистик, Шаман", WHITE),
+                ("  +10 ловкости, +10 мудрости", (100, 220, 100)),
+                ("Адепты воздуха — Бонус:", GOLD),
+                ("  +10 интеллекта, +10 удачи (+20% крит)", (100, 220, 100)),
+                ("Некромант — Дебаф:", (220, 100, 100)),
+                ("  −10 мудрости (свет отвергает тьму)", (220, 90, 90)),
+                ("Ассасин, Плут — Дебаф:", (220, 100, 100)),
+                ("  −10 ловкости (слишком светло)", (220, 90, 90)),
+            ],
+            "Запределье": [
+                ("Тёмные маги — Бонус:", GOLD),
+                ("  Мистик, Некромант", WHITE),
+                ("  Тёмный путь, Путь непознаваемого", WHITE),
+                ("  +15 интеллекта, +10 мудрости", (100, 220, 100)),
+                ("Воин, Варвар — Дебаф:", (220, 100, 100)),
+                ("  −15 силы (физика бесполезна)", (220, 90, 90)),
+                ("Орк — Дебаф:", (220, 100, 100)),
+                ("  −10 силы, −40 HP", (220, 90, 90)),
+            ],
+            "Кровавые топи": [
+                ("Некромант, Шаман — Бонус:", GOLD),
+                ("  +10 силы, +10 мудрости", (100, 220, 100)),
+                ("Варвар — Бонус:", GOLD),
+                ("  +40 HP, +5 физ. урона", (100, 220, 100)),
+                ("Воин — Дебаф:", (220, 100, 100)),
+                ("  −10 ловкости (броня вязнет)", (220, 90, 90)),
+                ("Адепты огня — Дебаф:", (220, 100, 100)),
+                ("  −10 интеллекта (сырость гасит пламя)", (220, 90, 90)),
+            ],
+            "Хруст. пещеры": [
+                ("Адепты магии — Бонус:", GOLD),
+                ("  Путь воды, земли, воздуха", WHITE),
+                ("  +10 интеллекта, +10 мудрости", (100, 220, 100)),
+                ("Боевой маг — Бонус:", GOLD),
+                ("  +10 интеллекта (кристальная сила)", (100, 220, 100)),
+                ("Адепты огня — Дебаф:", (220, 100, 100)),
+                ("  −10 мудрости (влажность)", (220, 90, 90)),
+                ("Орк — Дебаф:", (220, 100, 100)),
+                ("  −10 силы (узкие проходы)", (220, 90, 90)),
+            ],
+            "Призрачный замок": [
+                ("Некромант — Бонус:", GOLD),
+                ("  +5 ко всем характеристикам", (100, 220, 100)),
+                ("Ассасин, Плут — Бонус:", GOLD),
+                ("  +10 ловкости (тени замка)", (100, 220, 100)),
+                ("Варвар, Воин — Дебаф:", (220, 100, 100)),
+                ("  −10 силы (духи слабят грубую силу)", (220, 90, 90)),
+                ("Адепты земли — Дебаф:", (220, 100, 100)),
+                ("  −10 мудрости (камни нематериальны)", (220, 90, 90)),
             ],
         }
         return data.get(arena_name, [])
@@ -2858,7 +2961,6 @@ class ArenaGame:
         # Show arena background if one is selected
         bg = self.arena_backgrounds.get(self.selected_arena) if self.selected_arena else None
         if bg:
-            # Darken slightly for UI readability
             dark_bg = bg.copy()
             overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
             overlay.fill((0, 0, 0, 80))
@@ -2867,8 +2969,8 @@ class ArenaGame:
         else:
             self.screen.fill(DARK)
 
-        left_panel = pygame.Rect(70, 100, 400, 870)
-        right_panel = pygame.Rect(520, 100, 1210, 870)
+        left_panel  = pygame.Rect(70, 100, 690, 870)
+        right_panel = pygame.Rect(810, 100, 1000, 870)  # заканчивается до кнопки настроек
         pygame.draw.rect(self.screen, PANEL, left_panel, border_radius=20)
         pygame.draw.rect(self.screen, WHITE, left_panel, 3, border_radius=20)
         if not bg:
@@ -2882,44 +2984,61 @@ class ArenaGame:
         title = self.big_font.render("Выбор арены", True, WHITE)
         self.screen.blit(title, (610, 22))
 
-        # Left: arena buttons
+        # Left: arena buttons (2 columns)
         for btn in self.arena_select_buttons:
-            is_active = (btn.text == self.selected_arena) or (btn.text.startswith("🎲") and self.selected_arena is None)
+            is_active = (btn.text == self.selected_arena)
             btn.draw(self.screen, self.font, active=is_active)
 
-        self.arena_back_button.draw(self.screen, self.font)
         self.arena_confirm_button.draw(self.screen, self.font)
+        self.arena_back_button.draw(self.screen, self.font)
+
+        # Golden lucky random button
+        _gold_base  = (148, 118, 20)
+        _gold_hover = (200, 165, 35)
+        _lucky_active = self.arena_lucky and self.selected_arena is None
+        self.arena_lucky_random_button.draw(
+            self.screen, self.font,
+            accent=(_gold_base, _gold_hover, (255, 242, 180)),
+            active=_lucky_active,
+        )
+        if _lucky_active:
+            pygame.draw.rect(self.screen, GOLD, self.arena_lucky_random_button.rect, 2, border_radius=12)
 
         # Right panel content
-        rx = 545
+        rx = 840
         ry = 125
 
+        _arena_colors = {
+            "Колизей":           (240, 200, 130),
+            "Вулкан":            (220, 200, 120),
+            "Ледяная пустошь":   (130, 195, 240),
+            "Лес":               (120, 210, 130),
+            "Земля мёртвых":     (80,  200, 100),
+            "Горный пик":        (185, 195, 215),
+            "Арена теней":       (160,  90, 220),
+            "Небесная цитадель": (190, 215, 255),
+            "Светлый лес":       (180, 235, 150),
+            "Запределье":        (195, 135, 255),
+            "Кровавые топи":     (215,  75,  75),
+            "Хруст. пещеры":     (120, 225, 255),
+            "Призрачный замок":  (195, 180, 230),
+        }
+
         if self.selected_arena:
-            # Arena name big
-            a_color = (220, 200, 120) if self.selected_arena == "Вулкан" else \
-                      (130, 195, 240) if self.selected_arena == "Ледяная пустошь" else \
-                      (120, 210, 130) if self.selected_arena == "Лес" else \
-                      (80, 200, 100) if self.selected_arena == "Земля мёртвых" else \
-                      (185, 195, 215) if self.selected_arena == "Горный пик" else \
-                      (160, 90, 220) if self.selected_arena == "Арена теней" else \
-                      (190, 215, 255) if self.selected_arena == "Небесная цитадель" else \
-                      (240, 200, 130)
+            a_color = _arena_colors.get(self.selected_arena, (240, 200, 130))
             a_title = self.class_name_font.render(self.selected_arena.upper(), True, a_color)
             self.screen.blit(a_title, (rx, ry))
             ry += 52
 
-            # Preview image scaled
             prev_bg = self.arena_backgrounds.get(self.selected_arena)
             if prev_bg:
-                prev_w, prev_h = 680, 340
+                prev_w, prev_h = 940, 360
                 preview = pygame.transform.smoothscale(prev_bg, (prev_w, prev_h))
                 prev_rect = preview.get_rect(topleft=(rx, ry))
                 self.screen.blit(preview, prev_rect)
-                # Frame
                 pygame.draw.rect(self.screen, (160, 160, 180), prev_rect, 2, border_radius=10)
-                ry += prev_h + 22
+                ry += prev_h + 18
 
-            # Bonus lines
             bonus_title = self.font.render("Бонусы арены:", True, WHITE)
             self.screen.blit(bonus_title, (rx, ry))
             ry += 36
@@ -2928,16 +3047,26 @@ class ArenaGame:
                 self.screen.blit(surf, (rx, ry))
                 ry += 34
         else:
-            # Random mode
-            rand_title = self.class_name_font.render("СЛУЧАЙНАЯ", True, GOLD)
-            self.screen.blit(rand_title, (rx, ry))
-            ry += 60
-            rand_lines = [
-                ("Арена будет выбрана случайно", WHITE),
-                ("перед началом боя", WHITE),
-                ("", None),
-                ("Доступные арены:", (190, 190, 210)),
-            ]
+            if self.arena_lucky:
+                rand_title = self.class_name_font.render("🌟  СЧАСТЛИВАЯ  СЛУЧАЙНАЯ", True, GOLD)
+                self.screen.blit(rand_title, (rx, ry))
+                ry += 60
+                rand_lines = [
+                    ("Арена выбираeтся случайно", GOLD),
+                    ("Все бонусы и дебафы усилены в 1.5×!", (255, 230, 100)),
+                    ("", None),
+                    ("Доступные арены:", (190, 190, 210)),
+                ]
+            else:
+                rand_title = self.class_name_font.render("СЛУЧАЙНАЯ", True, GOLD)
+                self.screen.blit(rand_title, (rx, ry))
+                ry += 60
+                rand_lines = [
+                    ("Арена будет выбрана случайно", WHITE),
+                    ("перед началом боя", WHITE),
+                    ("", None),
+                    ("Доступные арены:", (190, 190, 210)),
+                ]
             for _an, _ in self.arena_data:
                 rand_lines.append((f"  • {_an}", (160, 210, 160)))
             for line_text, line_color in rand_lines:
@@ -2979,11 +3108,13 @@ class ArenaGame:
             self.players.append(self.create_ai_player())
 
         # Use selected arena or pick a random one (re-seed for true randomness)
+        _arena_mult = 1.5 if self.arena_lucky else 1.0
         if self.selected_arena:
-            self.arena_name, arena_messages = self.apply_random_arena(self.players, forced_name=self.selected_arena)
+            self.arena_name, arena_messages = self.apply_random_arena(self.players, forced_name=self.selected_arena, bonus_mult=_arena_mult)
         else:
             random.seed()  # Re-seed from OS entropy to avoid correlated picks
-            self.arena_name, arena_messages = self.apply_random_arena(self.players)
+            self.arena_name, arena_messages = self.apply_random_arena(self.players, bonus_mult=_arena_mult)
+        self.arena_lucky = False  # reset after use
         self.players = self.order_players_for_battle(self.players)
         order_text = " → ".join(player.name for player in self.players)
 
@@ -2992,6 +3123,7 @@ class ArenaGame:
         self.selected_target = None
         self.hit_target = None
         self.hit_timer = 0
+        self.pending_post_battle = False
         self.log = [
             self.make_log_entry(f"🏟 Арена: {self.arena_name}", category="arena"),
             self.make_log_entry(f"🎲 Порядок ходов: {order_text}", category="arena"),
@@ -3233,7 +3365,7 @@ class ArenaGame:
         pygame.draw.circle(self.screen, border_color, (gx, gy), hole_r, 2)
 
     def _render_settings_panel(self):
-        panel_w, panel_h = 500, 540
+        panel_w, panel_h = 500, 640
         panel_x = WIDTH - panel_w - 20
         panel_y = HEIGHT - 98 - 82 * 2 - panel_h - 14
         panel_rect = pygame.Rect(panel_x, panel_y, panel_w, panel_h)
@@ -3313,7 +3445,40 @@ class ArenaGame:
         # Apply button
         pygame.draw.line(self.screen, (90, 90, 120),
                          (panel_x + 18, panel_y + 406), (panel_x + panel_w - 18, panel_y + 406), 1)
-        self.settings_apply_rect = pygame.Rect(panel_x + 20, panel_y + 422, panel_w - 40, 52)
+
+        # Sound toggle
+        from sounds import _NUMPY_OK as _snd_numpy_ok
+        sound_label = self.font.render("Звук:", True, (200, 210, 255))
+        self.screen.blit(sound_label, (panel_x + 20, panel_y + 418))
+        snd_enabled = hasattr(self, "sounds") and self.sounds.enabled
+        self.settings_snd_on_rect = pygame.Rect(panel_x + 20, panel_y + 458, 215, 50)
+        self.settings_snd_off_rect = pygame.Rect(panel_x + 255, panel_y + 458, 215, 50)
+        for rect, label, active, locked in [
+            (self.settings_snd_on_rect, "Включён", snd_enabled, not _snd_numpy_ok),
+            (self.settings_snd_off_rect, "Выключен", not snd_enabled, False),
+        ]:
+            hov = rect.collidepoint(mouse) and not locked
+            if locked:
+                col = (45, 45, 55)
+                border_col = (80, 80, 100)
+            elif active:
+                col = (60, 140, 60)
+                border_col = (130, 220, 130)
+            else:
+                col = (80, 80, 130) if hov else (50, 50, 90)
+                border_col = (160, 160, 220)
+            pygame.draw.rect(self.screen, col, rect, border_radius=10)
+            pygame.draw.rect(self.screen, border_col, rect, 2, border_radius=10)
+            txt_col = (100, 100, 110) if locked else WHITE
+            t = self.font.render(label, True, txt_col)
+            self.screen.blit(t, t.get_rect(center=rect.center))
+        if not _snd_numpy_ok:
+            warn = self.small_font.render("numpy не найден — звук недоступен", True, (200, 120, 80))
+            self.screen.blit(warn, warn.get_rect(centerx=panel_rect.centerx, y=panel_y + 514))
+
+        pygame.draw.line(self.screen, (90, 90, 120),
+                         (panel_x + 18, panel_y + 520), (panel_x + panel_w - 18, panel_y + 520), 1)
+        self.settings_apply_rect = pygame.Rect(panel_x + 20, panel_y + 536, panel_w - 40, 52)
         mouse = pygame.mouse.get_pos()
         hov = self.settings_apply_rect.collidepoint(mouse)
         pygame.draw.rect(self.screen, (80, 150, 80) if hov else (55, 110, 55), self.settings_apply_rect, border_radius=12)
@@ -3322,7 +3487,7 @@ class ArenaGame:
         self.screen.blit(apply_t, apply_t.get_rect(center=self.settings_apply_rect.center))
 
         note = self.small_font.render("Изменение разрешения вступит в силу при перезапуске.", True, (170, 170, 190))
-        self.screen.blit(note, note.get_rect(centerx=panel_rect.centerx, y=panel_y + 490))
+        self.screen.blit(note, note.get_rect(centerx=panel_rect.centerx, y=panel_y + 600))
 
     def apply_settings(self):
         import os, sys
@@ -3360,6 +3525,15 @@ class ArenaGame:
                 self.use_new_art = False
                 self._reload_art()
             return
+        if hasattr(self, "settings_snd_on_rect") and self.settings_snd_on_rect.collidepoint(pos):
+            from sounds import _NUMPY_OK as _snd_numpy_ok
+            if hasattr(self, "sounds") and _snd_numpy_ok:
+                self.sounds.enabled = True
+            return
+        if hasattr(self, "settings_snd_off_rect") and self.settings_snd_off_rect.collidepoint(pos):
+            if hasattr(self, "sounds"):
+                self.sounds.enabled = False
+            return
         if hasattr(self, "settings_apply_rect") and self.settings_apply_rect.collidepoint(pos):
             self.apply_settings()
             self.settings_open = False
@@ -3375,7 +3549,7 @@ class ArenaGame:
             ("subtitle", "Что можно сделать в свой ход"),
             ("bullet", "Атака — обычный удар по выбранной цели. Даёт +10% к шансу критического удара на этот выпад."),
             ("bullet", "Осторожно — более аккуратная атака. После неё персонаж получает +10% временного уклонения до начала своего следующего хода."),
-            ("bullet", "Активка — классовая способность. Почти у всех активок откат 2 своих хода: 2 → 1 → 0."),
+            ("bullet", "Навык — классовая активная способность. Почти у всех откат 2 своих хода: 2 → 1 → 0."),
             ("bullet", "Лут — попытка найти предмет. Базовый шанс: 50% + удача. Если персонаж обезоружен, шанс ниже на 20%."),
             ("bullet", "Колдовать — открыть обычную магию своего пути. У обычной магии откат 2 своих хода. Возвышенная магия идёт отдельно и этим откатом не блокируется."),
             ("bullet", "Орк вместо магии использует ликантропию: форма медведя или волка на 3 своих хода, затем авто-возврат и откат 2 хода."),
@@ -3633,6 +3807,27 @@ class ArenaGame:
 
     def append_log(self, text, category="normal", actor=None, verb=None, target=None, target_hit=None, indent=False):
         self.log.append(self.make_log_entry(text, category, actor, verb, target, target_hit, indent))
+        # ── sound hooks ─────────────────────────────────────────────────────
+        if hasattr(self, "sounds"):
+            if "☠" in text or "💀" in text:
+                self.sounds.on_death()
+            elif category is not None and category.startswith("magic_water"):
+                # Water magic = healing or ice — use heal tone if text heals, else spell
+                if "восстанавливает" in text:
+                    self.sounds.on_heal()
+                else:
+                    self.sounds.on_spell()
+            elif category is not None and category.startswith("magic_"):
+                # All other magic schools play spell sound (hit, miss or self-cast)
+                if target_hit is not False:
+                    self.sounds.on_spell()
+            elif target_hit is True:
+                self.sounds.on_hit()
+            elif target_hit is False:
+                self.sounds.on_miss()
+            elif "восстанавливает" in text and "HP" in text:
+                # Item-based or passive heal (no magic category)
+                self.sounds.on_heal()
 
     def infer_log_color(self, text, category="normal"):
         lowered = text.lower()
@@ -4765,16 +4960,192 @@ class ArenaGame:
         self._arena_dark_overlay(surf, 115)
         return surf
 
+    def _gen_arena_bg_light_forest(self):
+        surf = pygame.Surface((WIDTH, HEIGHT))
+        rng = random.Random(9)
+        for y in range(HEIGHT):
+            t = y / HEIGHT
+            surf.fill((min(255, int(200 + t * 30)), min(255, int(228 + t * 10)), min(255, int(255 - t * 60))), (0, y, WIDTH, 1))
+        for r in range(90, 0, -3):
+            pygame.draw.circle(surf, (255, min(255, 248), min(255, 200)), (WIDTH // 2, 0), r, 1)
+        for tx in range(0, WIDTH + 60, rng.randint(60, 120)):
+            th = rng.randint(220, 420); tw = rng.randint(14, 26); ty = HEIGHT - th
+            bark_c = (228, 225, 215) if rng.random() > 0.5 else (195, 190, 175)
+            pygame.draw.rect(surf, bark_c, (tx - tw // 2, ty + th // 3, tw, th * 2 // 3))
+            for layer in range(4):
+                fsz = rng.randint(80 - layer * 10, 140 - layer * 12)
+                leaf_c = (max(60, rng.randint(125, 190) - layer * 15), rng.randint(190, 240), max(50, rng.randint(85, 140)))
+                pygame.draw.ellipse(surf, leaf_c, (tx - fsz // 2, ty + th // 3 - fsz * 3 // 4 + layer * 28, fsz, int(fsz * 0.75)))
+        for tx in range(-60, WIDTH + 80, rng.randint(80, 160)):
+            th = rng.randint(300, 550)
+            for seg in range(5):
+                sw = max(8, int((th / (seg + 1)) * 0.38))
+                sy = HEIGHT - th + seg * int(th * 0.18)
+                pts = [(tx - sw, sy + int(th * 0.18)), (tx, sy), (tx + sw, sy + int(th * 0.18))]
+                pine_col = (max(40, 80 + rng.randint(-15, 20)), max(70, 130 + rng.randint(-10, 25)), max(30, 65 + rng.randint(-10, 15)))
+                pygame.draw.polygon(surf, pine_col, pts)
+        for y in range(int(HEIGHT * 0.72), HEIGHT):
+            t2 = (y - HEIGHT * 0.72) / (HEIGHT - HEIGHT * 0.72)
+            g_val = int(170 - t2 * 28)
+            surf.fill((int(g_val * 0.62), g_val, int(g_val * 0.44)), (0, y, WIDTH, 1))
+        for _ in range(10):
+            lx = rng.randint(80, WIDTH - 80)
+            l_s = pygame.Surface((55, HEIGHT), pygame.SRCALPHA)
+            l_s.fill((255, 255, 240, 20)); surf.blit(l_s, (lx, 0))
+        for _ in range(800):
+            fx = rng.randint(0, WIDTH); fy = rng.randint(int(HEIGHT * 0.73), HEIGHT)
+            fc = rng.choice([(255, 240, 100), (255, 200, 210), (220, 255, 220), (255, 255, 175)])
+            pygame.draw.circle(surf, fc, (fx, fy), rng.randint(2, 5))
+        self._arena_dark_overlay(surf, 88)
+        return surf
+
+    def _gen_arena_bg_beyond(self):
+        surf = pygame.Surface((WIDTH, HEIGHT))
+        rng = random.Random(10)
+        surf.fill((8, 5, 20))
+        for _ in range(6):
+            nx = rng.randint(0, WIDTH); ny = rng.randint(0, HEIGHT); nr = rng.randint(180, 380)
+            col = rng.choice([(60, 10, 120), (30, 8, 90), (100, 20, 180), (20, 50, 130)])
+            for r in range(nr, 0, -12):
+                alpha_v = max(0, int((nr - r) / nr * 52))
+                cs = pygame.Surface((r * 2, r * 2), pygame.SRCALPHA)
+                pygame.draw.ellipse(cs, (col[0], col[1], col[2], alpha_v), (0, 0, r * 2, r * 2))
+                surf.blit(cs, (nx - r, ny - r), special_flags=pygame.BLEND_RGBA_ADD)
+        for _ in range(1200):
+            sx = rng.randint(0, WIDTH); sy = rng.randint(0, HEIGHT); sr = rng.randint(1, 3)
+            sc = rng.choice([(255, 255, 255), (200, 180, 255), (180, 220, 255), (255, 220, 180)])
+            pygame.draw.circle(surf, sc, (sx, sy), sr)
+        rift_cx, rift_cy = WIDTH // 2, int(HEIGHT * 0.42)
+        for r in range(120, 0, -5):
+            alpha_f = (120 - r) / 120
+            c_col = (int(100 * alpha_f), int(30 * alpha_f), int(220 * alpha_f), int(alpha_f * 175))
+            cs2 = pygame.Surface((r * 2, r * 2), pygame.SRCALPHA)
+            pygame.draw.ellipse(cs2, c_col, (0, 0, r * 2, r * 2))
+            surf.blit(cs2, (rift_cx - r, rift_cy - r), special_flags=pygame.BLEND_RGBA_ADD)
+        for _ in range(8):
+            lx1 = rng.randint(0, WIDTH); ly1 = rng.randint(0, HEIGHT)
+            lx2 = lx1 + rng.randint(-200, 200); ly2 = ly1 + rng.randint(-100, 100)
+            pygame.draw.line(surf, (150, 80, 255), (lx1, ly1), (lx2, ly2), rng.randint(1, 3))
+        self._arena_dark_overlay(surf, 148)
+        return surf
+
+    def _gen_arena_bg_blood_swamp(self):
+        surf = pygame.Surface((WIDTH, HEIGHT))
+        rng = random.Random(11)
+        for y in range(int(HEIGHT * 0.55)):
+            t = y / (HEIGHT * 0.55)
+            surf.fill((int(22 + t * 18), int(10 + t * 8), int(10 + t * 5)), (0, y, WIDTH, 1))
+        for y in range(int(HEIGHT * 0.55), HEIGHT):
+            t = (y - HEIGHT * 0.55) / (HEIGHT * 0.45)
+            surf.fill((int(55 + t * 25), int(12 + t * 4), int(8 + t * 4)), (0, y, WIDTH, 1))
+        for _ in range(12):
+            px = rng.randint(0, WIDTH); py = rng.randint(int(HEIGHT * 0.62), HEIGHT)
+            pw = rng.randint(60, 180); ph = rng.randint(15, 40)
+            pygame.draw.ellipse(surf, (rng.randint(100, 150), rng.randint(10, 25), rng.randint(8, 20)), (px - pw // 2, py, pw, ph))
+        for tx in range(-50, WIDTH + 80, rng.randint(80, 180)):
+            th = rng.randint(200, 500); tw = rng.randint(8, 20); ty = HEIGHT - th
+            pygame.draw.rect(surf, (38, 22, 14), (tx - tw // 2, ty, tw, th))
+            for bh in range(0, th * 2 // 3, rng.randint(50, 90)):
+                blen = rng.randint(40, 100); bdir = 1 if rng.random() > 0.5 else -1
+                pygame.draw.line(surf, (32, 18, 12), (tx, ty + bh), (tx + bdir * blen, ty + bh - rng.randint(15, 40)), 3)
+        for _ in range(14):
+            mx = rng.randint(-100, WIDTH); my = rng.randint(int(HEIGHT * 0.45), int(HEIGHT * 0.75))
+            mw = rng.randint(200, 500); mh = rng.randint(30, 80)
+            ms = pygame.Surface((mw, mh), pygame.SRCALPHA); ms.fill((80, 60, 50, 42))
+            surf.blit(ms, (mx, my))
+        for _ in range(200):
+            bx = rng.randint(0, WIDTH); by = rng.randint(int(HEIGHT * 0.7), HEIGHT)
+            pygame.draw.circle(surf, (80, 28, 18), (bx, by), rng.randint(2, 6))
+        self._arena_dark_overlay(surf, 158)
+        return surf
+
+    def _gen_arena_bg_crystal_caves(self):
+        surf = pygame.Surface((WIDTH, HEIGHT))
+        rng = random.Random(12)
+        for y in range(HEIGHT):
+            t = y / HEIGHT
+            surf.fill((int(4 + t * 10), int(6 + t * 18), int(22 + t * 28)), (0, y, WIDTH, 1))
+        for _ in range(32):
+            sx = rng.randint(0, WIDTH); sh = rng.randint(40, 180); sw = rng.randint(10, 35)
+            rock_c = (rng.randint(40, 75), rng.randint(55, 95), rng.randint(80, 130))
+            pygame.draw.polygon(surf, rock_c, [(sx - sw, 0), (sx + sw, 0), (sx + sw // 3, sh), (sx - sw // 3, sh)])
+        for _ in range(28):
+            fx = rng.randint(0, WIDTH); fh = rng.randint(50, 220); fw = rng.randint(12, 40)
+            rock_f = (rng.randint(35, 70), rng.randint(50, 90), rng.randint(75, 120))
+            pygame.draw.polygon(surf, rock_f, [(fx - fw, HEIGHT), (fx + fw, HEIGHT), (fx + fw // 3, HEIGHT - fh), (fx - fw // 3, HEIGHT - fh)])
+        for _ in range(55):
+            cx = rng.randint(0, WIDTH); cy = rng.randint(int(HEIGHT * 0.3), HEIGHT)
+            csz = rng.randint(8, 30)
+            c_col = rng.choice([(80, 220, 255), (60, 180, 240), (140, 255, 240), (100, 200, 255), (220, 160, 255)])
+            pygame.draw.polygon(surf, c_col, [(cx, cy - csz), (cx + csz // 3, cy), (cx, cy + csz // 2), (cx - csz // 3, cy)])
+            gs = pygame.Surface((csz * 4, csz * 4), pygame.SRCALPHA)
+            pygame.draw.circle(gs, (c_col[0] // 2, c_col[1] // 2, c_col[2] // 2, 58), (csz * 2, csz * 2), csz * 2)
+            surf.blit(gs, (cx - csz * 2, cy - csz * 2), special_flags=pygame.BLEND_RGBA_ADD)
+        pygame.draw.ellipse(surf, (20, 80, 120), (WIDTH // 2 - 250, int(HEIGHT * 0.72), 500, 80))
+        pygame.draw.ellipse(surf, (60, 140, 190), (WIDTH // 2 - 250, int(HEIGHT * 0.72), 500, 80), 2)
+        gl = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA); gl.fill((28, 58, 118, 16))
+        surf.blit(gl, (0, 0))
+        self._arena_dark_overlay(surf, 128)
+        return surf
+
+    def _gen_arena_bg_ghost_castle(self):
+        surf = pygame.Surface((WIDTH, HEIGHT))
+        rng = random.Random(13)
+        for y in range(HEIGHT):
+            t = y / HEIGHT
+            surf.fill((int(8 + t * 12), int(8 + t * 10), int(22 + t * 18)), (0, y, WIDTH, 1))
+        pygame.draw.circle(surf, (210, 220, 235), (WIDTH // 4, 90), 55)
+        pygame.draw.circle(surf, (175, 185, 195), (WIDTH // 4 + 18, 75), 48)
+        for _ in range(600):
+            sx = rng.randint(0, WIDTH); sy = rng.randint(0, int(HEIGHT * 0.6))
+            pygame.draw.circle(surf, (200, 205, 220), (sx, sy), rng.randint(1, 2))
+        for y in range(int(HEIGHT * 0.62), HEIGHT):
+            t2 = (y - HEIGHT * 0.62) / (HEIGHT * 0.38)
+            rv = int(14 + t2 * 10); surf.fill((rv, rv + 2, rv + 8), (0, y, WIDTH, 1))
+        base_y = int(HEIGHT * 0.6); wall_w = 1000; wall_h = 320; wall_x = (WIDTH - wall_w) // 2
+        for bxo in range(0, wall_w, 60):
+            for byo in range(0, wall_h, 32):
+                shade = rng.randint(44, 72)
+                pygame.draw.rect(surf, (shade, shade, shade + 6), (wall_x + bxo, base_y - wall_h + byo, 58, 30))
+                pygame.draw.rect(surf, (28, 28, 36), (wall_x + bxo, base_y - wall_h + byo, 58, 30), 1)
+        for mxi in range(0, wall_w, 50):
+            if rng.random() > 0.45:
+                pygame.draw.rect(surf, (52, 50, 60), (wall_x + mxi, base_y - wall_h - 28, 28, 30))
+        for tower_x, tower_h in [(wall_x - 20, 420), (wall_x + wall_w - 60, 400), (wall_x + wall_w // 2 - 40, 500)]:
+            tw2 = 85
+            pygame.draw.rect(surf, (48, 46, 58), (tower_x, base_y - tower_h, tw2, tower_h))
+            pygame.draw.polygon(surf, (35, 32, 45), [(tower_x - 8, base_y - tower_h), (tower_x + tw2 // 2, base_y - tower_h - 70), (tower_x + tw2 + 8, base_y - tower_h)])
+            for wy in range(base_y - tower_h + 30, base_y - 20, 65):
+                wg = pygame.Surface((20, 30), pygame.SRCALPHA); wg.fill((180, 160, 80, 78))
+                surf.blit(wg, (tower_x + tw2 // 2 - 10, wy))
+        for _ in range(18):
+            gx = rng.randint(0, WIDTH); gy = rng.randint(int(HEIGHT * 0.4), HEIGHT)
+            gr = rng.randint(18, 48)
+            gs2 = pygame.Surface((gr * 2, gr * 3), pygame.SRCALPHA)
+            pygame.draw.ellipse(gs2, (200, 215, 240, 52), (0, 0, gr * 2, gr * 2))
+            surf.blit(gs2, (gx - gr, gy - gr))
+        for _ in range(10):
+            mx = rng.randint(-120, WIDTH); my = rng.randint(int(HEIGHT * 0.55), HEIGHT)
+            mw = rng.randint(250, 600); mh = rng.randint(35, 90)
+            ms2 = pygame.Surface((mw, mh), pygame.SRCALPHA); ms2.fill((130, 145, 170, 36))
+            surf.blit(ms2, (mx, my))
+        self._arena_dark_overlay(surf, 133)
+        return surf
+
     # ─── Arena effects ───────────────────────────────────────────────────────────
 
-    def apply_random_arena(self, players, forced_name=None):
+    def apply_random_arena(self, players, forced_name=None, bonus_mult=1.0):
+        _STAT_ATTRS = ('strength', 'stamina', 'agility', 'luck', 'wisdom', 'intellect', 'damage', 'max_hp', 'hp', 'dodge', 'crit')
         if forced_name:
             arena_name = forced_name
             arena_key = next((k for n, k in self.arena_data if n == forced_name), None)
         else:
             arena_name, arena_key = random.choice(self.arena_data)
         messages = []
+        if bonus_mult != 1.0:
+            messages.append(f"🌟 Счастливая арена: все эффекты ×{bonus_mult:.1f}!")
         for player in players:
+            _pre = {a: getattr(player, a) for a in _STAT_ATTRS}
             role = player.role
             path = player.magic_path or ""
             if arena_key == "colosseum":
@@ -4872,6 +5243,83 @@ class ArenaGame:
                     player.wisdom = max(1, player.wisdom - 10)
                     player.intellect = max(1, player.intellect - 10)
                     messages.append(f"✨ Неб. цитадель: {player.name} −10 мудрости, −10 интеллекта (Орк, дебаф)")
+            elif arena_key == "light_forest":
+                if role in ("Эльф", "Мистик", "Шаман"):
+                    player.agility += 10;  player.wisdom += 10
+                    player.dodge += 20;  player.crit += 20
+                    messages.append(f"🌳 Светлый лес: {player.name} +10 ловкости, +10 мудрости")
+                elif path == "Путь воздуха":
+                    player.intellect += 10;  player.luck += 10;  player.crit += 20
+                    messages.append(f"🌳 Светлый лес: {player.name} +10 интеллекта, +10 удачи (воздух)")
+                if role == "Некромант":
+                    player.wisdom = max(1, player.wisdom - 10)
+                    messages.append(f"🌳 Светлый лес: {player.name} −10 мудрости (дебаф)")
+                if role in ("Ассасин", "Плут"):
+                    player.agility = max(1, player.agility - 10);  player.dodge = max(0, player.dodge - 20)
+                    messages.append(f"🌳 Светлый лес: {player.name} −10 ловкости (дебаф)")
+            elif arena_key == "beyond":
+                if role in ("Мистик", "Некромант") or path in ("Тёмный путь", "Путь непознаваемого"):
+                    player.intellect += 15;  player.wisdom += 10
+                    messages.append(f"🌀 Запределье: {player.name} +15 интеллекта, +10 мудрости")
+                if role in ("Воин", "Варвар"):
+                    player.strength = max(1, player.strength - 15)
+                    messages.append(f"🌀 Запределье: {player.name} −15 силы (дебаф)")
+                elif role == "Орк":
+                    player.strength = max(1, player.strength - 10)
+                    player.max_hp = max(8, player.max_hp - 40);  player.hp = min(player.hp, player.max_hp)
+                    messages.append(f"🌀 Запределье: {player.name} −10 силы, −40 HP (дебаф)")
+            elif arena_key == "blood_swamp":
+                if role in ("Некромант", "Шаман"):
+                    player.strength += 10;  player.wisdom += 10
+                    messages.append(f"🖥 Кров. топи: {player.name} +10 силы, +10 мудрости")
+                elif role == "Варвар":
+                    player.max_hp += 40;  player.hp += 40;  player.damage += 5
+                    messages.append(f"🖥 Кров. топи: {player.name} +40 HP, +5 урона (варвар)")
+                if role == "Воин":
+                    player.agility = max(1, player.agility - 10);  player.dodge = max(0, player.dodge - 20)
+                    messages.append(f"🖥 Кров. топи: {player.name} −10 ловкости (дебаф)")
+                if path == "Путь огня":
+                    player.intellect = max(1, player.intellect - 10)
+                    messages.append(f"🖥 Кров. топи: {player.name} −10 интеллекта (дебаф)")
+            elif arena_key == "crystal_caves":
+                if path in ("Путь воды", "Путь земли", "Путь воздуха"):
+                    player.intellect += 10;  player.wisdom += 10
+                    messages.append(f"💎 Хруст. пещеры: {player.name} +10 интеллекта, +10 мудрости ({path})")
+                elif role == "Боевой маг":
+                    player.intellect += 10
+                    messages.append(f"💎 Хруст. пещеры: {player.name} +10 интеллекта (боев. маг)")
+                if path == "Путь огня":
+                    player.wisdom = max(1, player.wisdom - 10)
+                    messages.append(f"💎 Хруст. пещеры: {player.name} −10 мудрости (дебаф)")
+                if role == "Орк":
+                    player.strength = max(1, player.strength - 10)
+                    messages.append(f"💎 Хруст. пещеры: {player.name} −10 силы (дебаф)")
+            elif arena_key == "ghost_castle":
+                if role == "Некромант":
+                    for _a in ('strength', 'stamina', 'agility', 'luck', 'wisdom', 'intellect'):
+                        setattr(player, _a, getattr(player, _a) + 5)
+                    player.damage += 5;  player.max_hp += 40;  player.hp += 40
+                    player.dodge += 10;  player.crit += 10
+                    messages.append(f"💀 Призр. замок: {player.name} +5 ко всем характеристикам")
+                elif role in ("Ассасин", "Плут"):
+                    player.agility += 10;  player.dodge += 20
+                    messages.append(f"💀 Призр. замок: {player.name} +10 ловкости (тени)")
+                if role in ("Варвар", "Воин"):
+                    player.strength = max(1, player.strength - 10)
+                    messages.append(f"💀 Призр. замок: {player.name} −10 силы (дебаф)")
+                if path == "Путь земли":
+                    player.wisdom = max(1, player.wisdom - 10)
+                    messages.append(f"💀 Призр. замок: {player.name} −10 мудрости (дебаф)")
+            # Коэффициент счастливой арены: масштабируем дельты
+            if bonus_mult != 1.0:
+                for _attr in _STAT_ATTRS:
+                    _delta = getattr(player, _attr) - _pre[_attr]
+                    if _delta != 0:
+                        setattr(player, _attr, _pre[_attr] + int(_delta * bonus_mult))
+                player.hp = min(player.hp, player.max_hp)
+            # Флаги бафа/дебафа от арены (после масштабирования)
+            player.arena_buff   = any(getattr(player, a) > _pre[a] for a in _STAT_ATTRS)
+            player.arena_debuff = any(getattr(player, a) < _pre[a] for a in _STAT_ATTRS)
         return arena_name, messages
 
     def prepare_current_turn(self):
@@ -4879,7 +5327,7 @@ class ArenaGame:
             alive = [player for player in self.players if player.hp > 0]
             if len(alive) == 0:
                 self.winner_name = "Никто"
-                self.set_state(self.POST_BATTLE)
+                self.pending_post_battle = True
                 return
             if len(alive) == 1:
                 self.finish_battle(alive[0].name)
@@ -5011,6 +5459,8 @@ class ArenaGame:
         self.decay_turn_effects(current_player)
         self.append_turn_separator(current_player)
         self.current_turn = self.next_alive_index(self.current_turn)
+        if hasattr(self, "sounds"):
+            self.sounds.on_turn()
         self.prepare_current_turn()
 
     def try_grant_assassin_bonus_turn(self, player):
@@ -5667,7 +6117,12 @@ class ArenaGame:
         return messages, False
 
     def finish_action_turn(self, player):
+        alive_before = {p for p in self.players if p.hp > 0}
         self.normalize_health()
+        if hasattr(self, "sounds"):
+            for p in self.players:
+                if p.hp <= 0 and p in alive_before:
+                    self.sounds.on_death()
         if self.bonus_turn_player is player:
             self.advance_turn()
             return
@@ -5771,6 +6226,15 @@ class ArenaGame:
         return True
 
     def handle_battle_events(self, events):
+        # Бой завершён — ждём клик на кнопку перехода к экрану победы
+        if self.pending_post_battle:
+            for ev in events:
+                if self.battle_end_button.clicked(ev):
+                    self.pending_post_battle = False
+                    self.set_state(self.POST_BATTLE)
+                    return
+            return
+
         current = self.players[self.current_turn]
 
         for event in events:
@@ -5823,9 +6287,27 @@ class ArenaGame:
 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
 
+                # If effect popup is open — any click outside an icon closes it
+                if self.effect_popup is not None:
+                    # Check if the click was on an icon to toggle (reuse same icon closes)
+                    icon_clicked = any(
+                        hr.collidepoint(event.pos)
+                        for hr, *_ in self.effect_popup_rects
+                    )
+                    self.effect_popup = None
+                    if not icon_clicked:
+                        return
+
                 for idx, rect in enumerate(self.info_rects):
                     if rect and rect.collidepoint(event.pos):
                         self.show_info_idx = idx
+                        self.effect_popup = None
+                        return
+
+                # Effect icon click — show description popup
+                for hit_rect, label, turns, color, positive, player_idx in self.effect_popup_rects:
+                    if hit_rect.collidepoint(event.pos):
+                        self.effect_popup = (label, turns, color, positive, player_idx)
                         return
 
                 for player, rect in self.get_target_rects():
@@ -6129,7 +6611,9 @@ class ArenaGame:
         self.winner_name = winner_name
         self.scores[winner_name] = self.scores.get(winner_name, 0) + 1
         self.champion = self.scores[winner_name] >= 3
-        self.set_state(self.POST_BATTLE)
+        if hasattr(self, "sounds"):
+            self.sounds.on_victory()
+        self.pending_post_battle = True  # show log-review button before transitioning
 
     def handle_post_battle_events(self, events):
         for event in events:
@@ -6540,6 +7024,9 @@ class ArenaGame:
             self.render_help_overlay()
 
     def get_target_rects(self):
+        # Use battle figure rects if available (new visual mode), fallback to old coords
+        if hasattr(self, "battle_figure_rects") and self.battle_figure_rects:
+            return self.battle_figure_rects
         rects = []
         for i, player in enumerate(self.players):
             x, y = 50, 50 + i * 120
@@ -6583,6 +7070,499 @@ class ArenaGame:
         hp_text = hp_font.render(f"{player.hp}/{player.max_hp}", True, WHITE if not dead else (180, 180, 180))
         self.screen.blit(hp_text, (x + 60, y + 54))
 
+    # ── Role colours used for above-card labels ────────────────────────────
+    ROLE_COLORS = {
+        "Воин":        (140, 170, 220),
+        "Варвар":      (220, 100,  60),
+        "Ассасин":     (180,  80, 200),
+        "Плут":        (210, 185,  50),
+        "Эльф":        ( 90, 195, 110),
+        "Боевой маг":  (100, 200, 240),
+        "Орк":         (140, 190,  80),
+        "Некромант":   (160,  70, 200),
+        "Мистик":      (200, 120, 230),
+        "Шаман":       (195, 150,  70),
+    }
+
+    def _draw_avatar_circle(self, cx, cy, radius, player, border_col):
+        """Draw a round avatar icon at (cx, cy) with given radius."""
+        raw_icon = self.icons.get(player.role)
+        if raw_icon:
+            av_d  = radius * 2
+            icon_s = pygame.Surface((av_d, av_d), pygame.SRCALPHA)
+            icon_s.fill((0, 0, 0, 0))
+            try:
+                icon_raw = pygame.transform.smoothscale(raw_icon, (av_d, av_d))
+            except Exception:
+                icon_raw = pygame.transform.scale(raw_icon, (av_d, av_d))
+            icon_s.blit(icon_raw, (0, 0))
+            mask = pygame.Surface((av_d, av_d), pygame.SRCALPHA)
+            mask.fill((0, 0, 0, 0))
+            pygame.draw.circle(mask, (255, 255, 255, 255), (radius, radius), radius)
+            icon_s.blit(mask, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
+            if player.hp <= 0:
+                gray = pygame.Surface((av_d, av_d), pygame.SRCALPHA)
+                gray.fill((0, 0, 0, 130))
+                icon_s.blit(gray, (0, 0))
+            self.screen.blit(icon_s, (cx - radius, cy - radius))
+        else:
+            col = (50, 50, 60) if player.hp <= 0 else (70, 90, 140)
+            pygame.draw.circle(self.screen, col, (cx, cy), radius)
+        pygame.draw.circle(self.screen, border_col, (cx, cy), radius + 2, 2)
+
+    def _draw_effect_icon(self, cx, cy, label, color, size):
+        """Draw a small procedural icon for a status effect directly on self.screen."""
+        s = self.screen
+        s2 = size // 2
+        s3 = max(1, size // 3)
+        if label == "огонь":
+            pts = [(cx, cy - s2), (cx - s3, cy + s3), (cx + s3, cy + s3)]
+            pygame.draw.polygon(s, color, pts)
+            pygame.draw.circle(s, (255, 200, 50), (cx, cy + s3 - 2), max(2, s3 - 1))
+        elif label == "огн.стена":
+            for row in range(3):
+                pygame.draw.rect(s, color, (cx - s2 + row, cy - s3 + row * 3, size - row * 2, 3))
+        elif label == "кровь":
+            pygame.draw.circle(s, color, (cx, cy - 2), s3)
+            pts = [(cx - s3, cy - 2), (cx + s3, cy - 2), (cx, cy + s2)]
+            pygame.draw.polygon(s, color, pts)
+        elif label == "мороз":
+            pygame.draw.line(s, color, (cx - s2, cy), (cx + s2, cy), 2)
+            pygame.draw.line(s, color, (cx, cy - s2), (cx, cy + s2), 2)
+            pygame.draw.line(s, color, (cx - s3, cy - s3), (cx + s3, cy + s3), 2)
+            pygame.draw.line(s, color, (cx + s3, cy - s3), (cx - s3, cy + s3), 2)
+        elif label == "проклятие":
+            pygame.draw.circle(s, color, (cx, cy - 1), s3 + 1, 2)
+            pygame.draw.circle(s, color, (cx - 3, cy - 2), 2)
+            pygame.draw.circle(s, color, (cx + 3, cy - 2), 2)
+        elif label == "разоруж.":
+            pygame.draw.line(s, color, (cx, cy - s2), (cx, cy + s2), 2)
+            pygame.draw.line(s, color, (cx - s3, cy), (cx + s3, cy), 2)
+        elif label == "скован":
+            pygame.draw.circle(s, color, (cx - 3, cy), s3, 1)
+            pygame.draw.circle(s, color, (cx + 3, cy), s3, 1)
+        elif label in ("стан", "станун"):
+            pygame.draw.circle(s, color, (cx, cy), s3)
+            for a in range(4):
+                ang = a * math.pi / 2
+                ex = cx + int(math.cos(ang) * s2)
+                ey = cy + int(math.sin(ang) * s2)
+                pygame.draw.line(s, color, (cx, cy), (ex, ey), 1)
+        elif label == "нет руки":
+            pygame.draw.line(s, color, (cx - s3 + 1, cy - s3 + 1), (cx + s3 - 1, cy + s3 - 1), 2)
+            pygame.draw.line(s, color, (cx - s3 + 1, cy + s3 - 1), (cx + s3 - 1, cy - s3 + 1), 2)
+            pygame.draw.line(s, color, (cx - s2, cy - s3), (cx + s2, cy - s3), 2)
+        elif label == "нет ноги":
+            pygame.draw.line(s, color, (cx - s3 + 1, cy - s3 + 1), (cx + s3 - 1, cy + s3 - 1), 2)
+            pygame.draw.line(s, color, (cx - s3 + 1, cy + s3 - 1), (cx + s3 - 1, cy - s3 + 1), 2)
+            pygame.draw.line(s, color, (cx - s3, cy + s2), (cx + s3, cy + s2), 2)
+        elif label == "каменная кожа":
+            pts = [(cx, cy - s2), (cx + s2, cy - s3),
+                   (cx + s2, cy + s3 - 2), (cx, cy + s2),
+                   (cx - s2, cy + s3 - 2), (cx - s2, cy - s3)]
+            pygame.draw.polygon(s, color, pts, 2)
+        elif label == "тень":
+            pygame.draw.ellipse(s, color, (cx - s2, cy - s3, size, size * 2 // 3), 2)
+        elif label == "попут.ветер":
+            pygame.draw.line(s, color, (cx - s2, cy), (cx + s3, cy), 2)
+            pygame.draw.polygon(s, color,
+                [(cx + s3, cy - s3), (cx + s2, cy), (cx + s3, cy + s3)])
+        elif label == "зачар.ор.":
+            for a in (0, math.pi / 2, math.pi, 3 * math.pi / 2):
+                ex = cx + int(math.cos(a) * s2)
+                ey = cy + int(math.sin(a) * s2)
+                pygame.draw.line(s, color, (cx, cy), (ex, ey), 2)
+        elif label == "транс":
+            pygame.draw.circle(s, color, (cx, cy), s2, 1)
+            pygame.draw.circle(s, color, (cx, cy), s3, 1)
+        elif label == "тотем":
+            for dx in (-s3, 0, s3):
+                pygame.draw.line(s, color, (cx + dx, cy - s2), (cx + dx, cy + s2), 2)
+        elif label == "уклон.":
+            # Shield shape for cautious evasion bonus
+            pts = [(cx, cy - s2), (cx + s2, cy - s3), (cx + s2, cy + 1), (cx, cy + s2), (cx - s2, cy + 1), (cx - s2, cy - s3)]
+            pygame.draw.polygon(s, color, pts, 2)
+            pygame.draw.line(s, color, (cx, cy - s3 + 2), (cx, cy + s3), 1)
+        elif label == "арена +":
+            # Teal map/diamond with + inside
+            pts = [(cx, cy - s2), (cx + s2, cy), (cx, cy + s2), (cx - s2, cy)]
+            pygame.draw.polygon(s, color, pts, 2)
+            pygame.draw.line(s, color, (cx - s3, cy), (cx + s3, cy), 2)
+            pygame.draw.line(s, color, (cx, cy - s3), (cx, cy + s3), 2)
+        elif label == "арена -":
+            # Pink map/diamond with – inside
+            pts = [(cx, cy - s2), (cx + s2, cy), (cx, cy + s2), (cx - s2, cy)]
+            pygame.draw.polygon(s, color, pts, 2)
+            pygame.draw.line(s, color, (cx - s3, cy), (cx + s3, cy), 2)
+        else:
+            pygame.draw.circle(s, color, (cx, cy), s3 + 1)
+
+    def draw_turn_order_strip(self):
+        """Draw current player avatar aligned with first button, then upcoming with names."""
+        if not self.players:
+            return
+
+        n      = len(self.players)
+        cur_i  = self.current_turn
+        R_BIG  = 39
+        R_SML  = 30
+        STRIP_FONT = self.log_font  # 22px — compact but readable for names under small avs
+
+        # Build display order: current first, then next-alive, then dead
+        alive_order = []
+        dead_list   = []
+        idx = cur_i
+        for _ in range(n):
+            p = self.players[idx]
+            if p.hp > 0:
+                alive_order.append(p)
+            else:
+                dead_list.append(p)
+            idx = (idx + 1) % n
+        display_order = alive_order + dead_list
+
+        # ── Large avatar: aligned to x=70 (first action button) ─────────────
+        bx, by = 70, 10
+        cur_p  = display_order[0]
+        dead_c = cur_p.hp <= 0
+        border_big = (255, 215, 0) if not dead_c else (100, 60, 60)
+        cx_big = bx + R_BIG
+        cy_big = by + R_BIG
+        self._draw_avatar_circle(cx_big, cy_big, R_BIG, cur_p, border_big)
+        name_col = (200, 200, 200) if dead_c else WHITE
+        ns = self.font.render(cur_p.name, True, name_col)
+        self.screen.blit(ns, ns.get_rect(centerx=cx_big, y=by + R_BIG * 2 + 5))
+
+        # ── Smaller avatars with names underneath ─────────────────────
+        # Step: big enough so names don’t overlap; at least 80px
+        STEP_MIN = 80
+        next_x = bx + R_BIG * 2 + 18
+        cy_sml = by + R_BIG   # align centers vertically
+        for p in display_order[1:]:
+            dead_s  = p.hp <= 0
+            b_col   = (100, 60, 60) if dead_s else (100, 130, 190)
+            ax = next_x + R_SML
+            self._draw_avatar_circle(ax, cy_sml, R_SML, p, b_col)
+            # Name below (truncate if very long)
+            disp_name = p.name if len(p.name) <= 8 else p.name[:7] + "…"
+            nc   = (180, 60, 60) if dead_s else (210, 210, 210)
+            n_sf = STRIP_FONT.render(disp_name, True, nc)
+            self.screen.blit(n_sf, n_sf.get_rect(centerx=ax, y=cy_sml + R_SML + 4))
+            # Advance by max(step_min, name_width + 12)
+            step = max(STEP_MIN, n_sf.get_width() + 14)
+            next_x += step
+
+    def _get_effect_description(self, label, player=None):
+        """Return (title, description) for a status effect label.
+        Pass player for numeric values in descriptions."""
+        # Numeric snippets
+        _burn_dmg  = f" ({player.burn_damage} урона/ход)"  if player and player.burn_damage  else ""
+        _bleed_dmg = f" ({player.bleed_damage} урона/ход)" if player and player.bleed_damage else ""
+        _tdodge    = f" (+{player.temp_dodge}% к уклонению)" if player and player.temp_dodge > 0 else ""
+        data = {
+            "огонь":         ("Горение",           f"Персонаж охвачен огнём{_burn_dmg} — в начале каждого своего хода получает урон. Снимается по истечении ходов."),
+            "огн.стена":     ("Огненная стена",    "Зона горит вокруг персонажа. Все атакующие ближнего боя получают поджог. Истекает через указанное число ходов."),
+            "кровь":         ("Кровотечение",      f"Персонаж истекает кровью{_bleed_dmg} — в начале каждого своего хода получает урон. Снимается по истечении ходов."),
+            "мороз":         ("Заморозка",         "Персонаж замёрз — пропускает ходы, пока действует эффект. Урон магии льда."),
+            "проклятие":     ("Проклятие души",    "В конце каждого хода наносит магический урон, растущий от интеллекта заклинателя."),
+            "разоруж.":      ("Разоружён",         "Оружие выбито. Урон снижен вдвое, активка и пассивка отключены. Оружие подбирается в начале следующего хода."),
+            "скован":        ("Скована суть",       "Нельзя использовать магию, обращения и активные способности."),
+            "стан":          ("Оглушение",         "Персонаж оглушён — пропускает следующий ход."),
+            "станун":        ("Оглушение",         "Персонаж оглушён — пропускает следующий ход."),
+            "нет руки":      ("Рука отрублена",    "Урон от физ. атаки снижен вдвое. Двуручные удары невозможны. Постоянный эффект."),
+            "нет ноги":      ("Нога отрублена",    "Уклонение и ловкость значительно снижены навсегда. Постоянный эффект."),
+            "каменная кожа": ("Каменная кожа",     "Входящий физический урон снижен до 50%. Доп. эффекты (кровь, поджог и т.д.) заблокированы. Магия и активка недоступны."),
+            "тень":          ("Теневой покров",    "Шанс уклонения значительно увеличен (+40%). Действует до конца указанного числа ходов."),
+            "попут.ветер":   ("Попутный ветер",    "Уклонение повышено на 30%. Действует до конца указанного числа ходов."),
+            "зачар.ор.":     ("Зачарованное оружие","Каждый физ. удар дополнительно наносит магический урон стихии. Действует до конца ходов."),
+            "транс":         ("Транс",             "Интеллект шамана увеличен на 1.5× на этот ход — заклинания наносят больше урона."),
+            "тотем":         ("Тотем зверя",       "В конце хода активируется тотем — усилит атаку или уклонение в зависимости от характеристик."),
+            "уклон.":        ("Осторожная позиция", f"После осторожной атаки персонаж занял защитную стойку{_tdodge}. Бонус действует до начала следующего своего хода."),
+            "арена +":       ("Бонус арены",       "Эта арена укрепляет персонажа: один или несколько параметров повышены на время боя."),
+            "арена -":       ("Штраф арены",       "Эта арена ослабляет персонажа: один или несколько параметров снижены на время боя."),
+        }
+        title, desc = data.get(label, (label.capitalize(), "Подробная информация об этом эффекте недоступна."))
+        return title, desc
+
+    def _get_status_effects(self, player):
+        """Return list of (label, turns_or_None, color, positive) for the player."""
+        effects = []
+        NEG = (240,  80,  80)
+        POS = ( 60, 210, 195)
+        if player.burning > 0:
+            effects.append(("огонь",    player.burning,           NEG, False))
+        if player.fire_wall_turns > 0:
+            effects.append(("огн.стена", player.fire_wall_turns,  NEG, False))
+        if player.bleeding > 0:
+            effects.append(("кровь",    player.bleeding,          NEG, False))
+        if player.frozen_turns > 0:
+            effects.append(("мороз",    player.frozen_turns,      NEG, False))
+        if player.soul_curse_turns > 0:
+            effects.append(("проклятие", player.soul_curse_turns, NEG, False))
+        if player.disarmed_turns > 0:
+            effects.append(("разоруж.", player.disarmed_turns,    NEG, False))
+        if player.essence_locked_turns > 0:
+            effects.append(("скован",   player.essence_locked_turns, NEG, False))
+        if getattr(player, "stunned", 0) > 0:
+            effects.append(("станун",   player.stunned,           NEG, False))
+        if player.arm_severed:
+            effects.append(("нет руки", None,                     NEG, False))
+        if player.leg_severed:
+            effects.append(("нет ноги", None,                     NEG, False))
+        # Positive
+        if player.stone_skin_turns > 0:
+            effects.append(("каменная кожа", player.stone_skin_turns,  POS, True))
+        if player.shadow_shroud_turns > 0:
+            effects.append(("тень",    player.shadow_shroud_turns, POS, True))
+        if player.tailwind_turns > 0:
+            effects.append(("попут.ветер", player.tailwind_turns,  POS, True))
+        if player.weapon_enchanted_turns > 0:
+            effects.append(("зачар.ор.", player.weapon_enchanted_turns, POS, True))
+        if getattr(player, "trance_active", False) or getattr(player, "trance_next", False):
+            effects.append(("транс",    None,                      POS, True))
+        if getattr(player, "totem_active", False) or getattr(player, "totem_next", False):
+            effects.append(("тотем",    None,                      POS, True))
+        if player.lycan_form:
+            effects.append((player.lycan_form, None,               POS, True))
+        # Осторожная атака: бонус уклонения до следующего хода
+        if player.temp_dodge > 0:
+            effects.append(("уклон.",   None,                      POS, True))
+        # Бонусы/штрафы арены
+        ARENA_TEAL = (0, 200, 185)
+        ARENA_PINK = (255, 90, 160)
+        if player.arena_buff:
+            effects.append(("арена +",  None,                      ARENA_TEAL, True))
+        if player.arena_debuff:
+            effects.append(("арена -",  None,                      ARENA_PINK, False))
+        return effects
+
+    def draw_battle_figures(self):
+        """Render character showcase art as fixed-size battlefield slots."""
+        n = len(self.players)
+        if n == 0:
+            return
+
+        # ── Fixed geometry (same as 4-player card size) ────────────────────
+        SLOT_W   = 295
+        INNER_M  = 10
+        ART_W    = SLOT_W - INNER_M * 2           # 275 px
+        ART_H    = int(300 * (ART_W / 220))        # ~375 px
+        LOG_BTM  = 686                             # log panel bottom
+        FOOTER_H = 72                              # HP bar + HP nums + gap on card
+
+        art_y = LOG_BTM - ART_H - FOOTER_H - 6    # card top area
+
+        # ── Role / subclass colour map ──────────────────────────────────────
+        def role_col(role):
+            return self.ROLE_COLORS.get(role, (180, 180, 180))
+
+        # ── Magic path colour ───────────────────────────────────────────────
+        def path_label_and_color(player):
+            if self.is_orc(player):
+                return "Оборотень", (120, 200, 70)
+            p = player.magic_path or ""
+            return p if p else "—", self.get_magic_path_color(p) if p else (130, 130, 150)
+
+        # ── Slot x-positions (fixed to 4-player base geometry) ─────────────
+        SLOT_X_MAP = {
+            1: [509],
+            2: [300, 760],   # left card moved slightly more right
+            3: [ 67, 509, 952],
+            4: [ 67, 362, 657, 952],
+        }
+        slot_positions = SLOT_X_MAP.get(n, [30 + i * (1225 // max(n - 1, 1)) for i in range(n)])
+
+        self.battle_figure_rects = []
+        current_player = self.players[self.current_turn]
+
+        ICON_SIZE   = 20   # size of each procedural effect icon
+        ICON_STEP   = ICON_SIZE + 8  # vertical step per effect row
+        self.effect_popup_rects = []
+
+        for i, player in enumerate(self.players):
+            slot_x   = slot_positions[i]
+            art_x    = slot_x + INNER_M
+            center_x = art_x + ART_W // 2
+
+            card_rect = pygame.Rect(art_x - 6, art_y - 6,
+                                    ART_W + 12, ART_H + FOOTER_H + 12)
+
+            dead      = player.hp <= 0
+            is_active = (player == current_player and not dead)
+            is_target = (self.selected_target == player)
+            is_hit    = (self.hit_timer > 0 and self.hit_target == player)
+
+            # ── Card background (semi-transparent) ─────────────────────────
+            bg_col = (20, 20, 20) if dead else (14, 20, 42)
+            card_surf = pygame.Surface((card_rect.w, card_rect.h), pygame.SRCALPHA)
+            card_surf.fill((*bg_col, 93))
+            self.screen.blit(card_surf, (card_rect.x, card_rect.y))
+
+            # ── Glow for active player ──────────────────────────────────────
+            if is_active:
+                for gw in (10, 7, 4):
+                    gr = pygame.Rect(card_rect.x - gw, card_rect.y - gw,
+                                     card_rect.w + gw * 2, card_rect.h + gw * 2)
+                    alpha = max(30, 100 - gw * 8)
+                    gs = pygame.Surface((gr.w, gr.h), pygame.SRCALPHA)
+                    pygame.draw.rect(gs, (255, 215, 0, alpha), gs.get_rect(), gw, border_radius=14)
+                    self.screen.blit(gs, (gr.x, gr.y))
+
+            # ── Border ─────────────────────────────────────────────────────
+            if is_hit:
+                border_col2, bw = (255, 55, 55), 5
+            elif is_active:
+                border_col2, bw = (255, 215, 0), 4
+            elif is_target:
+                border_col2, bw = (255, 100, 180), 3
+            else:
+                border_col2, bw = (70, 85, 115), 2
+            pygame.draw.rect(self.screen, border_col2, card_rect, bw, border_radius=12)
+
+            # ── Showcase art ──────────────────────────────────────────────
+            art = self.subclass_showcase_art.get(player.role)
+            if art:
+                try:
+                    scaled_art = pygame.transform.smoothscale(art, (ART_W, ART_H))
+                except Exception:
+                    scaled_art = pygame.transform.scale(art, (ART_W, ART_H))
+                self.screen.blit(scaled_art, (art_x, art_y))
+            else:
+                raw_icon = self.icons.get(player.role)
+                if raw_icon:
+                    self.screen.blit(pygame.transform.scale(raw_icon, (ART_W, ART_H)), (art_x, art_y))
+
+            # ── Hit flash ─────────────────────────────────────────────────
+            if is_hit:
+                flash = pygame.Surface((ART_W, ART_H), pygame.SRCALPHA)
+                flash.fill((255, 50, 50, min(180, int(200 * self.hit_timer / 10))))
+                self.screen.blit(flash, (art_x, art_y))
+
+            # ── Dead overlay ──────────────────────────────────────────────
+            if dead:
+                veil = pygame.Surface((ART_W, ART_H), pygame.SRCALPHA)
+                veil.fill((0, 0, 0, 160))
+                self.screen.blit(veil, (art_x, art_y))
+                skull = self.big_font.render("☠", True, (180, 55, 55))
+                self.screen.blit(skull,
+                    skull.get_rect(center=(art_x + ART_W // 2, art_y + ART_H // 2)))
+
+            # ── Target crosshair — large red, centered ────────────────────
+            if is_target and not dead:
+                cx = art_x + ART_W // 2
+                cy = art_y + ART_H // 2
+                R  = 40
+                pygame.draw.circle(self.screen, (225, 40, 40), (cx, cy), R, 3)
+                pygame.draw.circle(self.screen, (255, 80, 80), (cx, cy), 6)
+                for ddx, ddy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                    p1 = (cx + ddx * (R + 8),  cy + ddy * (R + 8))
+                    p2 = (cx + ddx * (R + 20), cy + ddy * (R + 20))
+                    pygame.draw.line(self.screen, (225, 40, 40), p1, p2, 3)
+
+            # ── Status effect strip (left edge of art) ────────────────────
+            effects = self._get_status_effects(player)
+            if effects:
+                eff_x  = art_x + 4
+                eff_y  = art_y + 8
+                ic_r   = ICON_SIZE // 2
+                for label, turns, color, positive in effects[:10]:
+                    # Clickable hit area covers icon + text
+                    hit_rect = pygame.Rect(eff_x, eff_y, ICON_SIZE + 26, ICON_SIZE)
+                    # Subtle hover highlight
+                    if hit_rect.collidepoint(pygame.mouse.get_pos()):
+                        hl = pygame.Surface((hit_rect.w, hit_rect.h), pygame.SRCALPHA)
+                        hl.fill((255, 255, 255, 28))
+                        self.screen.blit(hl, (hit_rect.x, hit_rect.y))
+                    # Procedural icon
+                    self._draw_effect_icon(eff_x + ic_r, eff_y + ic_r, label, color, ICON_SIZE)
+                    # Turn number or ∞
+                    num_str = str(turns) if turns is not None else "∞"
+                    num_col = (60, 210, 195) if positive else (240, 80, 80)
+                    ns2 = self.small_font.render(num_str, True, num_col)
+                    self.screen.blit(ns2, (eff_x + ICON_SIZE + 4, eff_y + ic_r - ns2.get_height() // 2))
+                    self.effect_popup_rects.append((hit_rect, label, turns, color, positive, i))
+                    eff_y += ICON_STEP
+                    if eff_y + ICON_SIZE > art_y + ART_H:
+                        break
+
+            # ── Footer on card: HP bar (+ overheal bar) + HP numbers ─────
+            foot_y   = art_y + ART_H + 6
+            HP_BAR_H = 22
+            OVER_H   = 10   # overheal second bar height
+
+            # Main HP bar background
+            pygame.draw.rect(self.screen, (90, 25, 25),
+                             (art_x, foot_y, ART_W, HP_BAR_H), border_radius=7)
+            if not dead and player.max_hp > 0:
+                # Cap at 100% of max for main bar
+                normal_hp  = min(player.hp, player.max_hp)
+                ratio      = max(0.0, normal_hp / player.max_hp)
+                fill_w     = int(ART_W * ratio)
+                hp_col     = (60, 195, 70) if ratio > 0.5 else (215, 175, 35) if ratio > 0.25 else (205, 55, 55)
+                if fill_w > 0:
+                    pygame.draw.rect(self.screen, hp_col,
+                                    (art_x, foot_y, fill_w, HP_BAR_H), border_radius=7)
+
+                # Overheal bar: second smaller bar directly below
+                if player.hp > player.max_hp:
+                    over_ratio  = min(1.0, (player.hp - player.max_hp) / player.max_hp)
+                    over_fill_w = int(ART_W * over_ratio)
+                    ov_y        = foot_y + HP_BAR_H + 3
+                    pygame.draw.rect(self.screen, (30, 60, 70),
+                                    (art_x, ov_y, ART_W, OVER_H), border_radius=4)
+                    if over_fill_w > 0:
+                        pygame.draw.rect(self.screen, (60, 220, 210),
+                                        (art_x, ov_y, over_fill_w, OVER_H), border_radius=4)
+
+            # HP numbers — BELOW bar(s), small gap
+            hp_str      = f"{max(0, player.hp)} / {player.max_hp}"
+            hp_num_y    = foot_y + HP_BAR_H + (OVER_H + 5 if not dead and player.hp > player.max_hp else 5)
+            hp_surf     = self.small_font.render(hp_str, True, (220, 220, 220) if dead else WHITE)
+            self.screen.blit(hp_surf, hp_surf.get_rect(centerx=center_x, y=hp_num_y))
+
+            # ── Info button (top-right corner) ────────────────────────────
+            ibx = card_rect.right - 16
+            iby = card_rect.top   + 16
+            pygame.draw.circle(self.screen, (45, 100, 165), (ibx, iby), 12)
+            pygame.draw.circle(self.screen, (120, 165, 240), (ibx, iby), 12, 2)
+            it = self.small_font.render("i", True, WHITE)
+            self.screen.blit(it, it.get_rect(center=(ibx, iby)))
+            self.info_rects[i] = pygame.Rect(ibx - 12, iby - 12, 24, 24)
+
+            # ── ABOVE card: subclass (coloured) + player name (centered) ──
+            # total height: font(~33) + gap(5) + small_font(~27) + gap(6) = ~71
+            LABEL_H  = 71
+            sub_y    = card_rect.top - LABEL_H
+            name_y   = sub_y + 38
+            rc       = role_col(player.role)
+            # Name colour: gold for active, pink for target
+            if dead:
+                nm_col = (150, 150, 150)
+            elif is_active:
+                nm_col = GOLD
+            elif is_target:
+                nm_col = (255, 110, 190)
+            else:
+                nm_col = WHITE
+            sub_s   = self.font.render(player.role, True, rc if not dead else (120, 120, 120))
+            pname_s = self.small_bold_font.render(player.name, True, nm_col)
+            self.screen.blit(sub_s,   sub_s.get_rect(centerx=center_x, y=sub_y))
+            self.screen.blit(pname_s, pname_s.get_rect(centerx=center_x, y=name_y))
+
+            # ── BELOW card: magic path / Оборотень label ──────────────────
+            mpath_text, mpath_color = path_label_and_color(player)
+            if dead:
+                mpath_color = (110, 110, 120)
+            mp_s = self.medium_font.render(mpath_text, True, mpath_color)
+            # Shadow for readability
+            mp_shadow = self.medium_font.render(mpath_text, True, (0, 0, 0))
+            below_y = card_rect.bottom + 8
+            self.screen.blit(mp_shadow, mp_shadow.get_rect(centerx=center_x + 1, y=below_y + 1))
+            self.screen.blit(mp_s,      mp_s.get_rect(centerx=center_x, y=below_y))
+
+            self.battle_figure_rects.append((player, card_rect))
+
+
     def render_battle(self):
         bg = self.arena_backgrounds.get(self.arena_name)
         if bg:
@@ -6590,22 +7570,11 @@ class ArenaGame:
         else:
             self.screen.fill(DARK)
 
-        arena_title = self.big_font.render(f"Арена: {self.arena_name}", True, WHITE)
-        self.screen.blit(arena_title, (650, 20))
-
         self.draw_arena_info_button()
 
         self.info_rects = [None] * len(self.players)
-        for i, player in enumerate(self.players):
-            x, y = 50, 50 + i * 120
-            current = player == self.players[self.current_turn] and player.hp > 0
-            dead = player.hp <= 0
-            self.draw_player_card(player, x, y, highlight=current, dead=dead, idx=i)
-
-            if self.selected_target == player:
-                pygame.draw.rect(self.screen, (255, 255, 0), pygame.Rect(x - 18, y, 238, 80), 4)
-            if self.hit_timer > 0 and self.hit_target == player:
-                pygame.draw.rect(self.screen, (255, 0, 0), pygame.Rect(x - 18, y, 238, 80), 6)
+        self.draw_battle_figures()
+        self.draw_turn_order_strip()
 
         self.render_log()
         self.render_battle_descriptions()
@@ -6616,7 +7585,7 @@ class ArenaGame:
             special_locked = self.has_stone_skin(current_player) or self.has_essence_lock(current_player) or current_player.special_cooldown > 0
             spell_locked = self.is_spellcasting_blocked(current_player)
             self.battle_buttons[4].text = "Колдовать"
-            self.battle_buttons[2].text = "Активка"
+            self.battle_buttons[2].text = "Навык"
             if self.has_essence_lock(current_player):
                 self.battle_buttons[2].text = "Скован"
                 self.battle_buttons[4].text = "Скован"
@@ -6641,7 +7610,17 @@ class ArenaGame:
                     enabled = False
                 if index == 4 and self.is_orc(current_player) and (self.has_essence_lock(current_player) or (current_player.lycan_cooldown > 0 and not self.is_beast_form_active(current_player))):
                     enabled = False
-                button.draw(self.screen, self.medium_font, enabled=enabled, active=(index == 4 and (self.spell_menu_open or self.form_menu_open)))
+                _is_active = index == 4 and (self.spell_menu_open or self.form_menu_open)
+                if index == 2 and enabled:
+                    _rc = self.ROLE_COLORS.get(current_player.role, (130, 130, 160))
+                    _bc = tuple(max(0, int(c * 0.55)) for c in _rc)
+                    button.draw(self.screen, self.medium_font, enabled=True, accent=(_bc, _rc, (230, 230, 235)))
+                elif index == 4 and enabled and not _is_active and not self.is_orc(current_player):
+                    _path = current_player.magic_path or ""
+                    _bc4, _hc4 = self.get_spell_button_colors(_path, "normal")
+                    button.draw(self.screen, self.medium_font, enabled=True, accent=(_bc4, _hc4, DARK))
+                else:
+                    button.draw(self.screen, self.medium_font, enabled=enabled, active=_is_active)
 
             if self.form_menu_open:
                 title_surface = self.font.render("Ликантропия", True, (170, 225, 110))
@@ -6751,6 +7730,57 @@ class ArenaGame:
         else:
             self.close_popup_rect = None
 
+        # ── Effect description popup ──────────────────────────────────
+        if self.effect_popup is not None:
+            label, turns, color, positive, player_idx = self.effect_popup
+            player_obj = self.players[player_idx] if 0 <= player_idx < len(self.players) else None
+            title, desc = self._get_effect_description(label, player_obj)
+            pw, ph = 430, 200
+            # Center popup on character card horizontally
+            _n = len(self.players)
+            _SXM = {1: [509], 2: [300, 760], 3: [67, 509, 952], 4: [67, 362, 657, 952]}
+            _slots = _SXM.get(_n, [30 + _ii * (1225 // max(_n - 1, 1)) for _ii in range(_n)])
+            if 0 <= player_idx < len(_slots):
+                _card_cx = _slots[player_idx] + 10 + 275 // 2  # INNER_M + ART_W//2
+                px = max(0, min(_card_cx - pw // 2, WIDTH - pw))
+            else:
+                px = (WIDTH - pw) // 2
+            py = 370
+            ps = pygame.Surface((pw, ph), pygame.SRCALPHA)
+            ps.fill((18, 20, 48, 240))
+            self.screen.blit(ps, (px, py))
+            pygame.draw.rect(self.screen, color, (px, py, pw, ph), 2, border_radius=12)
+            # Icon top-left
+            ic_sz = 26
+            self._draw_effect_icon(px + 22, py + 22, label, color, ic_sz)
+            # Title
+            t_surf = self.font.render(title, True, color)
+            self.screen.blit(t_surf, (px + ic_sz + 36, py + 12))
+            # Turns info
+            turns_txt = f"Ходов осталось: {turns}" if turns is not None else "Постоянный"
+            tur_surf = self.small_font.render(turns_txt, True, (200, 200, 200))
+            self.screen.blit(tur_surf, (px + ic_sz + 36, py + 48))
+            # Description wrapped
+            wrapped = self.wrap_text(desc, self.small_font, pw - 24)
+            for row_i, row_t in enumerate(wrapped[:4]):
+                rs = self.small_font.render(row_t, True, (210, 210, 230))
+                self.screen.blit(rs, (px + 12, py + 78 + row_i * 26))
+            # Hint
+            hint_s = self.log_font.render("Нажмите любую клавишу для закрытия", True, (130, 130, 150))
+            self.screen.blit(hint_s, hint_s.get_rect(centerx=px + pw // 2, y=py + ph - 24))
+
+        if self.pending_post_battle:
+            ov = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+            ov.fill((0, 0, 0, 145))
+            self.screen.blit(ov, (0, 0))
+            winner_surf = self.medium_font.render(
+                f"Бой закончен!  Победитель: {self.winner_name}", True, GOLD)
+            self.screen.blit(winner_surf, winner_surf.get_rect(center=(WIDTH // 2, 410)))
+            hint = self.small_font.render(
+                "Лог боя доступен для просмотра. Нажмите кнопку чтобы перейти на экран итогов.", True, (200, 200, 200))
+            self.screen.blit(hint, hint.get_rect(center=(WIDTH // 2, 455)))
+            self.battle_end_button.draw(self.screen, self.font)
+
         if self.help_open:
             self.render_help_overlay()
 
@@ -6805,12 +7835,16 @@ class ArenaGame:
 
     def render_battle_descriptions(self):
         current = self.players[self.current_turn]
+        _path = current.magic_path or "магии"
         descriptions = [
             "Обычная атака по выбранной цели.",
             "Атака с меньшим уроном, но с шансом уклониться.",
-            ("Суть скована: активные способности временно недоступны." if self.has_essence_lock(current) else (f"Активная способность на откате: {current.special_cooldown} ход." if current.special_cooldown > 0 else ("В звериной форме классовая активка недоступна." if self.is_orc(current) and self.is_beast_form_active(current) else self.class_data.get(current.role, {}).get("skill", "Спец-удар персонажа.")))),
+            # x=570 → кнопка "Лут"
             "Попытаться найти предмет.",
-            ("Суть скована: магия и обращения временно недоступны." if self.has_essence_lock(current) else ("Выбрать звериную форму ликантропии." if self.is_orc(current) and current.lycan_cooldown == 0 and not self.is_beast_form_active(current) else ("Вернуть обычный облик." if self.is_orc(current) and self.is_beast_form_active(current) else (f"Ликантропия на откате: {current.lycan_cooldown} ход." if self.is_orc(current) else (f"Обычная магия на откате: {current.spell_cooldown} ход." if current.spell_cooldown > 0 else "Открыть выбор заклинаний мистического пути."))))),
+            # x=820 → кнопка "Навык"
+            ("Суть скована: активные способности временно недоступны." if self.has_essence_lock(current) else (f"Активная способность на откате: {current.special_cooldown} ход." if current.special_cooldown > 0 else ("В звериной форме классовая активка недоступна." if self.is_orc(current) and self.is_beast_form_active(current) else self.class_data.get(current.role, {}).get("skill", "Спец-удар персонажа.")))),
+            # x=1070 → кнопка "Колдовать"
+            ("Суть скована: магия и обращения временно недоступны." if self.has_essence_lock(current) else ("Выбрать звериную форму ликантропии." if self.is_orc(current) and current.lycan_cooldown == 0 and not self.is_beast_form_active(current) else ("Вернуть обычный облик." if self.is_orc(current) and self.is_beast_form_active(current) else (f"Ликантропия на откате: {current.lycan_cooldown} ход." if self.is_orc(current) else (f"Обычная магия на откате: {current.spell_cooldown} ход." if current.spell_cooldown > 0 else f"Открыть заклинания: {_path}."))))),
         ]
         desc_y = 924
         for i, text in enumerate(descriptions):
