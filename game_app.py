@@ -79,6 +79,7 @@ class ArenaGame:
     ARENA_SELECT = "arena_select"
     BATTLE = "battle"
     POST_BATTLE = "post_battle"
+    BOSS_SELECT = "boss_select"
 
     def __init__(self):
         pygame.mixer.pre_init(44100, -16, 2, 512)
@@ -487,13 +488,100 @@ class ArenaGame:
             "Призрачный замок": self._gen_arena_bg_ghost_castle(),
         }
 
+        # ─── Boss data ──────────────────────────────────────────────────────────
+        self.boss_data = {
+            # Tier 1 – лёгкие
+            "shadow_warden": {
+                "name": "Теневой Дозорный",
+                "tier": 1,
+                "desc": "Выродок из тени, умеющий просачиваться сквозь защиту и оставлять смертоносные отметины.",
+                "strength": 16, "stamina": 18, "agility": 22, "luck": 12, "wisdom": 10, "intellect": 10,
+                "special_name": "Удар из тени",
+                "special_desc": "Атакует с 70% шансом нанести кровотечение на 3 хода.",
+                "color": (90, 60, 130),
+            },
+            "poison_ooze": {
+                "name": "Ядовитый Слизень",
+                "tier": 1,
+                "desc": "Медленная, но неумолимая тварь, разъедающая живую плоть едким ядом.",
+                "strength": 14, "stamina": 26, "agility": 7, "luck": 10, "wisdom": 8, "intellect": 12,
+                "special_name": "Ядовитый всплеск",
+                "special_desc": "Атакует, накладывает тяжёлое кровотечение на 4 хода.",
+                "color": (60, 140, 40),
+            },
+            # Tier 2 – средние
+            "mountain_giant": {
+                "name": "Горный Великан",
+                "tier": 2,
+                "desc": "Огромная туша из камня и мышц. Удар Великана способен снести башню.",
+                "strength": 30, "stamina": 34, "agility": 7, "luck": 10, "wisdom": 8, "intellect": 8,
+                "special_name": "Сокрушительный удар",
+                "special_desc": "Атакует на 170% урона с 40% шансом оглушить на 1 ход.",
+                "color": (140, 100, 60),
+            },
+            "bone_mage": {
+                "name": "Костяной Маг",
+                "tier": 2,
+                "desc": "Личес-полуфинишер, переклинивающий законы смерти в свою пользу.",
+                "strength": 12, "stamina": 24, "agility": 12, "luck": 12, "wisdom": 18, "intellect": 30,
+                "special_name": "Осколки кости",
+                "special_desc": "Магический удар (130% интеллекта) + проклятие на 2 хода.",
+                "color": (190, 190, 220),
+            },
+            # Tier 3 – тяжёлые
+            "wasteland_dragon": {
+                "name": "Дракон Пустоши",
+                "tier": 3,
+                "desc": "Пепел и пламя — вот что остаётся после его прохода. Дышит смертоносным огнём.",
+                "strength": 36, "stamina": 42, "agility": 18, "luck": 14, "wisdom": 12, "intellect": 20,
+                "special_name": "Огненное дыхание",
+                "special_desc": "Атакует 80% урона по ВСЕМ игрокам + поджигает каждого с шансом 50%.",
+                "color": (220, 80, 30),
+            },
+            "shadow_weaver": {
+                "name": "Ткач Теней",
+                "tier": 3,
+                "desc": "Существо вне пространства, переплетающее реальность нитями мрака.",
+                "strength": 22, "stamina": 32, "agility": 26, "luck": 18, "wisdom": 20, "intellect": 26,
+                "special_name": "Оковы теней",
+                "special_desc": "Атакует + заковывает суть цели на 1 ход + 35% шанс заморозки.",
+                "color": (60, 20, 100),
+            },
+            # Tier 4 – легендарные
+            "ancient_lich": {
+                "name": "Древний Лич",
+                "tier": 4,
+                "desc": "Носитель запредельной магии, чья воля обращает любое разрушение в жизненную силу.",
+                "strength": 15, "stamina": 52, "agility": 14, "luck": 20, "wisdom": 30, "intellect": 46,
+                "special_name": "Высасывание души",
+                "special_desc": "Магический удар (160% интеллекта) + исцеление Лича на 50% нанесённого урона.",
+                "color": (130, 50, 180),
+            },
+            "world_devourer": {
+                "name": "Пожиратель Миров",
+                "tier": 4,
+                "desc": "Бездна, принявшая форму. Поглощает всё — свет, надежду и жизнь.",
+                "strength": 52, "stamina": 62, "agility": 20, "luck": 18, "wisdom": 15, "intellect": 20,
+                "special_name": "Пустотный удар",
+                "special_desc": "240% урона с оглушением на 1 ход + кровотечение 3 хода.",
+                "color": (20, 10, 40),
+            },
+        }
+        # ────────────────────────────────────────────────────────────────────────
+
         self.menu_buttons = [
-            UIButton("1 игрок", 760, 240, 280, 70),
-            UIButton("2 игрока", 760, 330, 280, 70),
-            UIButton("3 игрока", 760, 420, 280, 70),
-            UIButton("4 игрока", 760, 510, 280, 70),
+            UIButton("1 игрок", 760, 230, 280, 65),
+            UIButton("2 игрока", 760, 310, 280, 65),
+            UIButton("3 игрока", 760, 390, 280, 65),
+            UIButton("4 игрока", 760, 470, 280, 65),
         ]
-        self.menu_exit_button = UIButton("Выход", 760, 620, 280, 70)
+        self.menu_boss_button = UIButton("⚔ Бой с Боссом", 760, 560, 280, 58)
+        self.menu_exit_button = UIButton("Выход", 760, 640, 280, 65)
+
+        # Boss select screen buttons
+        self.boss_select_buttons = []
+        self.boss_select_back_button = UIButton("Назад", 80, 940, 220, 65)
+        self.boss_select_confirm_button = UIButton("В бой!", 320, 940, 220, 65)
 
         self.name_confirm_button = UIButton("Продолжить", 760, 560, 280, 70)
         self.name_back_button = UIButton("Назад", 500, 560, 180, 70)
@@ -633,6 +721,9 @@ class ArenaGame:
         self.winner_name = ""
         self.champion = False
 
+        self.boss_mode = False
+        self.selected_boss = None
+
     def _create_fallback_icon(self, class_name, size=220):
         surface = pygame.Surface((size, size), pygame.SRCALPHA)
         color = self.get_class_color(class_name)
@@ -687,6 +778,19 @@ class ArenaGame:
                 icons[name] = scaled
             except Exception:
                 icons[name] = self._create_fallback_icon(name)
+        # Boss portrait icons
+        boss_icon_creators = {
+            "boss_shadow_warden":    self._create_boss_shadow_warden_icon,
+            "boss_poison_ooze":      self._create_boss_poison_ooze_icon,
+            "boss_mountain_giant":   self._create_boss_mountain_giant_icon,
+            "boss_bone_mage":        self._create_boss_bone_mage_icon,
+            "boss_wasteland_dragon": self._create_boss_wasteland_dragon_icon,
+            "boss_shadow_weaver":    self._create_boss_shadow_weaver_icon,
+            "boss_ancient_lich":     self._create_boss_ancient_lich_icon,
+            "boss_world_devourer":   self._create_boss_world_devourer_icon,
+        }
+        for key, creator in boss_icon_creators.items():
+            icons[key] = creator()
         return icons
 
     def _tint_surface(self, surface, color, alpha=40):
@@ -2598,6 +2702,470 @@ class ArenaGame:
             pygame.draw.line(s, claw_c, (66 + dx, 284), (63 + dx, 298), 4)
         return s
 
+    # ─── Boss portrait icons ────────────────────────────────────────────────────
+
+    def _create_boss_shadow_warden_icon(self):
+        """Shadow Warden — dark purple ghost silhouette."""
+        s = pygame.Surface((220, 220), pygame.SRCALPHA)
+        c1, c2 = (60, 20, 100), (120, 50, 180)
+        pygame.draw.circle(s, (30, 10, 50), (110, 110), 108)
+        # Hood/cloak
+        pygame.draw.ellipse(s, c1, (38, 30, 144, 110))
+        pygame.draw.ellipse(s, c2, (62, 42, 96, 80))
+        # Glowing eyes
+        pygame.draw.circle(s, (200, 60, 255), (88, 88), 10)
+        pygame.draw.circle(s, (200, 60, 255), (132, 88), 10)
+        pygame.draw.circle(s, (240, 180, 255), (88, 88), 5)
+        pygame.draw.circle(s, (240, 180, 255), (132, 88), 5)
+        # Shadow body outline
+        pygame.draw.ellipse(s, c1, (44, 110, 132, 90))
+        pygame.draw.polygon(s, c1, [(44, 165), (88, 115), (132, 115), (176, 165), (160, 200), (60, 200)])
+        # Tendrils
+        for xi, yi in [(30, 144), (190, 144), (22, 168), (198, 168)]:
+            pygame.draw.circle(s, c2, (xi, yi), 8)
+        return s
+
+    def _create_boss_poison_ooze_icon(self):
+        """Poison Ooze — green blob with glowing core."""
+        s = pygame.Surface((220, 220), pygame.SRCALPHA)
+        gc1, gc2, gc3 = (30, 80, 20), (60, 140, 40), (130, 220, 80)
+        pygame.draw.circle(s, (20, 40, 10), (110, 110), 108)
+        # Main blob body
+        pygame.draw.ellipse(s, gc1, (28, 40, 164, 145))
+        pygame.draw.ellipse(s, gc2, (40, 55, 140, 118))
+        # Acid drips
+        for xd, yd, wr, hr in [(60, 155, 30, 40), (110, 168, 24, 36), (155, 158, 22, 30)]:
+            pygame.draw.ellipse(s, gc1, (xd, yd, wr, hr))
+        # Glowing inner core
+        pygame.draw.ellipse(s, gc3, (72, 72, 76, 60))
+        # Eyes (hollow)
+        pygame.draw.circle(s, (200, 255, 80), (92, 100), 14)
+        pygame.draw.circle(s, (200, 255, 80), (128, 100), 14)
+        pygame.draw.circle(s, gc1, (92, 100), 8)
+        pygame.draw.circle(s, gc1, (128, 100), 8)
+        # Bubbles
+        for bx, by, br in [(55, 72, 8), (160, 80, 6), (80, 52, 5), (150, 60, 7)]:
+            pygame.draw.circle(s, gc3, (bx, by), br)
+            pygame.draw.circle(s, gc2, (bx, by), br, 2)
+        return s
+
+    def _create_boss_mountain_giant_icon(self):
+        """Mountain Giant — massive stone humanoid."""
+        s = pygame.Surface((220, 220), pygame.SRCALPHA)
+        stone, stone_dk, stone_lt = (130, 110, 80), (80, 65, 40), (190, 170, 120)
+        rock_vein = (160, 140, 100)
+        pygame.draw.circle(s, (40, 35, 25), (110, 110), 108)
+        # Huge body
+        pygame.draw.rect(s, stone, (38, 84, 144, 120), border_radius=8)
+        # Head
+        pygame.draw.ellipse(s, stone, (52, 28, 116, 88))
+        pygame.draw.ellipse(s, stone_dk, (68, 48, 84, 52))
+        # Deep-set eyes
+        pygame.draw.circle(s, (255, 160, 40), (87, 72), 10)
+        pygame.draw.circle(s, (255, 160, 40), (133, 72), 10)
+        pygame.draw.circle(s, (80, 50, 10), (87, 72), 6)
+        pygame.draw.circle(s, (80, 50, 10), (133, 72), 6)
+        # Rock cracks
+        for pts in [[(60, 50), (70, 65), (66, 80)], [(148, 55), (138, 70), (144, 82)]]:
+            pygame.draw.lines(s, stone_dk, False, pts, 3)
+        # Massive arms
+        pygame.draw.ellipse(s, stone, (8, 88, 44, 90))
+        pygame.draw.ellipse(s, stone, (168, 88, 44, 90))
+        pygame.draw.ellipse(s, stone_dk, (12, 94, 30, 72))
+        pygame.draw.ellipse(s, stone_dk, (178, 94, 30, 72))
+        # Stone texture
+        for rx, ry in [(55, 92), (100, 88), (145, 96), (75, 126), (130, 132)]:
+            pygame.draw.circle(s, rock_vein, (rx, ry), 7)
+        return s
+
+    def _create_boss_bone_mage_icon(self):
+        """Bone Mage — skeletal wizard in dark robes."""
+        s = pygame.Surface((220, 220), pygame.SRCALPHA)
+        bone_c, robe_c, glow_c = (220, 215, 185), (70, 45, 100), (160, 100, 255)
+        pygame.draw.circle(s, (20, 14, 30), (110, 110), 108)
+        # Robes
+        pygame.draw.ellipse(s, robe_c, (40, 90, 140, 118))
+        pygame.draw.polygon(s, robe_c, [(56, 140), (110, 100), (164, 140), (152, 200), (68, 200)])
+        # Skull head
+        pygame.draw.ellipse(s, bone_c, (64, 22, 92, 80))
+        pygame.draw.ellipse(s, (200, 195, 160), (72, 36, 76, 58))
+        # Hollow eye sockets
+        pygame.draw.ellipse(s, robe_c, (72, 54, 24, 22))
+        pygame.draw.ellipse(s, robe_c, (124, 54, 24, 22))
+        pygame.draw.ellipse(s, glow_c, (76, 58, 16, 14))
+        pygame.draw.ellipse(s, glow_c, (128, 58, 16, 14))
+        # Teeth
+        for tx in range(84, 138, 10):
+            pygame.draw.polygon(s, bone_c, [(tx, 102), (tx + 5, 102), (tx + 2, 114)])
+        # Staff with glowing orb
+        pygame.draw.line(s, (100, 60, 140), (158, 36), (152, 192), 6)
+        pygame.draw.circle(s, glow_c, (158, 30), 18)
+        pygame.draw.circle(s, (220, 180, 255), (158, 30), 10)
+        return s
+
+    def _create_boss_wasteland_dragon_icon(self):
+        """Wasteland Dragon — fire-breathing dragon."""
+        s = pygame.Surface((220, 220), pygame.SRCALPHA)
+        scale_c, scale_dk, scale_hi = (180, 60, 20), (110, 30, 10), (240, 130, 40)
+        fire_c = (255, 200, 40)
+        pygame.draw.circle(s, (30, 15, 5), (110, 110), 108)
+        # Dragon head
+        pygame.draw.ellipse(s, scale_c, (40, 40, 140, 90))
+        pygame.draw.ellipse(s, scale_dk, (56, 56, 108, 62))
+        # Snout
+        pygame.draw.ellipse(s, scale_c, (62, 90, 96, 46))
+        pygame.draw.ellipse(s, scale_dk, (72, 98, 76, 28))
+        # Horns
+        pygame.draw.polygon(s, scale_dk, [(78, 40), (66, 8), (90, 42)])
+        pygame.draw.polygon(s, scale_dk, [(142, 40), (154, 8), (130, 42)])
+        # Flame eyes
+        pygame.draw.circle(s, fire_c, (84, 68), 12)
+        pygame.draw.circle(s, fire_c, (136, 68), 12)
+        pygame.draw.circle(s, (255, 80, 20), (84, 68), 7)
+        pygame.draw.circle(s, (255, 80, 20), (136, 68), 7)
+        # Fire breath
+        for fx, fw in [(74, 30), (96, 24), (118, 26), (140, 20)]:
+            pygame.draw.ellipse(s, fire_c, (fx, 128, fw, 70))
+        pygame.draw.ellipse(s, (255, 120, 20), (88, 136, 44, 54))
+        # Scales on body
+        for px, py in [(50, 80), (88, 44), (132, 44), (170, 80), (60, 58), (160, 58)]:
+            pygame.draw.circle(s, scale_hi, (px, py), 6)
+        # Wings hint
+        pygame.draw.ellipse(s, scale_dk, (8, 56, 48, 72))
+        pygame.draw.ellipse(s, scale_dk, (164, 56, 48, 72))
+        return s
+
+    def _create_boss_shadow_weaver_icon(self):
+        """Shadow Weaver — entity of pure darkness with thread-like tendrils."""
+        s = pygame.Surface((220, 220), pygame.SRCALPHA)
+        c1, c2, glow = (30, 10, 60), (70, 20, 120), (180, 80, 255)
+        pygame.draw.circle(s, (8, 4, 16), (110, 110), 108)
+        # Floating void shape
+        pygame.draw.ellipse(s, c1, (30, 30, 160, 160))
+        pygame.draw.ellipse(s, c2, (54, 54, 112, 112))
+        # Glowing void eyes
+        pygame.draw.ellipse(s, glow, (76, 82, 28, 18))
+        pygame.draw.ellipse(s, glow, (116, 82, 28, 18))
+        pygame.draw.ellipse(s, (230, 180, 255), (80, 86, 20, 10))
+        pygame.draw.ellipse(s, (230, 180, 255), (120, 86, 20, 10))
+        # Threads/tendrils radiating outward
+        tendrils = [
+            (110, 30, 60, 8), (30, 110, 8, 60), (190, 110, 172, 60),
+            (110, 190, 60, 172), (50, 50, 28, 28), (170, 50, 192, 28),
+            (50, 170, 28, 192), (170, 170, 192, 192),
+        ]
+        for x1t, y1t, x2t, y2t in tendrils:
+            pygame.draw.line(s, glow, (x1t, y1t), (x2t, y2t), 2)
+        # Central dark mouth / abyss
+        pygame.draw.ellipse(s, (4, 2, 8), (88, 106, 44, 30))
+        return s
+
+    def _create_boss_ancient_lich_icon(self):
+        """Ancient Lich — supreme undead sorcerer with crown of dark energy."""
+        s = pygame.Surface((220, 220), pygame.SRCALPHA)
+        bone_c, robe_c, crown_c, glow_c = (200, 195, 165), (80, 30, 120), (160, 80, 220), (200, 120, 255)
+        pygame.draw.circle(s, (12, 8, 20), (110, 110), 108)
+        # Royal robe
+        pygame.draw.polygon(s, robe_c, [(40, 110), (110, 85), (180, 110), (166, 200), (54, 200)])
+        pygame.draw.ellipse(s, (60, 20, 90), (54, 115, 112, 80))
+        # Skull
+        pygame.draw.ellipse(s, bone_c, (62, 28, 96, 88))
+        pygame.draw.ellipse(s, (175, 170, 140), (72, 40, 76, 62))
+        # Crown of energy
+        crown_pts = [(70, 28), (80, 6), (90, 28), (100, 2), (110, 28), (120, 2), (130, 28), (140, 6), (150, 28)]
+        pygame.draw.polygon(s, crown_c, crown_pts + [(150, 38), (70, 38)])
+        # Deep socket eyes glowing
+        pygame.draw.ellipse(s, (30, 15, 50), (72, 58, 28, 22))
+        pygame.draw.ellipse(s, (30, 15, 50), (120, 58, 28, 22))
+        pygame.draw.ellipse(s, glow_c, (76, 62, 20, 14))
+        pygame.draw.ellipse(s, glow_c, (124, 62, 20, 14))
+        # Teeth
+        for tx in range(82, 138, 9):
+            pygame.draw.polygon(s, bone_c, [(tx, 102), (tx + 5, 102), (tx + 2, 114)])
+        # Energy orbs from hands
+        pygame.draw.circle(s, glow_c, (46, 148), 16)
+        pygame.draw.circle(s, (230, 160, 255), (46, 148), 9)
+        pygame.draw.circle(s, glow_c, (174, 148), 16)
+        pygame.draw.circle(s, (230, 160, 255), (174, 148), 9)
+        return s
+
+    def _create_boss_world_devourer_icon(self):
+        """World Devourer — cosmic void horror devouring reality."""
+        s = pygame.Surface((220, 220), pygame.SRCALPHA)
+        void_c, accent, core = (10, 5, 20), (80, 20, 40), (200, 30, 80)
+        pygame.draw.circle(s, (5, 2, 10), (110, 110), 108)
+        # Swirling void body
+        for rr in range(95, 15, -18):
+            alpha_v = min(255, 40 + rr)
+            pygame.draw.circle(s, (*void_c, alpha_v), (110, 110), rr, 10)
+        pygame.draw.circle(s, accent, (110, 110), 72)
+        pygame.draw.circle(s, core, (110, 110), 48)
+        pygame.draw.circle(s, (240, 60, 100), (110, 110), 28)
+        pygame.draw.circle(s, (255, 180, 200), (110, 110), 12)
+        # Consuming maw with teeth
+        maw_pts = [(74, 128), (86, 120), (98, 130), (110, 118), (122, 130), (134, 120), (146, 128), (138, 148), (82, 148)]
+        pygame.draw.polygon(s, (5, 2, 10), maw_pts)
+        for tx in range(82, 142, 12):
+            pygame.draw.polygon(s, (230, 100, 130), [(tx, 128), (tx + 6, 128), (tx + 3, 140)])
+        # Tentacles
+        import math as _m
+        for ang_deg in range(0, 360, 45):
+            ang = _m.radians(ang_deg)
+            x1t, y1t = 110 + int(72 * _m.cos(ang)), 110 + int(72 * _m.sin(ang))
+            x2t, y2t = 110 + int(108 * _m.cos(ang + 0.3)), 110 + int(108 * _m.sin(ang + 0.3))
+            pygame.draw.line(s, core, (x1t, y1t), (x2t, y2t), 4)
+        return s
+
+    # Legacy versions (same art — shared with new for compat)
+    def _create_boss_shadow_warden_icon_legacy(self): return self._create_boss_shadow_warden_icon()
+    def _create_boss_poison_ooze_icon_legacy(self): return self._create_boss_poison_ooze_icon()
+    def _create_boss_mountain_giant_icon_legacy(self): return self._create_boss_mountain_giant_icon()
+    def _create_boss_bone_mage_icon_legacy(self): return self._create_boss_bone_mage_icon()
+    def _create_boss_wasteland_dragon_icon_legacy(self): return self._create_boss_wasteland_dragon_icon()
+    def _create_boss_shadow_weaver_icon_legacy(self): return self._create_boss_shadow_weaver_icon()
+    def _create_boss_ancient_lich_icon_legacy(self): return self._create_boss_ancient_lich_icon()
+    def _create_boss_world_devourer_icon_legacy(self): return self._create_boss_world_devourer_icon()
+
+    # ─── Boss showcase (battle card) art ───────────────────────────────────────
+
+    def _create_boss_showcase_shadow_warden(self):
+        """Shadow Warden full showcase art (300×310)."""
+        s = pygame.Surface((300, 310), pygame.SRCALPHA)
+        c1, c2, glow = (50, 16, 90), (110, 44, 170), (200, 60, 255)
+        # Dark background
+        pygame.draw.rect(s, (15, 5, 28), (0, 0, 300, 310), border_radius=14)
+        # Cloak silhouette
+        pygame.draw.ellipse(s, c1, (44, 28, 212, 170))
+        pygame.draw.polygon(s, c1, [(44, 160), (150, 110), (256, 160), (240, 305), (60, 305)])
+        pygame.draw.ellipse(s, c2, (72, 44, 156, 128))
+        # Face void
+        pygame.draw.ellipse(s, (4, 2, 10), (96, 68, 108, 72))
+        # Eyes
+        pygame.draw.circle(s, glow, (124, 100), 14)
+        pygame.draw.circle(s, glow, (176, 100), 14)
+        pygame.draw.circle(s, (240, 180, 255), (124, 100), 7)
+        pygame.draw.circle(s, (240, 180, 255), (176, 100), 7)
+        # Shadow tendrils
+        for tdx, tdy in [(-44, 130), (-56, 165), (44 + 212, 130), (44 + 224, 165)]:
+            pygame.draw.circle(s, c2, (tdx, tdy), 12)
+        for ang in range(0, 360, 30):
+            ax = 150 + int(140 * math.cos(math.radians(ang)))
+            ay = 180 + int(140 * math.sin(math.radians(ang)))
+            pygame.draw.line(s, c1, (150, 180), (ax, ay), 3)
+        # Tier badge
+        tier_badge = self.small_font.render("TIER 1", True, glow)
+        s.blit(tier_badge, (8, 8))
+        return s
+
+    def _create_boss_showcase_poison_ooze(self):
+        s = pygame.Surface((300, 310), pygame.SRCALPHA)
+        gc1, gc2, gc3 = (20, 60, 10), (50, 120, 30), (120, 220, 60)
+        pygame.draw.rect(s, (10, 25, 5), (0, 0, 300, 310), border_radius=14)
+        # Blob main
+        pygame.draw.ellipse(s, gc1, (30, 50, 240, 210))
+        pygame.draw.ellipse(s, gc2, (50, 70, 200, 170))
+        pygame.draw.ellipse(s, gc3, (90, 100, 120, 90))
+        # Eyes
+        pygame.draw.circle(s, (200, 255, 80), (118, 140), 20)
+        pygame.draw.circle(s, (200, 255, 80), (182, 140), 20)
+        pygame.draw.circle(s, gc1, (118, 140), 11)
+        pygame.draw.circle(s, gc1, (182, 140), 11)
+        # Drips
+        for xd, yd, wr, hr in [(70, 245, 40, 55), (130, 258, 36, 48), (185, 250, 32, 44)]:
+            pygame.draw.ellipse(s, gc1, (xd, yd, wr, hr))
+        # Bubbles
+        for bx, by in [(64, 80), (220, 78), (80, 170), (210, 172), (138, 62)]:
+            pygame.draw.circle(s, gc3, (bx, by), 12)
+            pygame.draw.circle(s, gc2, (bx, by), 12, 2)
+        tier_label = self.small_font.render("TIER 1", True, gc3)
+        s.blit(tier_label, (8, 8))
+        return s
+
+    def _create_boss_showcase_mountain_giant(self):
+        s = pygame.Surface((300, 310), pygame.SRCALPHA)
+        st, st_dk, st_lt = (120, 100, 68), (70, 55, 30), (180, 160, 110)
+        pygame.draw.rect(s, (30, 25, 15), (0, 0, 300, 310), border_radius=14)
+        # Huge legs
+        pygame.draw.rect(s, st, (60, 210, 70, 95), border_radius=6)
+        pygame.draw.rect(s, st, (170, 210, 70, 95), border_radius=6)
+        # Body
+        pygame.draw.rect(s, st, (46, 120, 208, 108), border_radius=8)
+        # Arms
+        pygame.draw.ellipse(s, st, (2, 120, 58, 100))
+        pygame.draw.ellipse(s, st, (240, 120, 58, 100))
+        # Fists
+        pygame.draw.circle(s, st_dk, (20, 215), 26)
+        pygame.draw.circle(s, st_dk, (280, 215), 26)
+        # Head
+        pygame.draw.ellipse(s, st, (72, 24, 156, 108))
+        pygame.draw.ellipse(s, st_dk, (94, 46, 112, 72))
+        # Eyes
+        pygame.draw.circle(s, (255, 160, 40), (116, 72), 14)
+        pygame.draw.circle(s, (255, 160, 40), (184, 72), 14)
+        pygame.draw.circle(s, (80, 50, 10), (116, 72), 8)
+        pygame.draw.circle(s, (80, 50, 10), (184, 72), 8)
+        # Cracks
+        for pts in [[(80, 52), (96, 72), (88, 96)], [(206, 54), (192, 74), (200, 98)]]:
+            pygame.draw.lines(s, st_dk, False, pts, 4)
+        tier_label = self.small_font.render("TIER 2", True, (220, 170, 80))
+        s.blit(tier_label, (8, 8))
+        return s
+
+    def _create_boss_showcase_bone_mage(self):
+        s = pygame.Surface((300, 310), pygame.SRCALPHA)
+        bone_c, robe_c, glow_c = (210, 205, 175), (60, 35, 90), (160, 100, 255)
+        pygame.draw.rect(s, (18, 10, 28), (0, 0, 300, 310), border_radius=14)
+        # Robe
+        pygame.draw.polygon(s, robe_c, [(56, 130), (150, 100), (244, 130), (230, 308), (70, 308)])
+        pygame.draw.ellipse(s, (40, 20, 60), (70, 142, 160, 152))
+        # Skull
+        pygame.draw.ellipse(s, bone_c, (84, 22, 132, 112))
+        pygame.draw.ellipse(s, (185, 180, 150), (100, 38, 100, 78))
+        # Sockets + glow
+        pygame.draw.ellipse(s, robe_c, (96, 68, 36, 28))
+        pygame.draw.ellipse(s, robe_c, (168, 68, 36, 28))
+        pygame.draw.ellipse(s, glow_c, (100, 72, 28, 20))
+        pygame.draw.ellipse(s, glow_c, (172, 72, 28, 20))
+        # Jaw + teeth
+        for tx in range(104, 196, 14):
+            pygame.draw.polygon(s, bone_c, [(tx, 122), (tx + 8, 122), (tx + 4, 138)])
+        # Staff
+        pygame.draw.line(s, (90, 54, 130), (234, 22), (228, 308), 9)
+        pygame.draw.circle(s, glow_c, (234, 16), 26)
+        pygame.draw.circle(s, (210, 170, 255), (234, 16), 14)
+        tier_label = self.small_font.render("TIER 2", True, (220, 170, 80))
+        s.blit(tier_label, (8, 8))
+        return s
+
+    def _create_boss_showcase_wasteland_dragon(self):
+        s = pygame.Surface((300, 310), pygame.SRCALPHA)
+        sc, sc_dk, fire = (170, 50, 15), (100, 24, 6), (255, 200, 30)
+        pygame.draw.rect(s, (28, 12, 4), (0, 0, 300, 310), border_radius=14)
+        # Wings
+        pygame.draw.ellipse(s, sc_dk, (2, 60, 90, 130))
+        pygame.draw.ellipse(s, sc_dk, (208, 60, 90, 130))
+        # Body
+        pygame.draw.ellipse(s, sc, (60, 80, 180, 160))
+        # Head
+        pygame.draw.ellipse(s, sc, (56, 18, 188, 100))
+        pygame.draw.ellipse(s, sc_dk, (80, 40, 140, 70))
+        # Snout
+        pygame.draw.ellipse(s, sc, (76, 90, 148, 64))
+        # Horns
+        pygame.draw.polygon(s, sc_dk, [(96, 18), (80, -10), (114, 22)])
+        pygame.draw.polygon(s, sc_dk, [(204, 18), (220, -10), (186, 22)])
+        # Eyes
+        pygame.draw.circle(s, fire, (108, 52), 16)
+        pygame.draw.circle(s, fire, (192, 52), 16)
+        pygame.draw.circle(s, (210, 60, 20), (108, 52), 9)
+        pygame.draw.circle(s, (210, 60, 20), (192, 52), 9)
+        # Fire breath flowing down
+        for fx, fw, fy, fh in [(90, 30, 132, 80), (112, 24, 140, 70), (132, 20, 148, 56)]:
+            pygame.draw.ellipse(s, fire, (fx, fy, fw, fh))
+        pygame.draw.ellipse(s, (255, 120, 30), (110, 140, 80, 60))
+        # Scales
+        for px, py in [(68, 90), (110, 45), (190, 45), (232, 90), (78, 60), (222, 62)]:
+            pygame.draw.circle(s, (200, 90, 30), (px, py), 8)
+        tier_label = self.small_font.render("TIER 3", True, (240, 100, 40))
+        s.blit(tier_label, (8, 8))
+        return s
+
+    def _create_boss_showcase_shadow_weaver(self):
+        s = pygame.Surface((300, 310), pygame.SRCALPHA)
+        c1, c2, glow = (20, 6, 44), (60, 14, 100), (170, 70, 255)
+        pygame.draw.rect(s, (6, 2, 14), (0, 0, 300, 310), border_radius=14)
+        # Void swirl background
+        for rr in range(130, 10, -20):
+            pygame.draw.circle(s, c1, (150, 155), rr, 12)
+        # Central entity
+        pygame.draw.ellipse(s, c2, (62, 62, 176, 186))
+        pygame.draw.ellipse(s, (30, 8, 60), (90, 90, 120, 130))
+        # Eyes
+        pygame.draw.ellipse(s, glow, (102, 118, 36, 24))
+        pygame.draw.ellipse(s, glow, (162, 118, 36, 24))
+        pygame.draw.ellipse(s, (220, 180, 255), (108, 124, 24, 14))
+        pygame.draw.ellipse(s, (220, 180, 255), (168, 124, 24, 14))
+        # Threads
+        for ang_deg in range(0, 360, 24):
+            ang = math.radians(ang_deg)
+            x2t = 150 + int(145 * math.cos(ang))
+            y2t = 155 + int(145 * math.sin(ang))
+            pygame.draw.line(s, glow, (150, 155), (x2t, y2t), 2)
+        # Abyss mouth
+        pygame.draw.ellipse(s, (3, 1, 8), (116, 156, 68, 36))
+        tier_label = self.small_font.render("TIER 3", True, (240, 100, 40))
+        s.blit(tier_label, (8, 8))
+        return s
+
+    def _create_boss_showcase_ancient_lich(self):
+        s = pygame.Surface((300, 310), pygame.SRCALPHA)
+        bone_c, robe_c, crown_c, glow_c = (195, 190, 160), (70, 25, 110), (150, 70, 215), (190, 110, 255)
+        pygame.draw.rect(s, (10, 6, 18), (0, 0, 300, 310), border_radius=14)
+        # Royal robe large
+        pygame.draw.polygon(s, robe_c, [(34, 130), (150, 98), (266, 130), (250, 308), (50, 308)])
+        pygame.draw.ellipse(s, (50, 16, 80), (62, 138, 176, 162))
+        # Skull
+        pygame.draw.ellipse(s, bone_c, (80, 20, 140, 118))
+        pygame.draw.ellipse(s, (170, 165, 135), (96, 36, 108, 86))
+        # Crown
+        crown_pts = [(86, 20), (100, -2), (114, 20), (128, -6), (150, 20), (172, -6), (186, 20), (200, -2), (214, 20)]
+        pygame.draw.polygon(s, crown_c, crown_pts + [(214, 32), (86, 32)])
+        for gem_x in [100, 150, 200]:
+            pygame.draw.circle(s, glow_c, (gem_x, 14), 8)
+        # Eye sockets
+        pygame.draw.ellipse(s, (24, 12, 40), (92, 76, 38, 28))
+        pygame.draw.ellipse(s, (24, 12, 40), (170, 76, 38, 28))
+        pygame.draw.ellipse(s, glow_c, (98, 80, 26, 20))
+        pygame.draw.ellipse(s, glow_c, (176, 80, 26, 20))
+        # Teeth
+        for tx in range(100, 202, 12):
+            pygame.draw.polygon(s, bone_c, [(tx, 128), (tx + 7, 128), (tx + 3, 144)])
+        # Energy orbs
+        pygame.draw.circle(s, glow_c, (40, 200), 24)
+        pygame.draw.circle(s, (225, 165, 255), (40, 200), 14)
+        pygame.draw.circle(s, glow_c, (260, 200), 24)
+        pygame.draw.circle(s, (225, 165, 255), (260, 200), 14)
+        tier_label = self.small_font.render("TIER 4", True, (200, 80, 255))
+        s.blit(tier_label, (8, 8))
+        return s
+
+    def _create_boss_showcase_world_devourer(self):
+        s = pygame.Surface((300, 310), pygame.SRCALPHA)
+        void_c, accent, core = (8, 4, 16), (70, 18, 36), (190, 25, 75)
+        pygame.draw.rect(s, (4, 2, 8), (0, 0, 300, 310), border_radius=14)
+        # Void swirls
+        for rr in range(140, 10, -22):
+            pygame.draw.circle(s, void_c, (150, 155), rr, 14)
+        pygame.draw.circle(s, accent, (150, 155), 100)
+        pygame.draw.circle(s, core, (150, 155), 70)
+        pygame.draw.circle(s, (230, 50, 100), (150, 155), 42)
+        pygame.draw.circle(s, (255, 180, 210), (150, 155), 18)
+        # Maw
+        maw_pts = [(108, 182), (124, 170), (138, 186), (150, 164), (162, 186), (176, 170), (192, 182), (184, 210), (116, 210)]
+        pygame.draw.polygon(s, (4, 2, 8), maw_pts)
+        for tx in range(114, 188, 16):
+            pygame.draw.polygon(s, (225, 90, 130), [(tx, 182), (tx + 9, 182), (tx + 4, 198)])
+        # Tentacles
+        for ang_deg in range(0, 360, 36):
+            ang = math.radians(ang_deg)
+            x1t = 150 + int(100 * math.cos(ang))
+            y1t = 155 + int(100 * math.sin(ang))
+            x2t = 150 + int(148 * math.cos(ang + 0.4))
+            y2t = 155 + int(148 * math.sin(ang + 0.4))
+            pygame.draw.line(s, core, (x1t, y1t), (x2t, y2t), 5)
+        tier_label = self.small_font.render("TIER 4", True, (200, 80, 255))
+        s.blit(tier_label, (8, 8))
+        return s
+
+    def _create_boss_showcase_shadow_warden_legacy(self): return self._create_boss_showcase_shadow_warden()
+    def _create_boss_showcase_poison_ooze_legacy(self): return self._create_boss_showcase_poison_ooze()
+    def _create_boss_showcase_mountain_giant_legacy(self): return self._create_boss_showcase_mountain_giant()
+    def _create_boss_showcase_bone_mage_legacy(self): return self._create_boss_showcase_bone_mage()
+    def _create_boss_showcase_wasteland_dragon_legacy(self): return self._create_boss_showcase_wasteland_dragon()
+    def _create_boss_showcase_shadow_weaver_legacy(self): return self._create_boss_showcase_shadow_weaver()
+    def _create_boss_showcase_ancient_lich_legacy(self): return self._create_boss_showcase_ancient_lich()
+    def _create_boss_showcase_world_devourer_legacy(self): return self._create_boss_showcase_world_devourer()
+
     def create_subclass_showcase_art(self):
         if self.use_new_art:
             return {
@@ -2613,6 +3181,14 @@ class ArenaGame:
                 "Шаман": self._create_shaman_showcase_art(),
                 "wolf": self._create_wolf_showcase_art(),
                 "bear": self._create_bear_showcase_art(),
+                "boss_shadow_warden":    self._create_boss_showcase_shadow_warden(),
+                "boss_poison_ooze":      self._create_boss_showcase_poison_ooze(),
+                "boss_mountain_giant":   self._create_boss_showcase_mountain_giant(),
+                "boss_bone_mage":        self._create_boss_showcase_bone_mage(),
+                "boss_wasteland_dragon": self._create_boss_showcase_wasteland_dragon(),
+                "boss_shadow_weaver":    self._create_boss_showcase_shadow_weaver(),
+                "boss_ancient_lich":     self._create_boss_showcase_ancient_lich(),
+                "boss_world_devourer":   self._create_boss_showcase_world_devourer(),
             }
         else:
             return {
@@ -2628,6 +3204,14 @@ class ArenaGame:
                 "Шаман": self._create_shaman_showcase_art_legacy(),
                 "wolf": self._create_wolf_showcase_art_legacy(),
                 "bear": self._create_bear_showcase_art_legacy(),
+                "boss_shadow_warden":    self._create_boss_showcase_shadow_warden_legacy(),
+                "boss_poison_ooze":      self._create_boss_showcase_poison_ooze_legacy(),
+                "boss_mountain_giant":   self._create_boss_showcase_mountain_giant_legacy(),
+                "boss_bone_mage":        self._create_boss_showcase_bone_mage_legacy(),
+                "boss_wasteland_dragon": self._create_boss_showcase_wasteland_dragon_legacy(),
+                "boss_shadow_weaver":    self._create_boss_showcase_shadow_weaver_legacy(),
+                "boss_ancient_lich":     self._create_boss_showcase_ancient_lich_legacy(),
+                "boss_world_devourer":   self._create_boss_showcase_world_devourer_legacy(),
             }
 
     def _reload_art(self):
@@ -2669,6 +3253,8 @@ class ArenaGame:
             self.handle_stat_events(events)
         elif self.state == self.ARENA_SELECT:
             self.handle_arena_select_events(events)
+        elif self.state == self.BOSS_SELECT:
+            self.handle_boss_select_events(events)
         elif self.state == self.BATTLE:
             self.handle_battle_events(events)
         elif self.state == self.POST_BATTLE:
@@ -2697,6 +3283,8 @@ class ArenaGame:
             self.render_stat_select()
         elif self.state == self.ARENA_SELECT:
             self.render_arena_select()
+        elif self.state == self.BOSS_SELECT:
+            self.render_boss_select()
         elif self.state == self.BATTLE:
             self.render_battle()
         elif self.state == self.POST_BATTLE:
@@ -2704,7 +3292,14 @@ class ArenaGame:
 
     def handle_menu_events(self, events):
         for event in events:
+            # Boss mode toggle button
+            if self.menu_boss_button.clicked(event):
+                self.boss_mode = not self.boss_mode
+                return
             for index, button in enumerate(self.menu_buttons, start=1):
+                # Disable 4-player button in boss mode
+                if self.boss_mode and index == 4:
+                    continue
                 if button.clicked(event):
                     self.start_new_series(index)
                     return
@@ -2721,7 +3316,12 @@ class ArenaGame:
         self.name_index = 0
         self.name_buffer = ""
         self.rebuild_name_key_buttons()
-        self.set_state(self.NAME_INPUT)
+        if self.boss_mode:
+            self.selected_boss = None
+            self.boss_select_buttons = []
+            self.set_state(self.BOSS_SELECT)
+        else:
+            self.set_state(self.NAME_INPUT)
 
     def handle_name_events(self, events):
         for event in events:
@@ -3439,8 +4039,70 @@ class ArenaGame:
 
     def start_battle(self):
         self.players = [self.build_human_player(build) for build in self.player_builds]
-        if self.player_count == 1:
+        if self.boss_mode and self.selected_boss:
+            self.players.append(self.create_boss_player(self.selected_boss))
+        elif self.player_count == 1:
             self.players.append(self.create_ai_player())
+
+        # Use selected arena or pick a random one (re-seed for true randomness)
+        _arena_mult = 1.5 if self.arena_lucky else 1.0
+        if self.selected_arena:
+            self.arena_name, arena_messages = self.apply_random_arena(self.players, forced_name=self.selected_arena, bonus_mult=_arena_mult)
+        else:
+            random.seed()  # Re-seed from OS entropy to avoid correlated picks
+            self.arena_name, arena_messages = self.apply_random_arena(self.players, bonus_mult=_arena_mult)
+        self.arena_lucky = False  # reset after use
+        self.players = self.order_players_for_battle(self.players)
+        order_text = " → ".join(player.name for player in self.players)
+
+        self.current_turn = 0
+        self.bonus_turn_player = None
+        self.selected_target = None
+        self.hit_target = None
+        self.hit_timer = 0
+        self.pending_post_battle = False
+        self.log = [
+            self.make_log_entry(f"🏟 Арена: {self.arena_name}", category="arena"),
+            self.make_log_entry(f"🎲 Порядок ходов: {order_text}", category="arena"),
+        ]
+        if self.boss_mode and self.selected_boss:
+            bd = self.boss_data[self.selected_boss]
+            self.log.append(self.make_log_entry(
+                f"💀 Режим Босса: {bd['name']} (Tier {bd['tier']}) вышел на арену!", category="arena"
+            ))
+        for _am in arena_messages:
+            self.log.append(self.make_log_entry(_am, category="arena"))
+        self.info_rects = [None] * len(self.players)
+        self.show_info_idx = None
+        self.close_popup_rect = None
+        self.help_open = False
+        self.help_active_tab = self.help_tabs[0]
+        self.help_scroll = 0
+        self.help_max_scroll = 0
+        self.close_loot_choice()
+        self.close_form_menu()
+        self.reset_spell_state()
+        self.arena_info_open = False
+        self.settings_open = False
+        self.set_state(self.BATTLE)
+        self.prepare_current_turn()
+
+    def create_boss_player(self, boss_key):
+        bd = self.boss_data[boss_key]
+        boss = Player(bd["name"], is_ai=True)
+        boss.role = f"boss_{boss_key}"
+        boss.magic_path = ""
+        boss.is_boss = True
+        boss.boss_key = boss_key
+        boss.strength = bd["strength"]
+        boss.stamina = bd["stamina"]
+        boss.agility = bd["agility"]
+        boss.luck = bd["luck"]
+        boss.wisdom = bd["wisdom"]
+        boss.intellect = bd["intellect"]
+        boss.special_cooldown = 0
+        boss.calc()
+        return boss
 
         # Use selected arena or pick a random one (re-seed for true randomness)
         _arena_mult = 1.5 if self.arena_lucky else 1.0
@@ -5660,13 +6322,24 @@ class ArenaGame:
     def prepare_current_turn(self):
         while True:
             alive = [player for player in self.players if player.hp > 0]
-            if len(alive) == 0:
-                self.winner_name = "Никто"
-                self.pending_post_battle = True
-                return
-            if len(alive) == 1:
-                self.finish_battle(alive[0].name)
-                return
+            # Boss mode win/lose check
+            if getattr(self, 'boss_mode', False):
+                alive_boss = [p for p in alive if getattr(p, 'is_boss', False)]
+                alive_humans = [p for p in alive if not getattr(p, 'is_boss', False)]
+                if not alive_boss:
+                    self.finish_battle("Игроки победили!")
+                    return
+                if not alive_humans:
+                    self.finish_battle(alive_boss[0].name)
+                    return
+            else:
+                if len(alive) == 0:
+                    self.winner_name = "Никто"
+                    self.pending_post_battle = True
+                    return
+                if len(alive) == 1:
+                    self.finish_battle(alive[0].name)
+                    return
 
             current = self.players[self.current_turn]
             if current.hp <= 0:
@@ -6647,6 +7320,10 @@ class ArenaGame:
 
                 for player, rect in self.get_target_rects():
                     if rect.collidepoint(event.pos) and player != current and player.hp > 0:
+                        # Boss mode: human players can only target the boss
+                        if getattr(self, 'boss_mode', False) and not getattr(current, 'is_boss', False):
+                            if not getattr(player, 'is_boss', False):
+                                continue  # skip non-boss targets
                         self.selected_target = player
                         return
 
@@ -6775,7 +7452,146 @@ class ArenaGame:
 
         self.finish_action_turn(player)
 
+    def perform_boss_special_action(self, boss, target):
+        """Execute the boss's unique special ability."""
+        key = getattr(boss, 'boss_key', '')
+        messages = []
+
+        if key == "shadow_warden":
+            # Shadow Strike: attack + 70% bleed
+            msgs, hit = self.execute_attack(boss, target, True)
+            messages.extend(msgs)
+            if hit and random.randint(1, 100) <= 70:
+                bleed = max(1, int(boss.damage * 0.6))
+                if self.apply_bleeding(target, 3, bleed):
+                    messages.append(self.make_log_entry(f"🩸 Тень оставляет метку: {target.name} истекает кровью ({bleed} × 3 хода).", category="warning"))
+
+        elif key == "poison_ooze":
+            # Poison Splash: heavy bleed
+            msgs, hit = self.execute_attack(boss, target, True)
+            messages.extend(msgs)
+            if hit:
+                bleed = max(1, int(boss.damage * 0.8))
+                if self.apply_bleeding(target, 4, bleed):
+                    messages.append(self.make_log_entry(f"☠ Яд разъедает {target.name}: кровотечение {bleed} × 4 хода!", category="warning"))
+
+        elif key == "mountain_giant":
+            # Crushing Blow: 170% + stun
+            base_dmg = int(boss.damage * 1.7)
+            actual = self.apply_damage(target, base_dmg)
+            messages.append(self.make_log_entry(f"💥 Великан обрушивается на {target.name}: -{actual} HP", category="warning"))
+            if random.randint(1, 100) <= 40:
+                if self.apply_stun(target, 1):
+                    messages.append(self.make_log_entry(f"💫 Удар сотрясает {target.name} — оглушён на 1 ход!", category="warning"))
+
+        elif key == "bone_mage":
+            # Bone Shards: magic attack + curse
+            magic_dmg = int(boss.intellect * 1.3)
+            actual = self.apply_damage(target, magic_dmg)
+            messages.append(self.make_log_entry(f"🦴 Осколки кости пронзают {target.name}: -{actual} HP (магия)", category="warning"))
+            if self.apply_soul_curse(target, 2):
+                messages.append(self.make_log_entry(f"🌑 Проклятие души охватывает {target.name} на 2 хода!", category="warning"))
+
+        elif key == "wasteland_dragon":
+            # Flame Breath: 80% damage to ALL humans
+            human_targets = [p for p in self.players if p.hp > 0 and not getattr(p, 'is_boss', False)]
+            for ht in human_targets:
+                dmg = max(1, int(boss.damage * 0.8))
+                actual = self.apply_damage(ht, dmg)
+                messages.append(self.make_log_entry(f"🔥 Огненное дыхание охватывает {ht.name}: -{actual} HP", category="warning"))
+                if random.randint(1, 100) <= 50:
+                    burn = max(1, dmg // 3)
+                    if self.apply_burning(ht, burn):
+                        messages.append(self.make_log_entry(f"🔥 {ht.name} поджигается! ({burn} × оставшееся горение)", category="warning"))
+
+        elif key == "shadow_weaver":
+            # Shadow Lock: attack + essence lock + 35% freeze
+            msgs, hit = self.execute_attack(boss, target, True)
+            messages.extend(msgs)
+            if hit:
+                if self.apply_essence_lock(target, 1):
+                    messages.append(self.make_log_entry(f"⛓ {target.name} скован оковами теней на 1 ход!", category="warning"))
+                if random.randint(1, 100) <= 35:
+                    if self.apply_freeze(target, 1):
+                        messages.append(self.make_log_entry(f"🧊 Тьма замораживает {target.name}!", category="warning"))
+
+        elif key == "ancient_lich":
+            # Soul Drain: 160% intellect magic + boss heals 50%
+            magic_dmg = int(boss.intellect * 1.6)
+            actual = self.apply_damage(target, magic_dmg)
+            messages.append(self.make_log_entry(f"☠ Лич высасывает душу {target.name}: -{actual} HP (магия)", category="warning"))
+            heal = actual // 2
+            if heal > 0:
+                boss.hp = min(boss.max_hp, boss.hp + heal)
+                messages.append(self.make_log_entry(f"🩺 Лич поглощает жизненную силу и восстанавливает +{heal} HP", category="warning"))
+
+        elif key == "world_devourer":
+            # Void Crush: 240% + stun + bleed
+            base_dmg = int(boss.damage * 2.4)
+            actual = self.apply_damage(target, base_dmg)
+            messages.append(self.make_log_entry(f"💀 Пустотный удар сминает {target.name}: -{actual} HP", category="warning"))
+            if self.apply_stun(target, 1):
+                messages.append(self.make_log_entry(f"💫 {target.name} оглушён!", category="warning"))
+            bleed = max(1, actual // 4)
+            if self.apply_bleeding(target, 3, bleed):
+                messages.append(self.make_log_entry(f"🩸 {target.name} начинает истекать кровью ({bleed} × 3 хода)", category="warning"))
+        else:
+            msgs, _ = self.execute_attack(boss, target, True)
+            messages.extend(msgs)
+
+        return messages
+
+    def perform_boss_ai_turn(self, boss):
+        """AI logic for boss player — targets weakest human only."""
+        human_targets = [p for p in self.players if p.hp > 0 and not getattr(p, 'is_boss', False)]
+        if not human_targets:
+            return
+        target = min(human_targets, key=lambda x: x.hp)
+
+        # Special ability with 40% chance (cooldown 2)
+        if boss.special_cooldown == 0 and random.randint(1, 100) <= 40:
+            bd_name = self.boss_data.get(getattr(boss, 'boss_key', ''), {}).get('special_name', 'Спецудар')
+            messages = self.perform_boss_special_action(boss, target)
+            self.append_log(
+                f"{boss.name} применяет {bd_name} на {target.name}",
+                category="action", actor=boss.name, verb=f"применяет {bd_name}", target=target.name, indent=True,
+            )
+            if messages:
+                self.log.extend(messages)
+            boss.special_cooldown = 2
+            boss.special_cooldown_fresh = True
+            self.hit_target = target if target.hp < target.max_hp else None
+            self.hit_timer = 10
+            self.normalize_health()
+            self.finish_action_turn(boss)
+            return
+
+        # Careful attack (30% lower damage) with 20% chance
+        if random.randint(1, 100) <= 20:
+            messages, hit = self.execute_attack(boss, target, False, True)
+            self.append_log(
+                f"{boss.name} осторожно атакует {target.name}",
+                category="action", actor=boss.name, verb="осторожно атакует", target=target.name, target_hit=hit, indent=True,
+            )
+        else:
+            messages, hit = self.execute_attack(boss, target, True)
+            self.append_log(
+                f"{boss.name} атакует {target.name}",
+                category="action", actor=boss.name, verb="атакует", target=target.name, target_hit=hit, indent=True,
+            )
+        if messages:
+            self.log.extend(messages)
+        self.hit_target = target
+        self.hit_timer = 10
+        self.normalize_health()
+        self.finish_action_turn(boss)
+
     def perform_ai_turn(self, player):
+        # Boss AI: target only human players
+        if getattr(player, 'is_boss', False):
+            self.perform_boss_ai_turn(player)
+            return
+
         alive_targets = [x for x in self.players if x.hp > 0 and x != player]
         if not alive_targets:
             return
@@ -6999,6 +7815,8 @@ class ArenaGame:
         self.show_info_idx = None
         self.winner_name = ""
         self.champion = False
+        self.boss_mode = False
+        self.selected_boss = None
         self.close_loot_choice()
         self.close_form_menu()
         self.reset_spell_state()
@@ -7013,9 +7831,179 @@ class ArenaGame:
         title = self.title_font.render("RPG ARENA", True, WHITE)
         self.screen.blit(title, (705, 145))
 
-        for button in self.menu_buttons:
-            button.draw(self.screen, self.medium_font)
+        for idx, button in enumerate(self.menu_buttons):
+            player_count = idx + 1
+            disabled = self.boss_mode and player_count == 4
+            button.draw(self.screen, self.medium_font, enabled=not disabled)
+
+        # Boss mode toggle button — glow effect when active
+        boss_accent = ((140, 40, 40), (200, 60, 60), WHITE) if not self.boss_mode else ((180, 0, 180), (220, 60, 220), WHITE)
+        if self.boss_mode:
+            glow_r = int(6 + 3 * math.sin(pygame.time.get_ticks() * 0.006))
+            glow_surf = pygame.Surface((self.menu_boss_button.rect.width + glow_r * 4, self.menu_boss_button.rect.height + glow_r * 4), pygame.SRCALPHA)
+            pygame.draw.rect(glow_surf, (220, 0, 220, 70), glow_surf.get_rect(), border_radius=16)
+            self.screen.blit(glow_surf, (self.menu_boss_button.rect.x - glow_r * 2, self.menu_boss_button.rect.y - glow_r * 2))
+        self.menu_boss_button.draw(self.screen, self.font, active=self.boss_mode, accent=boss_accent)
+
         self.menu_exit_button.draw(self.screen, self.medium_font)
+
+    def render_boss_select(self):
+        self.screen.fill(DARK)
+        TIER_COLORS = {1: (120, 200, 120), 2: (200, 160, 60), 3: (220, 90, 40), 4: (180, 40, 220)}
+        boss_keys = list(self.boss_data.keys())
+        # Layout — left panel with boss cards, right panel with description
+        left_panel = pygame.Rect(40, 60, 820, 900)
+        right_panel = pygame.Rect(880, 60, 1000, 820)
+        pygame.draw.rect(self.screen, PANEL, left_panel, border_radius=18)
+        pygame.draw.rect(self.screen, WHITE, left_panel, 2, border_radius=18)
+        pygame.draw.rect(self.screen, PANEL, right_panel, border_radius=18)
+        pygame.draw.rect(self.screen, WHITE, right_panel, 2, border_radius=18)
+
+        title_surf = self.big_font.render("⚔ Выбор Босса", True, (230, 80, 230))
+        self.screen.blit(title_surf, title_surf.get_rect(x=60, y=80))
+
+        CARD_W, CARD_H = 370, 100
+        CARD_X = [55, 445]
+        tier_row = {1: 0, 2: 2, 3: 4, 4: 6}
+        mouse = pygame.mouse.get_pos()
+        self.boss_select_buttons = []
+        for i, key in enumerate(boss_keys):
+            bd = self.boss_data[key]
+            tier = bd["tier"]
+            col = i % 2
+            row = tier_row[tier] + col
+            # Actually use (row within tier, col) layout: tier has 2 bosses side by side
+            tier_idx = [1, 1, 2, 2, 3, 3, 4, 4]
+            col_idx = [0, 1, 0, 1, 0, 1, 0, 1]
+            row_idx = [0, 0, 1, 1, 2, 2, 3, 3]
+            cx_card = CARD_X[col_idx[i]]
+            cy_card = 155 + row_idx[i] * 185
+            card_rect = pygame.Rect(cx_card, cy_card, CARD_W, 165)
+            self.boss_select_buttons.append((key, card_rect))
+            is_selected = (self.selected_boss == key)
+            is_hovered = card_rect.collidepoint(mouse)
+            tc = TIER_COLORS[tier]
+            bg_col = (max(0, tc[0] - 80), max(0, tc[1] - 80), max(0, tc[2] - 80))
+            if is_selected:
+                glow_r = int(5 + 3 * math.sin(pygame.time.get_ticks() * 0.007))
+                glow_rect = pygame.Rect(card_rect.x - glow_r, card_rect.y - glow_r,
+                                        card_rect.w + glow_r * 2, card_rect.h + glow_r * 2)
+                pygame.draw.rect(self.screen, (*tc, 100), glow_rect, border_radius=16)
+            border_col = tc if (is_selected or is_hovered) else (80, 80, 80)
+            pygame.draw.rect(self.screen, bg_col, card_rect, border_radius=14)
+            pygame.draw.rect(self.screen, border_col, card_rect, 3 if is_selected else 2, border_radius=14)
+
+            # Portrait icon
+            icon_size = 80
+            if f"boss_{key}" in self.icons:
+                icon = self.icons[f"boss_{key}"]
+                scaled_icon = pygame.transform.smoothscale(icon, (icon_size, icon_size))
+                self.screen.blit(scaled_icon, (cx_card + 10, cy_card + 42))
+            else:
+                pygame.draw.circle(self.screen, tc, (cx_card + 50, cy_card + 82), 40)
+
+            # Tier badge
+            tier_badge_surf = self.small_bold_font.render(f"Tier {tier}", True, tc)
+            self.screen.blit(tier_badge_surf, (cx_card + 10, cy_card + 6))
+
+            # Name
+            name_surf = self.font.render(bd["name"], True, WHITE)
+            self.screen.blit(name_surf, (cx_card + 100, cy_card + 40))
+
+            # Stats compact
+            hp_val = bd["stamina"] * 8
+            stats_str = f"HP: {hp_val}  Сила: {bd['strength']}  Ловк: {bd['agility']}"
+            stats_surf = self.small_font.render(stats_str, True, (200, 200, 200))
+            self.screen.blit(stats_surf, (cx_card + 100, cy_card + 80))
+
+            # Special ability
+            sp_surf = self.small_font.render(f"🗡 {bd['special_name']}", True, tc)
+            self.screen.blit(sp_surf, (cx_card + 100, cy_card + 110))
+
+        # Tier labels on the left side
+        for tier, row_i in [(1, 0), (2, 1), (3, 2), (4, 3)]:
+            tier_label_y = 140 + row_i * 185
+            tc = TIER_COLORS[tier]
+            tier_line = pygame.Rect(40, tier_label_y, 4, 165)
+            pygame.draw.rect(self.screen, tc, tier_line, border_radius=2)
+
+        # Right panel: selected boss details
+        if self.selected_boss:
+            bd = self.boss_data[self.selected_boss]
+            tier = bd["tier"]
+            tc = TIER_COLORS[tier]
+            # Big portrait
+            icon_key = f"boss_{self.selected_boss}"
+            if icon_key in self.icons:
+                big_icon = pygame.transform.smoothscale(self.icons[icon_key], (220, 220))
+                big_icon = self._make_circle_portrait(big_icon, 220)
+                self.screen.blit(big_icon, (890, 80))
+            # Boss name big
+            bn_surf = self.medium_font.render(bd["name"], True, tc)
+            self.screen.blit(bn_surf, (1125, 100))
+            tier_s = self.font.render(f"✦ Уровень угрозы: Tier {tier}", True, tc)
+            self.screen.blit(tier_s, (1125, 148))
+            # Description
+            desc_lines = self.wrap_text(bd["desc"], self.small_font, 740)
+            for li, dl in enumerate(desc_lines):
+                dl_surf = self.small_font.render(dl, True, (220, 220, 220))
+                self.screen.blit(dl_surf, (890, 320 + li * 30))
+            # Stats grid
+            stat_y = 420
+            stats_items = [
+                ("HP", bd["stamina"] * 8),
+                ("Сила", bd["strength"]),
+                ("Выносл.", bd["stamina"]),
+                ("Ловкость", bd["agility"]),
+                ("Удача", bd["luck"]),
+                ("Мудрость", bd["wisdom"]),
+                ("Интеллект", bd["intellect"]),
+            ]
+            for si, (sn, sv) in enumerate(stats_items):
+                col_s = si % 2
+                row_s = si // 2
+                sx = 890 + col_s * 370
+                sy = stat_y + row_s * 48
+                pygame.draw.rect(self.screen, (35, 35, 45), pygame.Rect(sx, sy, 340, 40), border_radius=8)
+                sn_surf = self.small_font.render(sn, True, (160, 160, 180))
+                sv_surf = self.font.render(str(sv), True, tc)
+                self.screen.blit(sn_surf, (sx + 12, sy + 10))
+                self.screen.blit(sv_surf, (sx + 200, sy + 8))
+            # Special ability box
+            sp_y = stat_y + 4 * 48 + 20
+            sp_box = pygame.Rect(890, sp_y, 750, 100)
+            pygame.draw.rect(self.screen, (35, 35, 50), sp_box, border_radius=12)
+            pygame.draw.rect(self.screen, tc, sp_box, 2, border_radius=12)
+            sp_title = self.font.render(f"🗡 Спецспособность: {bd['special_name']}", True, tc)
+            self.screen.blit(sp_title, (905, sp_y + 12))
+            sp_desc_lines = self.wrap_text(bd["special_desc"], self.small_font, 720)
+            for li, sdl in enumerate(sp_desc_lines):
+                sdl_surf = self.small_font.render(sdl, True, (200, 200, 200))
+                self.screen.blit(sdl_surf, (905, sp_y + 48 + li * 26))
+        else:
+            hint = self.medium_font.render("Выбери босса", True, (120, 120, 120))
+            self.screen.blit(hint, hint.get_rect(center=(1380, 480)))
+
+        self.boss_select_back_button.draw(self.screen, self.font)
+        self.boss_select_confirm_button.draw(self.screen, self.font, enabled=self.selected_boss is not None)
+
+        # Player count reminder
+        pc_surf = self.small_font.render(f"Игроков: {self.player_count}  |  Режим: Бой с Боссом", True, (180, 80, 180))
+        self.screen.blit(pc_surf, (880, 955))
+
+    def handle_boss_select_events(self, events):
+        for event in events:
+            if self.boss_select_back_button.clicked(event):
+                self.set_state(self.MENU)
+                return
+            if self.boss_select_confirm_button.clicked(event, enabled=self.selected_boss is not None):
+                self.set_state(self.NAME_INPUT)
+                return
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                for key, card_rect in self.boss_select_buttons:
+                    if card_rect.collidepoint(event.pos):
+                        self.selected_boss = key
+                        return
 
     def render_name_input(self):
         self.screen.fill(DARK)
@@ -7794,7 +8782,10 @@ class ArenaGame:
             pygame.draw.rect(self.screen, border_col2, card_rect, bw, border_radius=12)
 
             # ── Showcase art ──────────────────────────────────────────────
-            _art_key = getattr(player, "lycan_form", "") or player.role
+            if getattr(player, 'is_boss', False):
+                _art_key = player.role  # e.g. "boss_shadow_warden"
+            else:
+                _art_key = getattr(player, "lycan_form", "") or player.role
             art = self.subclass_showcase_art.get(_art_key) or self.subclass_showcase_art.get(player.role)
             if art:
                 try:
