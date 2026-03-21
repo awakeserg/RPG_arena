@@ -84,8 +84,8 @@ class Player:
         self.hp=self.max_hp
 
         self.damage=self.strength
-        self.dodge=self.agility*2
-        self.crit=self.luck*2
+        self.dodge=min(95,self.agility*2)
+        self.crit=min(100,self.luck*2)
 
 
     def show(self):

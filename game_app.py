@@ -1,3 +1,4 @@
+import json
 import math
 import os
 import random
@@ -73,6 +74,7 @@ class UIButton:
 class ArenaGame:
     MENU = "menu"
     NAME_INPUT = "name_input"
+    HERO_PICK = "hero_pick"
     CLASS_SELECT = "class_select"
     MAGIC_SELECT = "magic_select"
     STAT_SELECT = "stat_select"
@@ -594,6 +596,12 @@ class ArenaGame:
         self.name_clear_button.rect = pygame.Rect(1120, 648, 220, 56)
         self.name_confirm_button.rect = pygame.Rect(670, 730, 260, 64)
         self.name_back_button.rect = pygame.Rect(990, 730, 260, 64)
+        self.hero_pick_use_button = UIButton("Взять прежнего", 640, 660, 300, 70)
+        self.hero_pick_new_button = UIButton("Создать нового", 980, 660, 300, 70)
+        self.hero_pick_delete_button = UIButton("Удалить героя", 640, 750, 300, 70)
+        self.hero_pick_back_button = UIButton("Назад", 980, 750, 300, 70)
+        self.saved_hero_buttons = []
+        self.saved_hero_delete_buttons = []
 
         self.name_key_buttons = []
         self.rebuild_name_key_buttons()
@@ -643,11 +651,12 @@ class ArenaGame:
         self.arena_lucky = False
 
         self.battle_buttons = [
-            UIButton("Атака", 70, 800, 220, 110),
-            UIButton("Осторожно", 320, 800, 220, 110),
-            UIButton("Навык", 820, 800, 220, 110),     # [2] активная способность класса
-            UIButton("Лут", 570, 800, 220, 110),        # [3] лут (позиции с навыком поменяны)
-            UIButton("Колдовать", 1070, 800, 220, 110),
+            UIButton("Атака",       70,  800, 190, 110),
+            UIButton("Осторожно",  275, 800, 190, 110),
+            UIButton("Навык",      685, 800, 190, 110),     # [2]
+            UIButton("Лут",        480, 800, 190, 110),     # [3]
+            UIButton("Колдовать",  890, 800, 190, 110),     # [4]
+            UIButton("🛡 Стойка", 1095, 800, 190, 110),     # [5] defensive stance
         ]
         self.spell_buttons = [
             UIButton("", 1360, 738, 330, 80),
@@ -684,11 +693,15 @@ class ArenaGame:
         self.player_count = 0
         self.human_names = []
         self.player_builds = []
+        self.selected_existing_heroes = []
         self.scores = {}
         self.rematch_mode = False
 
         self.name_index = 0
         self.name_buffer = ""
+        self.pending_saved_hero = None
+        self.saved_heroes_path = os.path.join(os.path.dirname(__file__), "saved_heroes.json")
+        self.saved_heroes = self.load_saved_heroes()
 
         self.setup_index = 0
         self.selected_class = None
@@ -731,9 +744,12 @@ class ArenaGame:
 
         self.winner_name = ""
         self.champion = False
+        self.turn_popup_text = ""
+        self.turn_popup_until = 0
 
         self.boss_mode = False
         self.selected_boss = None
+        self.current_actions_left = 0   # multi-action per turn
         # Boss run progression
         self.difficulty = "normal"        # easy / normal / hard / nightmare
         self.boss_run_level = 0           # bosses killed this run (= player level)
@@ -3265,6 +3281,8 @@ class ArenaGame:
             self.handle_menu_events(events)
         elif self.state == self.NAME_INPUT:
             self.handle_name_events(events)
+        elif self.state == self.HERO_PICK:
+            self.handle_hero_pick_events(events)
         elif self.state == self.CLASS_SELECT:
             self.handle_class_events(events)
         elif self.state == self.MAGIC_SELECT:
@@ -3297,6 +3315,8 @@ class ArenaGame:
             self.render_menu()
         elif self.state == self.NAME_INPUT:
             self.render_name_input()
+        elif self.state == self.HERO_PICK:
+            self.render_hero_pick()
         elif self.state == self.CLASS_SELECT:
             self.render_class_select()
         elif self.state == self.MAGIC_SELECT:
@@ -3334,11 +3354,13 @@ class ArenaGame:
     def start_new_series(self, count):
         self.player_count = count
         self.human_names = [""] * count
+        self.selected_existing_heroes = [None] * count
         self.player_builds = [{"name": "", "class": None, "magic_path": None, "stats": []} for _ in range(count)]
         self.scores = {}
         self.rematch_mode = False
         self.name_index = 0
         self.name_buffer = ""
+        self.pending_saved_hero = None
         self.rebuild_name_key_buttons()
         if self.boss_mode:
             self.selected_boss = None
@@ -3349,6 +3371,19 @@ class ArenaGame:
 
     def handle_name_events(self, events):
         for event in events:
+            for hero_name, button in self.saved_hero_buttons:
+                if button.clicked(event):
+                    self.name_buffer = hero_name
+                    self.pending_saved_hero = self.get_saved_hero(hero_name)
+                    if self.pending_saved_hero:
+                        self.set_state(self.HERO_PICK)
+                    return
+            for hero_name, button in self.saved_hero_delete_buttons:
+                if button.clicked(event):
+                    self.delete_saved_hero(hero_name)
+                    if self.name_buffer.strip().lower() == hero_name.lower():
+                        self.pending_saved_hero = None
+                    return
             if self.name_confirm_button.clicked(event, enabled=bool(self.name_buffer.strip())):
                 self.confirm_name_input()
                 return
@@ -3370,6 +3405,27 @@ class ArenaGame:
                 if button.clicked(event, enabled=len(self.name_buffer) < 12):
                     self.append_name_char(char)
                     return
+
+    def handle_hero_pick_events(self, events):
+        for event in events:
+            if self.hero_pick_use_button.clicked(event, enabled=self.pending_saved_hero is not None):
+                if self.pending_saved_hero:
+                    self.finalize_name_choice(self.pending_saved_hero["name"], self.pending_saved_hero)
+                return
+            if self.hero_pick_new_button.clicked(event):
+                self.finalize_name_choice(self.name_buffer.strip(), None)
+                return
+            if self.hero_pick_delete_button.clicked(event, enabled=self.pending_saved_hero is not None):
+                if self.pending_saved_hero:
+                    deleted_name = self.pending_saved_hero["name"]
+                    self.delete_saved_hero(deleted_name)
+                    self.pending_saved_hero = None
+                    self.name_buffer = deleted_name
+                    self.set_state(self.NAME_INPUT)
+                return
+            if self.hero_pick_back_button.clicked(event):
+                self.set_state(self.NAME_INPUT)
+                return
 
     def append_name_char(self, char):
         if len(self.name_buffer) >= 12:
@@ -3410,17 +3466,109 @@ class ArenaGame:
                 y = start_y + row_index * (key_h + gap)
                 self.name_key_buttons.append((char, UIButton(char.upper(), x, y, key_w, key_h)))
 
-    def confirm_name_input(self):
-        self.human_names[self.name_index] = self.name_buffer.strip()
+    def load_saved_heroes(self):
+        if not os.path.exists(self.saved_heroes_path):
+            return []
+        try:
+            with open(self.saved_heroes_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if isinstance(data, list):
+                cleaned = []
+                for item in data:
+                    if not isinstance(item, dict):
+                        continue
+                    name = str(item.get("name", "")).strip()
+                    cls = item.get("class")
+                    if not name or not cls:
+                        continue
+                    cleaned.append({
+                        "name": name,
+                        "class": cls,
+                        "magic_path": item.get("magic_path"),
+                        "stats": list(item.get("stats", []))[:2],
+                    })
+                return sorted(cleaned, key=lambda hero: hero["name"].lower())
+        except Exception:
+            pass
+        return []
+
+    def save_saved_heroes(self):
+        try:
+            with open(self.saved_heroes_path, "w", encoding="utf-8") as f:
+                json.dump(self.saved_heroes, f, ensure_ascii=False, indent=2)
+        except Exception:
+            pass
+
+    def get_saved_hero(self, name):
+        target = (name or "").strip().lower()
+        for hero in self.saved_heroes:
+            if hero["name"].lower() == target:
+                return dict(hero)
+        return None
+
+    def upsert_saved_hero(self, build):
+        hero_data = {
+            "name": build["name"],
+            "class": build["class"],
+            "magic_path": build.get("magic_path"),
+            "stats": list(build.get("stats", []))[:2],
+        }
+        existing = self.get_saved_hero(hero_data["name"])
+        if existing:
+            self.saved_heroes = [hero for hero in self.saved_heroes if hero["name"].lower() != hero_data["name"].lower()]
+        self.saved_heroes.append(hero_data)
+        self.saved_heroes.sort(key=lambda hero: hero["name"].lower())
+        self.save_saved_heroes()
+
+    def delete_saved_hero(self, name):
+        target = (name or "").strip().lower()
+        self.saved_heroes = [hero for hero in self.saved_heroes if hero["name"].lower() != target]
+        self.save_saved_heroes()
+        for idx, hero in enumerate(self.selected_existing_heroes):
+            if hero and hero.get("name", "").strip().lower() == target:
+                self.selected_existing_heroes[idx] = None
+
+    def finalize_name_choice(self, hero_name, saved_hero=None):
+        self.human_names[self.name_index] = hero_name.strip()
+        self.selected_existing_heroes[self.name_index] = dict(saved_hero) if saved_hero else None
+        self.pending_saved_hero = None
         if self.name_index < self.player_count - 1:
             self.name_index += 1
             self.name_buffer = self.human_names[self.name_index]
+            self.set_state(self.NAME_INPUT)
             return
 
         self.scores = {name: 0 for name in self.human_names}
         if self.player_count == 1:
             self.scores["AI"] = 0
         self.start_setup_flow(allow_back_to_names=True)
+
+    def move_to_next_setup_slot(self):
+        while self.setup_index < self.player_count and self.player_builds[self.setup_index].get("locked"):
+            self.setup_index += 1
+        if self.setup_index >= self.player_count:
+            self.selected_arena = None
+            self.set_state(self.ARENA_SELECT)
+            return
+        self.load_setup_state(self.setup_index)
+        self.set_state(self.CLASS_SELECT)
+
+    def get_previous_editable_setup_index(self, index):
+        idx = index - 1
+        while idx >= 0:
+            if not self.player_builds[idx].get("locked"):
+                return idx
+            idx -= 1
+        return None
+
+    def confirm_name_input(self):
+        entered_name = self.name_buffer.strip()
+        saved_hero = self.get_saved_hero(entered_name)
+        if saved_hero:
+            self.pending_saved_hero = saved_hero
+            self.set_state(self.HERO_PICK)
+            return
+        self.finalize_name_choice(entered_name)
 
     def back_from_name_input(self):
         if self.name_index > 0:
@@ -3431,13 +3579,25 @@ class ArenaGame:
 
     def start_setup_flow(self, allow_back_to_names):
         self.allow_back_to_names = allow_back_to_names
-        self.player_builds = [{"name": name, "class": None, "magic_path": None, "stats": []} for name in self.human_names]
+        self.player_builds = []
+        for idx, name in enumerate(self.human_names):
+            saved_hero = self.selected_existing_heroes[idx] if idx < len(self.selected_existing_heroes) else None
+            if saved_hero:
+                self.player_builds.append({
+                    "name": saved_hero["name"],
+                    "class": saved_hero["class"],
+                    "magic_path": saved_hero.get("magic_path"),
+                    "stats": list(saved_hero.get("stats", []))[:2],
+                    "locked": True,
+                })
+            else:
+                self.player_builds.append({"name": name, "class": None, "magic_path": None, "stats": [], "locked": False})
         self.setup_index = 0
         self.selected_class = None
         self.selected_group = None
         self.selected_magic_path = None
         self.selected_stats = []
-        self.set_state(self.CLASS_SELECT)
+        self.move_to_next_setup_slot()
 
     def load_setup_state(self, index):
         build = self.player_builds[index]
@@ -3538,8 +3698,9 @@ class ArenaGame:
         return []
 
     def back_from_class_select(self):
-        if self.setup_index > 0:
-            self.setup_index -= 1
+        prev_index = self.get_previous_editable_setup_index(self.setup_index)
+        if prev_index is not None:
+            self.setup_index = prev_index
             self.load_setup_state(self.setup_index)
             self.set_state(self.STAT_SELECT)
         elif self.allow_back_to_names:
@@ -3629,9 +3790,15 @@ class ArenaGame:
                 return
 
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                self.setup_index = self.player_count - 1
-                self.load_setup_state(self.setup_index)
-                self.set_state(self.STAT_SELECT)
+                last_editable = self.get_previous_editable_setup_index(self.player_count)
+                if last_editable is not None:
+                    self.setup_index = last_editable
+                    self.load_setup_state(self.setup_index)
+                    self.set_state(self.STAT_SELECT)
+                else:
+                    self.name_index = self.player_count - 1
+                    self.name_buffer = self.human_names[self.name_index]
+                    self.set_state(self.NAME_INPUT)
                 return
 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -3658,10 +3825,15 @@ class ArenaGame:
                 return
 
             if self.arena_back_button.clicked(event):
-                # Go back to last player's stat select
-                self.setup_index = self.player_count - 1
-                self.load_setup_state(self.setup_index)
-                self.set_state(self.STAT_SELECT)
+                last_editable = self.get_previous_editable_setup_index(self.player_count)
+                if last_editable is not None:
+                    self.setup_index = last_editable
+                    self.load_setup_state(self.setup_index)
+                    self.set_state(self.STAT_SELECT)
+                else:
+                    self.name_index = self.player_count - 1
+                    self.name_buffer = self.human_names[self.name_index]
+                    self.set_state(self.NAME_INPUT)
                 return
 
             if self.arena_confirm_button.clicked(event):
@@ -4049,12 +4221,13 @@ class ArenaGame:
             "class": self.selected_class,
             "magic_path": self.selected_magic_path,
             "stats": list(self.selected_stats),
+            "locked": False,
         }
+        self.upsert_saved_hero(self.player_builds[self.setup_index])
 
         if self.setup_index < self.player_count - 1:
             self.setup_index += 1
-            self.load_setup_state(self.setup_index)
-            self.set_state(self.CLASS_SELECT)
+            self.move_to_next_setup_slot()
             return
 
         # All players configured — go to arena selection
@@ -4063,6 +4236,9 @@ class ArenaGame:
 
     def start_battle(self):
         self.players = [self.build_human_player(build) for build in self.player_builds]
+        # Reset resurrection flag before each fight
+        for p in self.players:
+            p.boss_resurrect_used = False
         if self.boss_mode and self.selected_boss:
             self.players.append(self.create_boss_player(self.selected_boss))
         elif self.player_count == 1:
@@ -5077,8 +5253,8 @@ class ArenaGame:
         intellect = data.get("intellect", 10)
 
         damage = strength
-        dodge = agility * 2
-        crit = luck * 2
+        dodge = min(95, agility * 2)
+        crit = min(100, luck * 2)
 
         return {
             "strength": strength,
@@ -5107,10 +5283,10 @@ class ArenaGame:
                 preview["hp"] += 80
             elif stat == "Ловкий":
                 preview["agility"] += 10
-                preview["dodge"] += 20
+                preview["dodge"] = min(95, preview["dodge"] + 20)
             elif stat == "Удачливый":
                 preview["luck"] += 10
-                preview["crit"] += 20
+                preview["crit"] = min(100, preview["crit"] + 20)
             elif stat == "Мудрый":
                 preview["wisdom"] += 10
                 preview["insight"] = min(100, preview["wisdom"] * 2)
@@ -5119,6 +5295,14 @@ class ArenaGame:
                 preview["intellect"] += 10
                 preview["magic_damage"] += 10
         return preview
+
+    def clamp_player_percent_stats(self, player):
+        player.dodge = min(95, max(0, int(player.dodge)))
+        player.crit = min(100, max(0, int(player.crit)))
+
+    def show_turn_popup(self, player):
+        self.turn_popup_text = f"Ходит: {player.name}"
+        self.turn_popup_until = pygame.time.get_ticks() + 2000
 
     def get_insight_chance(self, player):
         return max(0, min(100, player.wisdom * 2))
@@ -5229,7 +5413,7 @@ class ArenaGame:
         return True
 
     def try_spell_dodge(self, caster, target, messages, spell_name):
-        dodge_chance = max(0, target.dodge + target.temp_dodge)
+        dodge_chance = min(95, max(0, target.dodge + target.temp_dodge))
         if random.randint(1, 100) <= dodge_chance:
             messages.append(self.make_log_entry(f"✨ {target.name} уклоняется от заклинания {spell_name} от {caster.name}!"))
             return True
@@ -5341,7 +5525,7 @@ class ArenaGame:
         self.close_form_menu()
         if messages:
             self.log.extend(messages)
-        self.finish_action_turn(current)
+        self.finish_action_turn(current, full_turn=True)
         return True
 
     def get_spells_for_player(self, player, tier="normal"):
@@ -5386,6 +5570,55 @@ class ArenaGame:
                 "desc": "оглушает цель на 1 ход",
                 "negative": True,
             },
+            # ── New loot items ────────────────────────────────────────────
+            {
+                "id": "strength_elixir",
+                "name": "Эликсир силы",
+                "desc": "+10 силы, +5 урона навсегда",
+                "negative": False,
+            },
+            {
+                "id": "stamina_draught",
+                "name": "Настой выносливости",
+                "desc": "+50 HP сейчас, +8 макс. HP навсегда",
+                "negative": False,
+            },
+            {
+                "id": "berserker_tonic",
+                "name": "Тоник берсерка",
+                "desc": "+15 урона навсегда, +10% крита",
+                "negative": False,
+            },
+            {
+                "id": "swift_powder",
+                "name": "Порошок быстроты",
+                "desc": "+12 ловкости, +10% уклонения навсегда",
+                "negative": False,
+            },
+            {
+                "id": "antidote",
+                "name": "Противоядие",
+                "desc": "снимает кровотечение и горение",
+                "negative": False,
+            },
+            {
+                "id": "smoke_bomb",
+                "name": "Дымовая бомба",
+                "desc": "оглушает цель на 2 хода",
+                "negative": True,
+            },
+            {
+                "id": "battle_bread",
+                "name": "Боевой хлеб",
+                "desc": "+40 HP + снимает оглушение",
+                "negative": False,
+            },
+            {
+                "id": "void_crystal",
+                "name": "Кристалл пустоты",
+                "desc": "-30 HP, -15% крита цели навсегда",
+                "negative": True,
+            },
         ]
 
     def roll_loot_items(self, count=1):
@@ -5409,13 +5642,23 @@ class ArenaGame:
             return 80 if missing_hp >= player.max_hp * 0.35 else 12
         if item_id == "heal_potion":
             return 60 if missing_hp >= 25 else 15
-        if item_id == "luck_amulet":
+        if item_id == "stamina_draught":
+            return 55 if missing_hp >= 20 else 20
+        if item_id == "battle_bread":
+            return 50 if missing_hp >= 30 else 18
+        if item_id == "antidote":
+            return 70 if (player.bleeding > 0 or player.burning > 0) else 5
+        if item_id in ("luck_amulet", "berserker_tonic"):
             return 32
+        if item_id == "strength_elixir":
+            return 40
+        if item_id == "swift_powder":
+            return 30
         if item_id == "poison_potion":
             return 28
-        if item_id == "cursed_amulet":
+        if item_id in ("cursed_amulet", "void_crystal"):
             return 24
-        if item_id == "sleep_powder":
+        if item_id in ("sleep_powder", "smoke_bomb"):
             return 22
         return 10
 
@@ -5469,6 +5712,61 @@ class ArenaGame:
             else:
                 blocked_name = target.name if target != player else player.name
                 messages.append(self.make_log_entry(f"🎒 {item_name} не действует на {blocked_name}: эффект поглощён защитой.", category="warning"))
+        # ── New items ─────────────────────────────────────────────────────
+        elif item_id == "strength_elixir":
+            player.strength += 10
+            player.damage = max(player.damage, player.damage + 5)
+            player.calc()
+            messages.append(self.make_log_entry(f"🎒 {player.name} выпивает {item_name}: сила +10, урон +5 навсегда.", category="active"))
+        elif item_id == "stamina_draught":
+            player.stamina += 8
+            old_max = player.max_hp
+            player.calc()
+            player.hp = min(player.max_hp, player.hp + 50 + (player.max_hp - old_max))
+            messages.append(self.make_log_entry(f"🎒 {player.name} пьёт {item_name}: +50 HP, макс. HP +{player.max_hp - old_max} навсегда.", category="active"))
+        elif item_id == "berserker_tonic":
+            player.damage += 15
+            player.crit = min(100, player.crit + 10)
+            messages.append(self.make_log_entry(f"🎒 {player.name} пьёт {item_name}: урон +15, крит +10% навсегда.", category="active"))
+        elif item_id == "swift_powder":
+            player.agility += 12
+            player.dodge = min(95, player.dodge + 10)
+            messages.append(self.make_log_entry(f"🎒 {player.name} вдыхает {item_name}: ловкость +12, уклонение +10% навсегда.", category="active"))
+        elif item_id == "antidote":
+            removed = []
+            if player.bleeding > 0:
+                player.bleeding = 0
+                player.bleed_damage = 0
+                removed.append("кровотечение")
+            if player.burning > 0:
+                player.burning = 0
+                player.burn_damage = 0
+                removed.append("горение")
+            effect_str = " и ".join(removed) if removed else "активных DoT-эффектов​ нет"
+            messages.append(self.make_log_entry(f"🎒 {player.name} применяет {item_name}: снято {effect_str}.", category="active"))
+        elif item_id == "smoke_bomb":
+            if self.apply_stun(target, 2):
+                if target == player:
+                    messages.append(self.make_log_entry(f"🎒 {player.name} попадает в дым своей бомбы: оглушен на 2 хода.", category="warning"))
+                else:
+                    messages.append(self.make_log_entry(f"🎒 {player.name} бросает {item_name} в {target.name}: оглушён на 2 хода!", category="active"))
+            else:
+                messages.append(self.make_log_entry(f"🎒 {item_name} не прошёл сквозь защиту {target.name}.", category="warning"))
+        elif item_id == "battle_bread":
+            heal_val = min(40, max(0, player.max_hp - player.hp))
+            player.hp = min(player.max_hp, player.hp + 40)
+            if player.stunned > 0:
+                player.stunned = 0
+                messages.append(self.make_log_entry(f"🎒 {player.name} съедает {item_name}: +{heal_val} HP, оглушение снято.", category="active"))
+            else:
+                messages.append(self.make_log_entry(f"🎒 {player.name} съедает {item_name}: +{heal_val} HP.", category="active"))
+        elif item_id == "void_crystal":
+            actual_dmg = self.apply_damage(target, 30)
+            target.crit = max(0, target.crit - 15)
+            if target == player:
+                messages.append(self.make_log_entry(f"🎒 {player.name} разбивает {item_name}: -{actual_dmg} HP, крит -15% навсегда.", category="warning"))
+            else:
+                messages.append(self.make_log_entry(f"🎒 {player.name} кидает кристалл в {target.name}: -{actual_dmg} HP, крит -15%.", category="active"))  
 
         return messages, actual_target
 
@@ -5495,7 +5793,7 @@ class ArenaGame:
         self.hit_target = actual_target
         self.hit_timer = 10 if actual_target else 0
         self.close_loot_choice()
-        self.finish_action_turn(player)
+        self.finish_action_turn(player, full_turn=True)
         return True
 
     def apply_burning(self, target, burn_damage, turns=2):
@@ -5512,6 +5810,11 @@ class ArenaGame:
         return True
 
     def decay_turn_effects(self, player):
+        # Защитная стойка
+        if getattr(player, 'defense_stance_turns', 0) > 0:
+            player.defense_stance_turns -= 1
+            if player.defense_stance_turns == 0:
+                self.append_log(f"🛡 Защитная стойка {player.name} снята.", category="passive")
         if player.essence_locked_turns > 0:
             player.essence_locked_turns -= 1
         if player.fire_wall_turns > 0:
@@ -6381,6 +6684,9 @@ class ArenaGame:
                 self.current_turn = self.next_alive_index(self.current_turn)
                 continue
 
+            # Reset multi-action counter for human players
+            self.current_actions_left = 2 if not current.is_ai else 1
+
             self.tick_personal_cooldown(current, "spell_cooldown", "spell_cooldown_fresh")
             self.tick_personal_cooldown(current, "special_cooldown", "special_cooldown_fresh")
             if self.is_orc(current) and current.lycan_cooldown > 0 and not self.is_beast_form_active(current):
@@ -6473,6 +6779,8 @@ class ArenaGame:
                 self.append_log(f"🐾 {current.name} сражается в форме {form_name}. Осталось своих ходов: {current.lycan_turns}.", category="passive")
                 current.lycan_turns = max(0, current.lycan_turns - 1)
 
+            self.clamp_player_percent_stats(current)
+            self.show_turn_popup(current)
             self.ai_action_due = pygame.time.get_ticks() + 700
             return
 
@@ -6560,6 +6868,14 @@ class ArenaGame:
         defender_dodge_backup = defender.dodge
         defender_temp_dodge_backup = defender.temp_dodge
         ignore_dodge = False
+
+        # Защитная стойка — уменьшает входящий урон на 35%
+        if getattr(defender, 'defense_stance_turns', 0) > 0:
+            damage_scale = damage_scale * 0.65
+            messages.append(self.make_log_entry(
+                f"🛡 {defender.name} в защитной стойке — урон снижен на 35%!",
+                category="passive"
+            ))
 
         if attacker.role == "Эльф" and not self.is_passive_blocked(attacker) and random.randint(1, 100) <= 60:
             ignore_dodge = True
@@ -7159,13 +7475,51 @@ class ArenaGame:
         self.hit_timer = 10 if actual_target else 0
         return messages, False
 
-    def finish_action_turn(self, player):
+    def finish_action_turn(self, player, full_turn=False):
         alive_before = {p for p in self.players if p.hp > 0}
         self.normalize_health()
+
+        # Воскрешение в босс-режиме (один раз за бой)
+        if getattr(self, 'boss_mode', False):
+            for p in self.players:
+                if p.hp <= 0 and not getattr(p, 'is_boss', False) and not getattr(p, 'boss_resurrect_used', False):
+                    p.boss_resurrect_used = True
+                    revival_hp = max(1, int(p.max_hp * 0.25))
+                    p.hp = revival_hp
+                    self.append_log(
+                        f"✨ {p.name} воскресает с {revival_hp} HP! Следующее воскрешение недоступно.",
+                        category="passive"
+                    )
+
         if hasattr(self, "sounds"):
             for p in self.players:
                 if p.hp <= 0 and p in alive_before:
                     self.sounds.on_death()
+
+        # Если после действия живых противников не осталось, сразу завершаем бой,
+        # а не оставляем игрока на дополнительном действии без доступной цели.
+        if getattr(self, 'boss_mode', False):
+            if getattr(player, 'is_boss', False):
+                alive_enemies = [p for p in self.players if p.hp > 0 and not getattr(p, 'is_boss', False)]
+            else:
+                alive_enemies = [p for p in self.players if p.hp > 0 and getattr(p, 'is_boss', False)]
+        else:
+            alive_enemies = [p for p in self.players if p.hp > 0 and p is not player]
+
+        if not alive_enemies:
+            self.prepare_current_turn()
+            return
+
+        # Мультиэкшен: первые действия не завершают ход (только для людей)
+        if not full_turn and not player.is_ai and self.current_actions_left > 1:
+            self.current_actions_left -= 1
+            self.append_log(
+                f"⚡ {player.name} может действовать ещё раз! ({self.current_actions_left} действие осталось)",
+                category="arena"
+            )
+            self.selected_target = None  # сбрасываем цель перед следующим действием
+            return
+
         if self.bonus_turn_player is player:
             self.advance_turn()
             return
@@ -7355,10 +7709,8 @@ class ArenaGame:
 
                 for player, rect in self.get_target_rects():
                     if rect.collidepoint(event.pos) and player != current and player.hp > 0:
-                        # Boss mode: human players can only target the boss
-                        if getattr(self, 'boss_mode', False) and not getattr(current, 'is_boss', False):
-                            if not getattr(player, 'is_boss', False):
-                                continue  # skip non-boss targets
+                        # Boss mode: attack buttons auto-target boss via perform_player_action
+                        # But manual clicks on allies are allowed (for heals/buffs)
                         self.selected_target = player
                         return
 
@@ -7413,16 +7765,33 @@ class ArenaGame:
                     else:
                         self.toggle_spell_menu()
                     return
+                # [5] Защитная стойка (нельзя в boss-режиме для босса)
+                stance_enabled = not spells_only and not self.loot_choice_open and not self.form_menu_open and not getattr(current, 'is_boss', False)
+                if self.battle_buttons[5].clicked(event, enabled=stance_enabled):
+                    self.reset_spell_state()
+                    self.close_form_menu()
+                    self.perform_player_action("stance")
+                    return
 
     def perform_player_action(self, action_name):
         player = self.players[self.current_turn]
 
-        if action_name in {"attack", "cautious"} and (self.selected_target is None or self.selected_target.hp <= 0):
-            self.append_log("Сначала выберите цель", category="warning")
-            return
-        if action_name == "special" and player.role not in ("Боевой маг", "Шаман") and (self.selected_target is None or self.selected_target.hp <= 0):
-            self.append_log("Сначала выберите цель", category="warning")
-            return
+        # Авто-таргет: если нет цели и у врага только 1 вариант — выбрать его авто
+        if action_name in {"attack", "cautious", "special"} and (
+            self.selected_target is None or self.selected_target.hp <= 0
+        ):
+            # Build list of valid enemy targets
+            if getattr(self, 'boss_mode', False) and not getattr(player, 'is_boss', False):
+                valid_enemies = [p for p in self.players if p.hp > 0 and getattr(p, 'is_boss', False)]
+            else:
+                valid_enemies = [p for p in self.players if p.hp > 0 and p is not player]
+            if len(valid_enemies) == 1:
+                self.selected_target = valid_enemies[0]
+            elif action_name in {"attack", "cautious"} or (
+                action_name == "special" and player.role not in ("Боевой маг", "Шаман")
+            ):
+                self.append_log("Сначала выберите цель", category="warning")
+                return
 
         if action_name == "attack":
             messages, hit_success = self.execute_attack(player, self.selected_target, True)
@@ -7439,6 +7808,7 @@ class ArenaGame:
             self.hit_timer = 10
             if messages:
                 self.log.extend(messages)
+            self.finish_action_turn(player, full_turn=False)  # 1 экшен
         elif action_name == "cautious":
             messages, hit_success = self.execute_attack(player, self.selected_target, False, True)
             self.append_log(
@@ -7454,6 +7824,7 @@ class ArenaGame:
             self.hit_timer = 10
             if messages:
                 self.log.extend(messages)
+            self.finish_action_turn(player, full_turn=False)  # 1 экшен
         elif action_name == "special":
             messages, hit_success, actual_target = self.perform_special_action(player, self.selected_target)
             if player.special_cooldown > 0 and not messages:
@@ -7484,8 +7855,19 @@ class ArenaGame:
             if waiting_for_choice:
                 self.normalize_health()
                 return
+        elif action_name == "stance":
+            # Защитная стойка: снижение входящего урона на 35% до своего следующего хода
+            player.defense_stance_turns = 2  # действует вплоть до начала следующего хода этого цикла
+            self.append_log(
+                f"🛡 {player.name} занимает защитную стойку! Урон снижен на 35% до следующего хода.",
+                category="passive"
+            )
+            self.finish_action_turn(player, full_turn=True)
+            return
 
-        self.finish_action_turn(player)
+        # Специальные/лут — полный ход
+        if action_name in {"special", "loot"}:
+            self.finish_action_turn(player, full_turn=True)
 
     def perform_boss_special_action(self, boss, target):
         """Execute the boss's unique special ability."""
@@ -7792,6 +8174,7 @@ class ArenaGame:
     def normalize_health(self):
         for player in self.players:
             player.hp = max(0, player.hp)
+            self.clamp_player_percent_stats(player)
 
     def finish_battle(self, winner_name):
         self.winner_name = winner_name
@@ -7835,10 +8218,12 @@ class ArenaGame:
         self.player_count = 0
         self.human_names = []
         self.player_builds = []
+        self.selected_existing_heroes = []
         self.scores = {}
         self.rematch_mode = False
         self.name_index = 0
         self.name_buffer = ""
+        self.pending_saved_hero = None
         self.selected_class = None
         self.selected_group = None
         self.selected_magic_path = None
@@ -8146,8 +8531,10 @@ class ArenaGame:
     def start_boss_continuation_battle(self):
         """Start next boss fight using saved players (no rebuild from builds)."""
         self.selected_boss = self.boss_next_key
-        # Restore saved human players
+        # Restore saved human players and reset resurrection flag for each fight
         self.players = list(self.boss_saved_players)
+        for p in self.players:
+            p.boss_resurrect_used = False
         # Add new boss
         self.players.append(self.create_boss_player(self.selected_boss))
         # Pick random arena
@@ -8344,6 +8731,65 @@ class ArenaGame:
         self.name_clear_button.draw(self.screen, self.font)
         self.name_confirm_button.draw(self.screen, self.font, enabled=bool(self.name_buffer.strip()))
         self.name_back_button.draw(self.screen, self.font)
+
+        # Saved heroes list
+        self.saved_hero_buttons = []
+        self.saved_hero_delete_buttons = []
+        side_panel = pygame.Rect(40, 145, 320, 650)
+        pygame.draw.rect(self.screen, (38, 38, 48), side_panel, border_radius=18)
+        pygame.draw.rect(self.screen, (120, 120, 150), side_panel, 2, border_radius=18)
+        sh_title = self.font.render("Сохранённые герои", True, GOLD)
+        self.screen.blit(sh_title, (68, 170))
+        sh_hint = self.small_font.render("Нажми, чтобы взять. X — удалить.", True, (190, 190, 210))
+        self.screen.blit(sh_hint, (58, 210))
+
+        hero_y = 250
+        for hero in self.saved_heroes[:8]:
+            hero_btn = UIButton(hero["name"], 58, hero_y, 240, 54)
+            del_btn = UIButton("✕", 308, hero_y, 38, 54)
+            hero_btn.draw(self.screen, self.small_font)
+            del_btn.draw(self.screen, self.small_font, accent=((100, 25, 25), (180, 45, 45), WHITE))
+            meta = f"{hero['class']}"
+            if hero.get("magic_path"):
+                meta += f" · {hero['magic_path']}"
+            meta_s = self.small_font.render(meta, True, (180, 180, 195))
+            self.screen.blit(meta_s, (62, hero_y + 58))
+            self.saved_hero_buttons.append((hero["name"], hero_btn))
+            self.saved_hero_delete_buttons.append((hero["name"], del_btn))
+            hero_y += 84
+
+        if not self.saved_heroes:
+            empty_s = self.small_font.render("Пока нет сохранённых героев", True, (130, 130, 145))
+            self.screen.blit(empty_s, (68, 280))
+
+    def render_hero_pick(self):
+        self.screen.fill(DARK)
+        panel = pygame.Rect(470, 160, 980, 620)
+        pygame.draw.rect(self.screen, PANEL, panel, border_radius=24)
+        pygame.draw.rect(self.screen, GOLD, panel, 3, border_radius=24)
+
+        hero = self.pending_saved_hero
+        hero_name = hero["name"] if hero else self.name_buffer.strip()
+        title = self.big_font.render("Этот герой уже существует", True, WHITE)
+        self.screen.blit(title, title.get_rect(centerx=WIDTH // 2, y=215))
+        name_s = self.medium_font.render(hero_name, True, GOLD)
+        self.screen.blit(name_s, name_s.get_rect(centerx=WIDTH // 2, y=305))
+        question = self.font.render("Взять предыдущего героя или создать нового?", True, WHITE)
+        self.screen.blit(question, question.get_rect(centerx=WIDTH // 2, y=375))
+
+        if hero:
+            preview = f"{hero['class']}"
+            if hero.get("magic_path"):
+                preview += f" · {hero['magic_path']}"
+            if hero.get("stats"):
+                preview += f" · {', '.join(hero['stats'])}"
+            preview_s = self.small_font.render(preview, True, (190, 190, 210))
+            self.screen.blit(preview_s, preview_s.get_rect(centerx=WIDTH // 2, y=430))
+
+        self.hero_pick_use_button.draw(self.screen, self.font, enabled=hero is not None)
+        self.hero_pick_new_button.draw(self.screen, self.font)
+        self.hero_pick_delete_button.draw(self.screen, self.font, enabled=hero is not None)
+        self.hero_pick_back_button.draw(self.screen, self.font)
 
     def render_class_select(self):
         self.screen.fill(DARK)
@@ -9250,6 +9696,16 @@ class ArenaGame:
         self.draw_battle_figures()
         self.draw_turn_order_strip()
 
+        if pygame.time.get_ticks() < self.turn_popup_until and self.turn_popup_text:
+            popup_w, popup_h = 520, 74
+            popup_rect = pygame.Rect((WIDTH - popup_w) // 2, 34, popup_w, popup_h)
+            popup_surf = pygame.Surface((popup_w, popup_h), pygame.SRCALPHA)
+            pygame.draw.rect(popup_surf, (15, 15, 25, 210), popup_surf.get_rect(), border_radius=18)
+            pygame.draw.rect(popup_surf, GOLD, popup_surf.get_rect(), 3, border_radius=18)
+            self.screen.blit(popup_surf, popup_rect.topleft)
+            popup_txt = self.medium_font.render(self.turn_popup_text, True, WHITE)
+            self.screen.blit(popup_txt, popup_txt.get_rect(center=popup_rect.center))
+
         self.render_log()
         self.render_battle_descriptions()
 
@@ -9275,7 +9731,15 @@ class ArenaGame:
             if current_player.special_cooldown > 0 and not self.has_essence_lock(current_player):
                 self.battle_buttons[2].text = f"Откат {current_player.special_cooldown}"
             for index, button in enumerate(self.battle_buttons):
-                enabled = (not spells_only or index == 4) and not self.loot_choice_open and not self.form_menu_open if index != 4 else (not self.loot_choice_open)
+                if index == 5:
+                    # Стойка: недоступна в режиме только заклинаний, при луте/форме, и для боссов
+                    enabled = (not spells_only and not self.loot_choice_open
+                               and not self.form_menu_open
+                               and not getattr(current_player, 'is_boss', False))
+                elif index != 4:
+                    enabled = (not spells_only or index == 4) and not self.loot_choice_open and not self.form_menu_open
+                else:
+                    enabled = not self.loot_choice_open
                 if index == 2 and (special_locked or (self.is_orc(current_player) and self.is_beast_form_active(current_player))):
                     enabled = False
                 if index == 4 and spell_locked and not self.spell_menu_open:
@@ -9293,8 +9757,27 @@ class ArenaGame:
                     _path = current_player.magic_path or ""
                     _bc4, _hc4 = self.get_spell_button_colors(_path, "normal")
                     button.draw(self.screen, self.medium_font, enabled=True, accent=(_bc4, _hc4, DARK))
+                elif index == 5:
+                    # Стойка — синяя стальная расцветка
+                    _active_stance = getattr(current_player, 'defense_stance_turns', 0) > 0
+                    stance_accent = ((30, 60, 100), (60, 120, 200), WHITE)
+                    button.draw(self.screen, self.medium_font, enabled=enabled,
+                                active=_active_stance, accent=stance_accent)
                 else:
                     button.draw(self.screen, self.medium_font, enabled=enabled, active=_is_active)
+
+            # ── Счётчик действий (2 экшена за ход) ───────────────────────────
+            acts = self.current_actions_left
+            if acts > 0:
+                ac_col = (80, 220, 80) if acts >= 2 else (220, 200, 60)
+                ac_txt = f"⚡ × {acts}"
+                ac_surf = self.font.render(ac_txt, True, ac_col)
+                ac_rect = ac_surf.get_rect(centerx=self.battle_buttons[0].rect.centerx, y=self.battle_buttons[0].rect.y - 36)
+                # Маленькая подложка
+                bg_r = pygame.Rect(ac_rect.x - 8, ac_rect.y - 4, ac_rect.width + 16, ac_rect.height + 8)
+                pygame.draw.rect(self.screen, (20, 30, 20), bg_r, border_radius=8)
+                pygame.draw.rect(self.screen, ac_col, bg_r, 2, border_radius=8)
+                self.screen.blit(ac_surf, ac_rect)
 
             # ── Путь / Ликантропия под 5-й кнопкой ───────────────────────────
             btn4_rect = self.battle_buttons[4].rect
@@ -9529,22 +10012,20 @@ class ArenaGame:
         descriptions = [
             "Обычная атака по выбранной цели.",
             "Атака с меньшим уроном, но с шансом уклониться.",
-            # x=570 → кнопка "Лут"
             "Попытаться найти предмет.",
-            # x=820 → кнопка "Навык"
             ("Суть скована: активные способности временно недоступны." if self.has_essence_lock(current) else (f"Активная способность на откате: {current.special_cooldown} ход." if current.special_cooldown > 0 else ("В звериной форме классовая активка недоступна." if self.is_orc(current) and self.is_beast_form_active(current) else self.class_data.get(current.role, {}).get("skill", "Спец-удар персонажа.")))),
-            # x=1070 → кнопка "Колдовать"
             ("Суть скована: магия и обращения временно недоступны." if self.has_essence_lock(current) else ("Выбрать звериную форму ликантропии." if self.is_orc(current) and current.lycan_cooldown == 0 and not self.is_beast_form_active(current) else ("Вернуть обычный облик." if self.is_orc(current) and self.is_beast_form_active(current) else (f"Ликантропия на откате: {current.lycan_cooldown} ход." if self.is_orc(current) else (f"Обычная магия на откате: {current.spell_cooldown} ход." if current.spell_cooldown > 0 else f"Открыть заклинания: {_path}."))))),
+            "Защитная стойка завершает ход и снижает входящий урон на 35% до следующего хода.",
         ]
         desc_y = 924
         for i, text in enumerate(descriptions):
-            x = [70, 320, 570, 820, 1070][i]
+            x = [70, 275, 480, 685, 890, 1095][i]
             words = text.split(" ")
             lines = []
             current_line = ""
             for word in words:
                 test = (current_line + " " + word).strip()
-                if self.small_font.size(test)[0] <= 220:
+                if self.small_font.size(test)[0] <= 190:
                     current_line = test
                 else:
                     if current_line:

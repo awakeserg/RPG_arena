@@ -3,8 +3,8 @@ import random
 def attack(a,d,strong=False,cautious=False):
 
     messages = []
-    dodge = d.dodge + d.temp_dodge
-    crit = a.crit
+    dodge = min(95, max(0, d.dodge + d.temp_dodge))
+    crit = min(100, max(0, a.crit))
 
     if strong:
         crit += 10
