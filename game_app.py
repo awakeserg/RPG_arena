@@ -26,6 +26,7 @@ LIGHT_BLUE = (170, 225, 255)
 LIGHT_PINK = (255, 190, 220)
 TURQUOISE = (80, 220, 215)
 BRIGHT_TURQUOISE = (120, 255, 245)
+OCHRE = (204, 119, 34)
 
 
 class UIButton:
@@ -2378,6 +2379,225 @@ class ArenaGame:
         pygame.draw.circle(s,(230,248,255),(c,23),3)
         return s
 
+    def _create_wolf_showcase_art_legacy(self):
+        """Classic procedural wolf art (orc-wolf, greenish fur)."""
+        s = pygame.Surface((220, 280), pygame.SRCALPHA)
+        fur    = (100, 138, 78)
+        fur_dk = (54, 80, 38)
+        fur_lt = (168, 200, 130)
+        eye_c  = (220, 188, 28)
+        nose_c = (36, 30, 26)
+        claw_c = (212, 202, 176)
+        # Body
+        pygame.draw.ellipse(s, fur, (48, 106, 132, 144))
+        pygame.draw.ellipse(s, fur_lt, (70, 128, 80, 92))
+        # Head
+        pygame.draw.circle(s, fur, (110, 66), 42)
+        # Muzzle
+        pygame.draw.ellipse(s, fur_lt, (84, 72, 52, 34))
+        pygame.draw.ellipse(s, nose_c, (101, 80, 18, 11))
+        # Eyes
+        for ex in (90, 130):
+            pygame.draw.circle(s, eye_c, (ex, 57), 9)
+            pygame.draw.circle(s, (24, 20, 16), (ex, 58), 5)
+            pygame.draw.circle(s, (255, 248, 220), (ex - 2, 55), 2)
+        # Pointed ears
+        pygame.draw.polygon(s, fur, [(78, 32), (64, 2), (102, 28)])
+        pygame.draw.polygon(s, fur, [(140, 32), (156, 2), (118, 28)])
+        pygame.draw.polygon(s, (188, 118, 118), [(80, 28), (72, 10), (100, 26)])
+        pygame.draw.polygon(s, (188, 118, 118), [(138, 28), (148, 10), (120, 26)])
+        # Dark fur stripes
+        pygame.draw.line(s, fur_dk, (94, 46), (90, 26), 3)
+        pygame.draw.line(s, fur_dk, (126, 46), (130, 26), 3)
+        # Arms
+        pygame.draw.line(s, fur, (72, 142), (42, 218), 20)
+        pygame.draw.line(s, fur, (148, 142), (178, 214), 20)
+        pygame.draw.line(s, fur_dk, (72, 142), (42, 218), 8)
+        pygame.draw.line(s, fur_dk, (148, 142), (178, 214), 8)
+        # Claws
+        for dx in (-7, 0, 7):
+            pygame.draw.line(s, claw_c, (42 + dx, 218), (38 + dx, 233), 3)
+            pygame.draw.line(s, claw_c, (178 + dx, 214), (174 + dx, 229), 3)
+        # Legs
+        pygame.draw.line(s, fur, (88, 250), (74, 274), 18)
+        pygame.draw.line(s, fur, (134, 250), (148, 274), 18)
+        for dx in (-6, 0, 6):
+            pygame.draw.line(s, claw_c, (74 + dx, 274), (72 + dx, 280), 2)
+        # Tail arc
+        pygame.draw.arc(s, fur, (155, 192, 48, 68), -0.4, 2.4, 16)
+        pygame.draw.arc(s, fur_lt, (162, 200, 30, 44), -0.4, 2.4, 7)
+        return s
+
+    def _create_wolf_showcase_art(self):
+        """Enhanced procedural wolf art with more detail."""
+        s = pygame.Surface((220, 300), pygame.SRCALPHA)
+        fur    = (98, 136, 76)
+        fur_dk = (52, 78, 36)
+        fur_lt = (172, 204, 134)
+        eye_c  = (224, 192, 32)
+        nose_c = (34, 28, 24)
+        claw_c = (216, 206, 180)
+        tooth_c = (240, 234, 210)
+        # Body with more detail
+        pygame.draw.ellipse(s, fur, (46, 106, 136, 154))
+        pygame.draw.ellipse(s, fur_lt, (68, 132, 84, 96))
+        pygame.draw.ellipse(s, fur_dk, (50, 108, 136, 154), 3)
+        # Head
+        pygame.draw.circle(s, fur, (110, 66), 44)
+        pygame.draw.circle(s, fur_dk, (110, 66), 44, 2)
+        # Muzzle with shading
+        pygame.draw.ellipse(s, fur_lt, (82, 70, 56, 38))
+        pygame.draw.ellipse(s, fur_dk, (82, 70, 56, 38), 2)
+        pygame.draw.ellipse(s, nose_c, (100, 80, 20, 12))
+        # Nostrils
+        pygame.draw.circle(s, (20, 16, 14), (106, 85), 3)
+        pygame.draw.circle(s, (20, 16, 14), (114, 85), 3)
+        # Fangs
+        pygame.draw.polygon(s, tooth_c, [(99, 92), (103, 106), (106, 92)])
+        pygame.draw.polygon(s, tooth_c, [(121, 92), (118, 106), (114, 92)])
+        # Eyes with glow
+        for ex in (89, 131):
+            pygame.draw.circle(s, (42, 32, 14), (ex, 57), 11)
+            pygame.draw.circle(s, eye_c, (ex, 57), 9)
+            pygame.draw.circle(s, (24, 20, 16), (ex, 58), 5)
+            pygame.draw.circle(s, (255, 250, 230), (ex - 2, 55), 2)
+        # Pointed ears with inner detail
+        pygame.draw.polygon(s, fur, [(76, 30), (62, -2), (104, 26)])
+        pygame.draw.polygon(s, fur, [(142, 30), (158, -2), (116, 26)])
+        pygame.draw.polygon(s, (188, 116, 116), [(79, 27), (70, 8), (102, 24)])
+        pygame.draw.polygon(s, (188, 116, 116), [(139, 27), (149, 8), (118, 24)])
+        # Forehead fur stripes
+        for ox in ((-18, -8), (-6, 2), (6, 16)):
+            pygame.draw.line(s, fur_dk, (110 + ox[0], 38), (110 + ox[1], 22), 2)
+        # Muscular arms
+        pygame.draw.line(s, fur, (70, 144), (40, 222), 22)
+        pygame.draw.line(s, fur, (150, 144), (180, 218), 22)
+        pygame.draw.line(s, fur_dk, (70, 144), (40, 222), 10)
+        pygame.draw.line(s, fur_dk, (150, 144), (180, 218), 10)
+        pygame.draw.ellipse(s, fur_lt, (50, 148, 24, 40))
+        pygame.draw.ellipse(s, fur_lt, (148, 148, 24, 40))
+        # Longer claws
+        for dx in (-8, 0, 8, 16):
+            pygame.draw.line(s, claw_c, (40 + dx, 222), (36 + dx, 240), 4)
+            pygame.draw.line(s, claw_c, (180 + dx - 8, 218), (177 + dx - 8, 236), 4)
+        # Legs with knee
+        pygame.draw.line(s, fur, (86, 254), (72, 280), 20)
+        pygame.draw.line(s, fur, (136, 254), (150, 280), 20)
+        pygame.draw.line(s, fur_dk, (86, 254), (72, 280), 8)
+        pygame.draw.line(s, fur_dk, (136, 254), (150, 280), 8)
+        for dx in (-7, 0, 7):
+            pygame.draw.line(s, claw_c, (72 + dx, 280), (70 + dx, 296), 3)
+        # Tail (longer, bushier)
+        pygame.draw.arc(s, fur, (150, 190, 56, 80), -0.5, 2.6, 20)
+        pygame.draw.arc(s, fur_lt, (158, 198, 38, 56), -0.5, 2.6, 10)
+        pygame.draw.arc(s, (240, 236, 218), (164, 205, 22, 32), -0.5, 2.6, 5)
+        return s
+
+    def _create_bear_showcase_art_legacy(self):
+        """Classic procedural bear art (dark brown, massive build)."""
+        s = pygame.Surface((220, 280), pygame.SRCALPHA)
+        fur    = (96, 54, 24)
+        fur_dk = (54, 28, 10)
+        fur_lt = (170, 122, 78)
+        eye_c  = (38, 28, 22)
+        eye_hi = (208, 168, 96)
+        nose_c = (30, 22, 18)
+        claw_c = (212, 204, 178)
+        # Large body
+        pygame.draw.ellipse(s, fur, (30, 106, 162, 156))
+        pygame.draw.ellipse(s, fur_lt, (56, 134, 108, 106))
+        # Big round head
+        pygame.draw.circle(s, fur, (112, 66), 50)
+        pygame.draw.circle(s, fur_lt, (112, 76), 30)
+        # Nose
+        pygame.draw.ellipse(s, nose_c, (100, 80, 26, 16))
+        pygame.draw.ellipse(s, fur_dk, (102, 82, 22, 12))
+        # Small deep-set eyes
+        for ex in (92, 132):
+            pygame.draw.circle(s, fur_dk, (ex, 57), 8)
+            pygame.draw.circle(s, eye_c, (ex, 58), 5)
+            pygame.draw.circle(s, eye_hi, (ex + 1, 56), 2)
+        # Small round ears
+        pygame.draw.circle(s, fur, (84, 23), 17)
+        pygame.draw.circle(s, fur, (136, 23), 17)
+        pygame.draw.circle(s, fur_dk, (84, 23), 10)
+        pygame.draw.circle(s, fur_dk, (136, 23), 10)
+        # Head shading
+        pygame.draw.arc(s, fur_dk, (68, 28, 88, 54), 0, 3.14, 5)
+        # Thick arms
+        pygame.draw.line(s, fur, (60, 150), (24, 230), 30)
+        pygame.draw.line(s, fur, (160, 150), (196, 228), 30)
+        pygame.draw.line(s, fur_dk, (60, 150), (24, 230), 12)
+        pygame.draw.line(s, fur_dk, (160, 150), (196, 228), 12)
+        # Bear claws (large)
+        for dx in (-9, -3, 3, 9):
+            pygame.draw.line(s, claw_c, (24 + dx, 230), (20 + dx, 248), 5)
+            pygame.draw.line(s, claw_c, (196 + dx - 2, 228), (193 + dx - 2, 246), 5)
+        # Legs
+        pygame.draw.line(s, fur, (86, 258), (70, 278), 28)
+        pygame.draw.line(s, fur, (138, 258), (154, 278), 28)
+        pygame.draw.line(s, fur_dk, (86, 258), (70, 278), 12)
+        pygame.draw.line(s, fur_dk, (138, 258), (154, 278), 12)
+        return s
+
+    def _create_bear_showcase_art(self):
+        """Enhanced procedural bear art with more detail and shading."""
+        s = pygame.Surface((220, 300), pygame.SRCALPHA)
+        fur    = (92, 50, 20)
+        fur_dk = (50, 24, 8)
+        fur_lt = (172, 124, 80)
+        eye_c  = (36, 26, 20)
+        eye_hi = (210, 172, 100)
+        nose_c = (28, 20, 16)
+        claw_c = (216, 208, 182)
+        # Body with detail
+        pygame.draw.ellipse(s, fur, (26, 106, 170, 164))
+        pygame.draw.ellipse(s, fur_lt, (52, 136, 116, 112))
+        pygame.draw.ellipse(s, fur_dk, (26, 106, 170, 164), 4)
+        # Big round head
+        pygame.draw.circle(s, fur, (112, 66), 52)
+        pygame.draw.circle(s, fur_dk, (112, 66), 52, 3)
+        pygame.draw.circle(s, fur_lt, (112, 78), 32)
+        # Detailed nose
+        pygame.draw.ellipse(s, nose_c, (98, 80, 28, 18))
+        pygame.draw.ellipse(s, fur_dk, (100, 82, 24, 14))
+        pygame.draw.line(s, nose_c, (112, 88), (112, 96), 3)  # philtrum
+        pygame.draw.ellipse(s, nose_c, (100, 92, 10, 7))
+        pygame.draw.ellipse(s, nose_c, (112, 92, 10, 7))
+        # Small deep-set eyes with glow
+        for ex in (90, 134):
+            pygame.draw.circle(s, fur_dk, (ex, 57), 9)
+            pygame.draw.circle(s, eye_c, (ex, 58), 6)
+            pygame.draw.circle(s, (80, 60, 40), (ex, 58), 4)
+            pygame.draw.circle(s, eye_hi, (ex + 1, 56), 2)
+        # Small round ears with inner color
+        for ex2 in (82, 138):
+            pygame.draw.circle(s, fur, (ex2, 21), 18)
+            pygame.draw.circle(s, fur_dk, (ex2, 21), 12)
+            pygame.draw.circle(s, (150, 80, 60), (ex2, 21), 7)
+        # Head fur patterns
+        pygame.draw.arc(s, fur_dk, (64, 26, 96, 58), 0, 3.14, 6)
+        pygame.draw.ellipse(s, fur_dk, (80, 38, 64, 22), 2)
+        # Very thick arms
+        pygame.draw.line(s, fur, (58, 152), (20, 234), 34)
+        pygame.draw.line(s, fur, (162, 152), (200, 232), 34)
+        pygame.draw.line(s, fur_dk, (58, 152), (20, 234), 14)
+        pygame.draw.line(s, fur_dk, (162, 152), (200, 232), 14)
+        pygame.draw.ellipse(s, fur_lt, (42, 158, 28, 50))
+        pygame.draw.ellipse(s, fur_lt, (152, 158, 28, 50))
+        # Big bear claws
+        for dx in (-10, -4, 2, 8):
+            pygame.draw.line(s, claw_c, (20 + dx, 234), (16 + dx, 254), 6)
+            pygame.draw.line(s, claw_c, (200 + dx - 4, 232), (197 + dx - 4, 252), 6)
+        # Thick legs
+        pygame.draw.line(s, fur, (84, 262), (66, 284), 30)
+        pygame.draw.line(s, fur, (140, 262), (158, 284), 30)
+        pygame.draw.line(s, fur_dk, (84, 262), (66, 284), 12)
+        pygame.draw.line(s, fur_dk, (140, 262), (158, 284), 12)
+        for dx in (-8, 0, 8):
+            pygame.draw.line(s, claw_c, (66 + dx, 284), (63 + dx, 298), 4)
+        return s
+
     def create_subclass_showcase_art(self):
         if self.use_new_art:
             return {
@@ -2391,6 +2611,8 @@ class ArenaGame:
                 "Некромант": self._create_necromancer_showcase_art(),
                 "Мистик": self._create_mystic_showcase_art(),
                 "Шаман": self._create_shaman_showcase_art(),
+                "wolf": self._create_wolf_showcase_art(),
+                "bear": self._create_bear_showcase_art(),
             }
         else:
             return {
@@ -2404,6 +2626,8 @@ class ArenaGame:
                 "Некромант": self._create_necromancer_showcase_art_legacy(),
                 "Мистик": self._create_mystic_showcase_art_legacy(),
                 "Шаман": self._create_shaman_showcase_art_legacy(),
+                "wolf": self._create_wolf_showcase_art_legacy(),
+                "bear": self._create_bear_showcase_art_legacy(),
             }
 
     def _reload_art(self):
@@ -2819,6 +3043,117 @@ class ArenaGame:
             if self.arena_confirm_button.clicked(event):
                 self.start_battle()
                 return
+
+    def get_player_arena_effect_lines(self, player):
+        """Return [(text, color)] describing this specific player's arena bonuses/debuffs."""
+        arena_name = getattr(self, "arena_name", "")
+        if not arena_name:
+            return []
+        role  = player.role
+        path  = player.magic_path or ""
+        arena_key = next((k for n, k in self.arena_data if n == arena_name), None)
+        if not arena_key:
+            return []
+        P = (100, 220, 100)
+        N = (220, 90, 90)
+        G = (140, 140, 160)
+        res = []
+        if arena_key == "colosseum":
+            if role in ("Воин", "Боевой маг"):
+                res.append(("+~30% физ. урона — боец на своей арене", P))
+            elif role in ("Варвар", "Шаман"):
+                res.append(("−10 ловкости, −20% уклонения — тесные трибуны сковывают манёвр", N))
+        elif arena_key == "volcano":
+            if path in ("Путь огня", "Путь земли"):
+                res.append((f"+10 мудрости, +10 интеллекта — {path} питает первозданный огонь", P))
+            if path in ("Путь воды", "Путь воздуха"):
+                res.append(("−10 мудрости — жар вулкана подавляет холодную стихию", N))
+        elif arena_key == "frozen":
+            if path == "Путь воды":
+                res.append(("+10 мудрости, +10 интеллекта — вода родная стихия льда", P))
+            if role == "Некромант":
+                res.append(("+5 мудрости, +5 интеллекта — смерть холодна как лёд", P))
+            if path == "Путь огня":
+                res.append(("−10 мудрости, −10 интеллекта — холод гасит пламя", N))
+        elif arena_key == "forest":
+            if role in ("Эльф", "Орк", "Варвар", "Шаман"):
+                res.append(("+10 ловкости, +10 удачи, +20% уклон/крит — лес родная среда", P))
+            if role == "Мистик":
+                res.append(("+15 мудрости — в лесной тиши слышны духи", P))
+        elif arena_key == "deadlands":
+            if role == "Некромант":
+                res.append(("+5 ко всем характеристикам, +40 HP — мёртвая земля источник силы", P))
+            elif role in ("Шаман", "Мистик"):
+                res.append(("Нет эффектов — равновесие между мирами", G))
+            else:
+                res.append(("−5 ко всем характеристикам, −40 HP — мёртвая земля высасывает жизнь", N))
+        elif arena_key == "mountain":
+            if path in ("Путь земли", "Путь воздуха"):
+                res.append((f"+10 мудрости, +10 удачи, +20% крит — {path} усилен высотой", P))
+            if role in ("Воин", "Варвар"):
+                res.append(("−10 выносливости, −80 HP — разреженный воздух давит", N))
+        elif arena_key == "shadows":
+            if role in ("Ассасин", "Плут") or path in ("Тёмный путь", "Путь непознаваемого"):
+                res.append(("+10 ловкости, +10 интеллекта, +20% уклон — тьма даёт силу", P))
+            if role == "Некромант":
+                res.append(("+5 мудрости — тени послушны воле некроманта", P))
+            if role == "Воин":
+                res.append(("−10 ловкости, −20% уклонения — броня обуза в темноте", N))
+        elif arena_key == "citadel":
+            if path == "Путь воздуха":
+                res.append(("+15 интеллекта, +5 мудрости — небо родная стихия воздуха", P))
+            if role == "Эльф":
+                res.append(("+10 ловкости, +10 мудрости, +20% уклон — эльф расцветает на высоте", P))
+            if role == "Орк":
+                res.append(("−10 мудрости, −10 интеллекта — высота дезориентирует", N))
+            if role == "Варвар":
+                res.append(("−10 силы — тяжёлое тело тянет вниз", N))
+        elif arena_key == "light_forest":
+            if role in ("Эльф", "Мистик", "Шаман"):
+                res.append(("+10 ловкости, +10 мудрости, +20% уклон/крит — природный класс", P))
+            if path == "Путь воздуха":
+                res.append(("+10 интеллекта, +10 удачи, +20% крит — Путь воздуха", P))
+            if role == "Некромант":
+                res.append(("−10 мудрости — свет отвергает тьму", N))
+            if role in ("Ассасин", "Плут"):
+                res.append(("−10 ловкости, −20% уклонения — слишком светло", N))
+        elif arena_key == "beyond":
+            if role in ("Мистик", "Некромант") or path in ("Тёмный путь", "Путь непознаваемого"):
+                res.append(("+15 интеллекта, +10 мудрости — тёмный маг в своей стихии", P))
+            if role in ("Воин", "Варвар"):
+                res.append(("−15 силы, −15 урона — физика бесполезна за пределом", N))
+            elif role == "Орк":
+                res.append(("−10 силы, −40 HP — запределье ослабляет нелюдя", N))
+        elif arena_key == "blood_swamp":
+            if role in ("Некромант", "Шаман"):
+                res.append(("+10 силы, +10 мудрости — болотные духи питают", P))
+            if role == "Варвар":
+                res.append(("+40 HP, +5 урона — мощь кровавых топей", P))
+            if role == "Воин":
+                res.append(("−10 ловкости, −20% уклонения — броня вязнет в болоте", N))
+            if path == "Путь огня":
+                res.append(("−10 интеллекта — сырость гасит пламя", N))
+        elif arena_key == "crystal_caves":
+            if path in ("Путь воды", "Путь земли", "Путь воздуха"):
+                res.append((f"+10 интеллекта, +10 мудрости — {path} усилен кристаллами", P))
+            if role == "Боевой маг":
+                res.append(("+10 интеллекта — кристальная сила", P))
+            if path == "Путь огня":
+                res.append(("−10 мудрости — влажность пещер гасит огонь", N))
+            if role == "Орк":
+                res.append(("−10 силы, −10 урона — узкие проходы сковывают", N))
+        elif arena_key == "ghost_castle":
+            if role == "Некромант":
+                res.append(("+5 ко всем характеристикам, +40 HP — замок мёртвых источник силы", P))
+            if role in ("Ассасин", "Плут"):
+                res.append(("+10 ловкости, +20% уклонения — тени замка помогают", P))
+            if role in ("Варвар", "Воин"):
+                res.append(("−10 силы — духи слабят грубую силу", N))
+            if path == "Путь земли":
+                res.append(("−10 мудрости — камни нематериальны в призрачном замке", N))
+        if not res:
+            res.append(("— нет эффектов от этой арены —", G))
+        return res
 
     def get_arena_bonus_lines(self, arena_name):
         """Returns list of (text, color) for display in arena_select."""
@@ -7194,6 +7529,19 @@ class ArenaGame:
             pts = [(cx, cy - s2), (cx + s2, cy), (cx, cy + s2), (cx - s2, cy)]
             pygame.draw.polygon(s, color, pts, 2)
             pygame.draw.line(s, color, (cx - s3, cy), (cx + s3, cy), 2)
+        elif label == "wolf":
+            # Wolf icon: pointed ears + round head + dot eyes
+            pygame.draw.polygon(s, color, [(cx - s3, cy - s2), (cx - s2, cy - s3 - 2), (cx - s3 + 2, cy - s3)])
+            pygame.draw.polygon(s, color, [(cx + s3, cy - s2), (cx + s2, cy - s3 - 2), (cx + s3 - 2, cy - s3)])
+            pygame.draw.circle(s, color, (cx, cy), s3, 2)
+            pygame.draw.circle(s, color, (cx - 3, cy - 1), 1)
+            pygame.draw.circle(s, color, (cx + 3, cy - 1), 1)
+        elif label == "bear":
+            # Bear icon: round head + small round ears + muzzle
+            pygame.draw.circle(s, color, (cx, cy), s3, 2)
+            pygame.draw.circle(s, color, (cx - s3 + 1, cy - s2 + 3), max(2, s3 // 2), 2)
+            pygame.draw.circle(s, color, (cx + s3 - 1, cy - s2 + 3), max(2, s3 // 2), 2)
+            pygame.draw.ellipse(s, color, (cx - s3 + 3, cy, s3 * 2 - 6, s3), 2)
         else:
             pygame.draw.circle(s, color, (cx, cy), s3 + 1)
 
@@ -7259,6 +7607,30 @@ class ArenaGame:
         _burn_dmg  = f" ({player.burn_damage} урона/ход)"  if player and player.burn_damage  else ""
         _bleed_dmg = f" ({player.bleed_damage} урона/ход)" if player and player.bleed_damage else ""
         _tdodge    = f" (+{player.temp_dodge}% к уклонению)" if player and player.temp_dodge > 0 else ""
+        # Lycan numeric snippets
+        _bear_bonus = ""
+        _wolf_bonus = ""
+        if player:
+            _sv_str = getattr(player, "lycan_saved_strength", 0)
+            _sv_dmg = getattr(player, "lycan_saved_damage", 0)
+            _sv_lck = getattr(player, "lycan_saved_luck", 0)
+            _sv_crt = getattr(player, "lycan_saved_crit", 0)
+            if _sv_str:
+                _bear_bonus = (f" Сила: {_sv_str}→{player.strength} (+{player.strength - _sv_str}),"
+                               f" урон: {_sv_dmg}→{player.damage} (+{player.damage - _sv_dmg}).")
+            if _sv_lck:
+                _wolf_bonus = (f" Удача: {_sv_lck}→{player.luck} (+{player.luck - _sv_lck}),"
+                               f" крит: {_sv_crt}%→{player.crit}% (+{player.crit - _sv_crt}%).")
+        # Arena specific description with numbers
+        _arena_pos_desc = "Один или несколько параметров повышены на время боя."
+        _arena_neg_desc = "Один или несколько параметров снижены на время боя."
+        if player is not None and label in ("арена +", "арена -"):
+            arena_lines = self.get_player_arena_effect_lines(player)
+            if arena_lines:
+                _arena_all_desc = "  ·  ".join(l for l, _ in arena_lines)
+                _arena_pos_desc = _arena_all_desc
+                _arena_neg_desc = _arena_all_desc
+        _lycan_turns = f"Осталось {player.lycan_turns} своих ходов." if player and getattr(player, "lycan_turns", 0) else ""
         data = {
             "огонь":         ("Горение",           f"Персонаж охвачен огнём{_burn_dmg} — в начале каждого своего хода получает урон. Снимается по истечении ходов."),
             "огн.стена":     ("Огненная стена",    "Зона горит вокруг персонажа. Все атакующие ближнего боя получают поджог. Истекает через указанное число ходов."),
@@ -7271,15 +7643,17 @@ class ArenaGame:
             "станун":        ("Оглушение",         "Персонаж оглушён — пропускает следующий ход."),
             "нет руки":      ("Рука отрублена",    "Урон от физ. атаки снижен вдвое. Двуручные удары невозможны. Постоянный эффект."),
             "нет ноги":      ("Нога отрублена",    "Уклонение и ловкость значительно снижены навсегда. Постоянный эффект."),
-            "каменная кожа": ("Каменная кожа",     "Входящий физический урон снижен до 50%. Доп. эффекты (кровь, поджог и т.д.) заблокированы. Магия и активка недоступны."),
+            "каменная кожа": ("Каменная кожа",     "Входящий физический урон снижён до 50%. Доп. эффекты (кровь, поджог и т.д.) заблокированы. Магия и активка недоступны."),
             "тень":          ("Теневой покров",    "Шанс уклонения значительно увеличен (+40%). Действует до конца указанного числа ходов."),
             "попут.ветер":   ("Попутный ветер",    "Уклонение повышено на 30%. Действует до конца указанного числа ходов."),
             "зачар.ор.":     ("Зачарованное оружие","Каждый физ. удар дополнительно наносит магический урон стихии. Действует до конца ходов."),
             "транс":         ("Транс",             "Интеллект шамана увеличен на 1.5× на этот ход — заклинания наносят больше урона."),
             "тотем":         ("Тотем зверя",       "В конце хода активируется тотем — усилит атаку или уклонение в зависимости от характеристик."),
             "уклон.":        ("Осторожная позиция", f"После осторожной атаки персонаж занял защитную стойку{_tdodge}. Бонус действует до начала следующего своего хода."),
-            "арена +":       ("Бонус арены",       "Эта арена укрепляет персонажа: один или несколько параметров повышены на время боя."),
-            "арена -":       ("Штраф арены",       "Эта арена ослабляет персонажа: один или несколько параметров снижены на время боя."),
+            "арена +":       ("Бонус арены",       _arena_pos_desc),
+            "арена -":       ("Штраф арены",       _arena_neg_desc),
+            "bear":          ("Форма медведя",     f"Сила и урон удвоены.{_bear_bonus} 25% шанс полностью игнорировать любой удар. Пассивка и активка класса отключены. {_lycan_turns}"),
+            "wolf":          ("Форма волка",       f"Удача и крит удвоены.{_wolf_bonus} 25% шанс получить ещё один ход. Пассивка и активка класса отключены. {_lycan_turns}"),
         }
         title, desc = data.get(label, (label.capitalize(), "Подробная информация об этом эффекте недоступна."))
         return title, desc
@@ -7359,7 +7733,7 @@ class ArenaGame:
         # ── Magic path colour ───────────────────────────────────────────────
         def path_label_and_color(player):
             if self.is_orc(player):
-                return "Оборотень", (120, 200, 70)
+                return "Оборотень", OCHRE
             p = player.magic_path or ""
             return p if p else "—", self.get_magic_path_color(p) if p else (130, 130, 150)
 
@@ -7420,7 +7794,8 @@ class ArenaGame:
             pygame.draw.rect(self.screen, border_col2, card_rect, bw, border_radius=12)
 
             # ── Showcase art ──────────────────────────────────────────────
-            art = self.subclass_showcase_art.get(player.role)
+            _art_key = getattr(player, "lycan_form", "") or player.role
+            art = self.subclass_showcase_art.get(_art_key) or self.subclass_showcase_art.get(player.role)
             if art:
                 try:
                     scaled_art = pygame.transform.smoothscale(art, (ART_W, ART_H))
@@ -7622,8 +7997,24 @@ class ArenaGame:
                 else:
                     button.draw(self.screen, self.medium_font, enabled=enabled, active=_is_active)
 
+            # ── Путь / Ликантропия под 5-й кнопкой ───────────────────────────
+            btn4_rect = self.battle_buttons[4].rect
+            if self.is_orc(current_player):
+                _mb_label = "Ликантропия"
+                _mb_color = OCHRE
+            elif current_player.magic_path:
+                _mb_label = current_player.magic_path
+                _mb_color = self.get_magic_path_color(current_player.magic_path)
+            else:
+                _mb_label = ""
+                _mb_color = GRAY
+            if _mb_label:
+                _mb_surf = self.log_font.render(_mb_label, True, _mb_color)
+                self.screen.blit(_mb_surf, _mb_surf.get_rect(
+                    centerx=btn4_rect.centerx, y=btn4_rect.bottom + 4))
+
             if self.form_menu_open:
-                title_surface = self.font.render("Ликантропия", True, (170, 225, 110))
+                title_surface = self.font.render("Ликантропия", True, OCHRE)
                 self.screen.blit(title_surface, (1408, 702))
                 hovered_form = None
                 options = self.get_orc_form_options(current_player)
@@ -7633,11 +8024,11 @@ class ArenaGame:
                         button.text = option["name"]
                         mouse = pygame.mouse.get_pos()
                         is_disabled = option["id"] == "info"
-                        base_color = (78, 118, 56) if not is_disabled else (82, 82, 82)
-                        hover_color = (110, 160, 82) if not is_disabled else (92, 92, 92)
+                        base_color = (130, 76, 18) if not is_disabled else (82, 82, 82)
+                        hover_color = (176, 108, 32) if not is_disabled else (92, 92, 92)
                         color = hover_color if button.rect.collidepoint(mouse) and not is_disabled else base_color
                         pygame.draw.rect(self.screen, color, button.rect, border_radius=14)
-                        pygame.draw.rect(self.screen, (210, 230, 170), button.rect, 2, border_radius=14)
+                        pygame.draw.rect(self.screen, (230, 180, 70), button.rect, 2, border_radius=14)
                         txt = self.font.render(button.text, True, WHITE)
                         self.screen.blit(txt, txt.get_rect(center=button.rect.center))
                         if button.rect.collidepoint(mouse):
@@ -7871,7 +8262,7 @@ class ArenaGame:
         overlay.fill((0, 0, 0, 150))
         self.screen.blit(overlay, (0, 0))
 
-        popup_w, popup_h = 780, 760
+        popup_w, popup_h = 780, 860
         popup_x = (WIDTH - popup_w) // 2
         popup_y = (HEIGHT - popup_h) // 2
         popup_rect = pygame.Rect(popup_x, popup_y, popup_w, popup_h)
@@ -7911,7 +8302,16 @@ class ArenaGame:
             status_lines.append(f"Эффект: проклятие души ещё {player.soul_curse_turns} ход(а) — урон и интеллект снижены на 25%.")
         if self.is_orc(player) and self.is_beast_form_active(player):
             form_name = "медведя" if player.lycan_form == "bear" else "волка"
-            status_lines.append(f"Эффект: форма {form_name} активна ещё {player.lycan_turns} своих ход(а) — классовые пассивка и активка отключены.")
+            _sv_str = getattr(player, "lycan_saved_strength", 0)
+            _sv_dmg = getattr(player, "lycan_saved_damage", 0)
+            _sv_lck = getattr(player, "lycan_saved_luck", 0)
+            _sv_crt = getattr(player, "lycan_saved_crit", 0)
+            if form_name == "медведя" and _sv_str:
+                status_lines.append(f"Эффект: форма медведя ещё {player.lycan_turns} ход(а) — сила {_sv_str}→{player.strength}, урон {_sv_dmg}→{player.damage}, 25% игнор. урона; пассивка и активка откл.")
+            elif form_name == "волка" and _sv_lck:
+                status_lines.append(f"Эффект: форма волка ещё {player.lycan_turns} ход(а) — удача {_sv_lck}→{player.luck}, крит {_sv_crt}%→{player.crit}%, 25% доп. ход; пассивка и активка откл.")
+            else:
+                status_lines.append(f"Эффект: форма {form_name} активна ещё {player.lycan_turns} своих ход(а) — классовые пассивка и активка отключены.")
         if self.is_orc(player) and player.lycan_cooldown > 0 and not self.is_beast_form_active(player):
             status_lines.append(f"Эффект: ликантропия на откате ещё {player.lycan_cooldown} ход(а).")
         if player.spell_cooldown > 0:
@@ -7949,6 +8349,9 @@ class ArenaGame:
             "Текущие эффекты:",
         ]
 
+        # ── Arena bonus section ──────────────────────────────────────────
+        arena_effect_lines = self.get_player_arena_effect_lines(player)
+
         y_text = popup_y + 95
         for line in lines + status_lines:
             if not line:
@@ -7961,6 +8364,26 @@ class ArenaGame:
                 txt = font.render(part, True, line_color)
                 self.screen.blit(txt, (popup_x + 30, y_text))
                 y_text += 28
+
+        # ── Draw arena bonus block at the bottom of content ─────────────
+        if arena_effect_lines and y_text < popup_y + popup_h - 90:
+            y_text += 8
+            pygame.draw.line(self.screen, (90, 90, 120),
+                             (popup_x + 20, y_text), (popup_x + popup_w - 20, y_text), 1)
+            y_text += 8
+            hdr = self.font.render(f"Бонус арены «{getattr(self, 'arena_name', '...')}»:", True, GOLD)
+            self.screen.blit(hdr, (popup_x + 30, y_text))
+            y_text += 32
+            for a_text, a_col in arena_effect_lines:
+                if y_text > popup_y + popup_h - 90:
+                    break
+                wrapped_a = self.wrap_text(a_text, self.small_font, popup_w - 70)
+                for part_a in wrapped_a:
+                    if y_text > popup_y + popup_h - 90:
+                        break
+                    ta = self.small_font.render(part_a, True, a_col)
+                    self.screen.blit(ta, (popup_x + 40, y_text))
+                    y_text += 26
 
         close_rect = pygame.Rect(popup_x + popup_w - 150, popup_y + popup_h - 75, 120, 48)
         pygame.draw.rect(self.screen, RED, close_rect, border_radius=10)
