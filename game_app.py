@@ -80,6 +80,7 @@ class ArenaGame:
     BATTLE = "battle"
     POST_BATTLE = "post_battle"
     BOSS_SELECT = "boss_select"
+    BOSS_LEVELUP = "boss_levelup"
 
     def __init__(self):
         pygame.mixer.pre_init(44100, -16, 2, 512)
@@ -661,6 +662,16 @@ class ArenaGame:
         self.post_restart_button = UIButton("Начать заново", 770, 720, 320, 75)
         self.post_quit_button = UIButton("Закрыть игру", 1180, 720, 300, 75)
 
+        # Difficulty selector buttons (shown on boss select screen)
+        _diff_labels = [("easy", "Легко"), ("normal", "Нормально"), ("hard", "Сложно"), ("nightmare", "Кошмар")]
+        self.boss_difficulty_buttons = {
+            key: UIButton(label, 930 + i * 240, 888, 220, 52)
+            for i, (key, label) in enumerate(_diff_labels)
+        }
+        # Boss level-up screen buttons
+        self.boss_levelup_continue_button = UIButton("Следующий Босс  ▶", 560, 800, 420, 80)
+        self.boss_levelup_menu_button = UIButton("Завершить забег", 1010, 800, 300, 80)
+
         self.pending_post_battle = False
         self.battle_end_button = UIButton("Смотреть итоги боя  ▶", 610, 490, 700, 80)
 
@@ -723,6 +734,15 @@ class ArenaGame:
 
         self.boss_mode = False
         self.selected_boss = None
+        # Boss run progression
+        self.difficulty = "normal"        # easy / normal / hard / nightmare
+        self.boss_run_level = 0           # bosses killed this run (= player level)
+        self.boss_run_tier = 1            # current boss tier (1–4)
+        self.boss_run_defeated = []       # boss keys defeated in current run
+        self.boss_saved_players = []      # player objects saved between boss fights
+        self.boss_next_key = None         # next boss key
+        self.boss_run_victory = False     # True if all bosses cleared
+        self.boss_level_gains = {}        # stat gains for level-up screen
 
     def _create_fallback_icon(self, class_name, size=220):
         surface = pygame.Surface((size, size), pygame.SRCALPHA)
@@ -3255,6 +3275,8 @@ class ArenaGame:
             self.handle_arena_select_events(events)
         elif self.state == self.BOSS_SELECT:
             self.handle_boss_select_events(events)
+        elif self.state == self.BOSS_LEVELUP:
+            self.handle_boss_levelup_events(events)
         elif self.state == self.BATTLE:
             self.handle_battle_events(events)
         elif self.state == self.POST_BATTLE:
@@ -3285,6 +3307,8 @@ class ArenaGame:
             self.render_arena_select()
         elif self.state == self.BOSS_SELECT:
             self.render_boss_select()
+        elif self.state == self.BOSS_LEVELUP:
+            self.render_boss_levelup()
         elif self.state == self.BATTLE:
             self.render_battle()
         elif self.state == self.POST_BATTLE:
@@ -4094,12 +4118,23 @@ class ArenaGame:
         boss.magic_path = ""
         boss.is_boss = True
         boss.boss_key = boss_key
-        boss.strength = bd["strength"]
-        boss.stamina = bd["stamina"]
-        boss.agility = bd["agility"]
-        boss.luck = bd["luck"]
-        boss.wisdom = bd["wisdom"]
-        boss.intellect = bd["intellect"]
+
+        # Scale stats: difficulty × player count × run progression
+        diff_mult = {"easy": 0.60, "normal": 1.0, "hard": 1.55, "nightmare": 2.3}.get(
+            getattr(self, 'difficulty', 'normal'), 1.0
+        )
+        pcount = max(1, getattr(self, 'player_count', 1))
+        player_scale = {1: 1.0, 2: 1.50, 3: 2.0, 4: 2.4}.get(pcount, 1.0)
+        run_level = getattr(self, 'boss_run_level', 0)
+        level_scale = 1.0 + run_level * 0.12   # +12% per boss killed
+        total_mult = diff_mult * player_scale * level_scale
+
+        boss.strength  = max(5, int(bd["strength"]  * total_mult))
+        boss.stamina   = max(8, int(bd["stamina"]   * total_mult))
+        boss.agility   = max(5, int(bd["agility"]   * total_mult))
+        boss.intellect = max(5, int(bd["intellect"] * total_mult))
+        boss.luck      = max(5, int(bd["luck"]      * (total_mult ** 0.7)))
+        boss.wisdom    = max(5, int(bd["wisdom"]    * (total_mult ** 0.7)))
         boss.special_cooldown = 0
         boss.calc()
         return boss
@@ -6327,7 +6362,7 @@ class ArenaGame:
                 alive_boss = [p for p in alive if getattr(p, 'is_boss', False)]
                 alive_humans = [p for p in alive if not getattr(p, 'is_boss', False)]
                 if not alive_boss:
-                    self.finish_battle("Игроки победили!")
+                    self.on_boss_killed()
                     return
                 if not alive_humans:
                     self.finish_battle(alive_boss[0].name)
@@ -7817,6 +7852,14 @@ class ArenaGame:
         self.champion = False
         self.boss_mode = False
         self.selected_boss = None
+        self.difficulty = "normal"
+        self.boss_run_level = 0
+        self.boss_run_tier = 1
+        self.boss_run_defeated = []
+        self.boss_saved_players = []
+        self.boss_next_key = None
+        self.boss_run_victory = False
+        self.boss_level_gains = {}
         self.close_loot_choice()
         self.close_form_menu()
         self.reset_spell_state()
@@ -7987,9 +8030,44 @@ class ArenaGame:
         self.boss_select_back_button.draw(self.screen, self.font)
         self.boss_select_confirm_button.draw(self.screen, self.font, enabled=self.selected_boss is not None)
 
+        # ── Difficulty selector ────────────────────────────────────────────────
+        DIFF_COLORS = {
+            "easy":      (80, 190, 80),
+            "normal":    (200, 180, 60),
+            "hard":      (220, 100, 40),
+            "nightmare": (180, 30, 220),
+        }
+        diff_label_surf = self.small_font.render("Сложность:", True, (200, 200, 200))
+        self.screen.blit(diff_label_surf, (932, 866))
+        for d_key, d_btn in self.boss_difficulty_buttons.items():
+            is_active = (self.difficulty == d_key)
+            dc = DIFF_COLORS[d_key]
+            accent = (
+                (max(0, dc[0]-60), max(0, dc[1]-60), max(0, dc[2]-60)),
+                dc,
+                WHITE,
+            )
+            d_btn.draw(self.screen, self.small_font, active=is_active, accent=accent)
+
+        # Stat scale preview
+        diff_mult = {"easy": 0.60, "normal": 1.0, "hard": 1.55, "nightmare": 2.3}.get(self.difficulty, 1.0)
+        pcount = max(1, self.player_count)
+        player_scale = {1: 1.0, 2: 1.50, 3: 2.0, 4: 2.4}.get(pcount, 1.0)
+        run_level = self.boss_run_level
+        level_scale = 1.0 + run_level * 0.12
+        preview_mult = diff_mult * player_scale * level_scale
+        scale_pct = int(preview_mult * 100)
+        diff_name = {"easy": "Лёгкий", "normal": "Нормальный", "hard": "Сложный", "nightmare": "Кошмар"}[self.difficulty]
+        scale_info = self.small_font.render(
+            f"{diff_name}  ×{preview_mult:.2f}  ({scale_pct}% от базового)  |  Игроков: {self.player_count}  |  Уровень забега: {run_level}",
+            True, DIFF_COLORS.get(self.difficulty, WHITE)
+        )
+        self.screen.blit(scale_info, (930, 950))
+
         # Player count reminder
-        pc_surf = self.small_font.render(f"Игроков: {self.player_count}  |  Режим: Бой с Боссом", True, (180, 80, 180))
-        self.screen.blit(pc_surf, (880, 955))
+        pc_surf = self.small_font.render(f"Режим: Бой с Боссом", True, (180, 80, 180))
+        self.screen.blit(pc_surf, (80, 955))
+
 
     def handle_boss_select_events(self, events):
         for event in events:
@@ -7999,11 +8077,241 @@ class ArenaGame:
             if self.boss_select_confirm_button.clicked(event, enabled=self.selected_boss is not None):
                 self.set_state(self.NAME_INPUT)
                 return
+            # Difficulty buttons
+            for d_key, d_btn in self.boss_difficulty_buttons.items():
+                if d_btn.clicked(event):
+                    self.difficulty = d_key
+                    return
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 for key, card_rect in self.boss_select_buttons:
                     if card_rect.collidepoint(event.pos):
                         self.selected_boss = key
                         return
+
+    # ─────────────────────────── Boss Run Progression ───────────────────────
+
+    def on_boss_killed(self):
+        """Called when the boss dies. Level up players, determine next boss, show levelup screen."""
+        boss_key = getattr(self, 'selected_boss', None) or ''
+        self.boss_run_defeated.append(boss_key)
+        self.boss_run_level += 1
+
+        # Level up all surviving human players
+        survivors = [p for p in self.players if not getattr(p, 'is_boss', False) and p.hp > 0]
+        gains = {"strength": 3, "stamina": 4, "agility": 2, "luck": 1, "wisdom": 2, "intellect": 2}
+        self.boss_level_gains = {}
+        for p in survivors:
+            for stat, val in gains.items():
+                setattr(p, stat, getattr(p, stat) + val)
+            old_max = p.max_hp
+            p.calc()
+            hp_bonus = p.max_hp - old_max
+            # Restore 50% HP + new HP from stamina gain
+            p.hp = min(p.hp + int(p.max_hp * 0.5) + hp_bonus, p.max_hp)
+            self.boss_level_gains[p.name] = dict(gains)
+            self.boss_level_gains[p.name]["hp_bonus"] = p.max_hp
+
+        # Save survivors for next fight
+        self.boss_saved_players = list(survivors)
+
+        # Determine what comes next
+        self._determine_next_boss()
+
+        if hasattr(self, "sounds"):
+            self.sounds.on_victory()
+        self.set_state(self.BOSS_LEVELUP)
+
+    def _determine_next_boss(self):
+        """Pick the next boss key and set boss_run_victory if all bosses cleared."""
+        current_tier = self.boss_run_tier
+        tier_bosses = [k for k, v in self.boss_data.items() if v["tier"] == current_tier]
+        remaining_in_tier = [k for k in tier_bosses if k not in self.boss_run_defeated]
+
+        if remaining_in_tier:
+            self.boss_next_key = random.choice(remaining_in_tier)
+        else:
+            next_tier = current_tier + 1
+            if next_tier > 4:
+                # All tiers cleared!
+                self.boss_next_key = None
+                self.boss_run_victory = True
+            else:
+                self.boss_run_tier = next_tier
+                next_bosses = [k for k, v in self.boss_data.items() if v["tier"] == next_tier]
+                remaining_next = [k for k in next_bosses if k not in self.boss_run_defeated]
+                self.boss_next_key = random.choice(remaining_next) if remaining_next else None
+                if not remaining_next:
+                    self.boss_run_victory = True
+
+    def start_boss_continuation_battle(self):
+        """Start next boss fight using saved players (no rebuild from builds)."""
+        self.selected_boss = self.boss_next_key
+        # Restore saved human players
+        self.players = list(self.boss_saved_players)
+        # Add new boss
+        self.players.append(self.create_boss_player(self.selected_boss))
+        # Pick random arena
+        random.seed()
+        self.arena_name, arena_messages = self.apply_random_arena(self.players)
+        self.players = self.order_players_for_battle(self.players)
+        order_text = " → ".join(p.name for p in self.players)
+        self.current_turn = 0
+        self.bonus_turn_player = None
+        self.selected_target = None
+        self.hit_target = None
+        self.hit_timer = 0
+        self.pending_post_battle = False
+        bd = self.boss_data[self.selected_boss]
+        self.log = [
+            self.make_log_entry(f"🏟 Арена: {self.arena_name}", category="arena"),
+            self.make_log_entry(f"🎲 Порядок ходов: {order_text}", category="arena"),
+            self.make_log_entry(
+                f"💀 Следующий босс: {bd['name']} (Tier {bd['tier']}) вышел на арену!", category="arena"
+            ),
+        ]
+        for _am in arena_messages:
+            self.log.append(self.make_log_entry(_am, category="arena"))
+        self.info_rects = [None] * len(self.players)
+        self.show_info_idx = None
+        self.close_popup_rect = None
+        self.help_open = False
+        self.help_active_tab = self.help_tabs[0]
+        self.help_scroll = 0
+        self.help_max_scroll = 0
+        self.close_loot_choice()
+        self.close_form_menu()
+        self.reset_spell_state()
+        self.arena_info_open = False
+        self.settings_open = False
+        self.set_state(self.BATTLE)
+        self.prepare_current_turn()
+
+    def render_boss_levelup(self):
+        """Level-up screen shown after killing a boss."""
+        self.screen.fill(DARK)
+        TIER_COLORS = {1: (120, 200, 120), 2: (200, 160, 60), 3: (220, 90, 40), 4: (180, 40, 220)}
+
+        # Background overlay
+        overlay = pygame.Rect(200, 60, WIDTH - 400, HEIGHT - 130)
+        pygame.draw.rect(self.screen, (25, 20, 35), overlay, border_radius=24)
+        pygame.draw.rect(self.screen, GOLD, overlay, 4, border_radius=24)
+
+        if self.boss_run_victory:
+            # ── ALL BOSSES CLEARED ─────────────────────────────────────────
+            title_col = (255, 215, 0)
+            title = self.hero_font.render("ВСЕ БОССЫ ПОВЕРЖЕНЫ!", True, title_col)
+            self.screen.blit(title, title.get_rect(centerx=WIDTH // 2, y=90))
+            sub = self.medium_font.render("Вы прошли весь забег Бой с Боссом!", True, WHITE)
+            self.screen.blit(sub, sub.get_rect(centerx=WIDTH // 2, y=190))
+            stars = self.big_font.render("★  ★  ★  ★", True, GOLD)
+            self.screen.blit(stars, stars.get_rect(centerx=WIDTH // 2, y=260))
+        else:
+            # ── BOSS KILLED — LEVEL UP ─────────────────────────────────────
+            run_lvl = self.boss_run_level
+            title_col = (120, 220, 255)
+            title = self.hero_font.render(f"БОСС ПОВЕРЖЕН!  +1 УРОВЕНЬ", True, title_col)
+            self.screen.blit(title, title.get_rect(centerx=WIDTH // 2, y=90))
+
+            killed_name = ""
+            if self.selected_boss and self.selected_boss in self.boss_data:
+                killed_name = self.boss_data[self.selected_boss]["name"]
+            if killed_name:
+                killed_surf = self.medium_font.render(f"«{killed_name}» уничтожен", True, (200, 200, 200))
+                self.screen.blit(killed_surf, killed_surf.get_rect(centerx=WIDTH // 2, y=178))
+
+            level_surf = self.big_font.render(f"Уровень забега: {run_lvl}", True, GOLD)
+            self.screen.blit(level_surf, level_surf.get_rect(centerx=WIDTH // 2, y=230))
+
+            # Player stat gains
+            gains_title = self.font.render("Прирост характеристик:", True, (180, 255, 180))
+            self.screen.blit(gains_title, (260, 300))
+            pygame.draw.line(self.screen, (80, 200, 80), (260, 330), (WIDTH - 260, 330), 2)
+
+            gain_y = 345
+            for p_idx, (p_name, p_gains) in enumerate(self.boss_level_gains.items()):
+                col_x = 260 + (p_idx % 2) * 740
+                row_y = gain_y + (p_idx // 2) * 240
+
+                # Player panel
+                p_panel = pygame.Rect(col_x, row_y, 700, 220)
+                pygame.draw.rect(self.screen, (35, 30, 50), p_panel, border_radius=14)
+                pygame.draw.rect(self.screen, (100, 100, 160), p_panel, 2, border_radius=14)
+
+                pn_surf = self.font.render(p_name, True, WHITE)
+                self.screen.blit(pn_surf, (col_x + 16, row_y + 14))
+
+                stat_names = {
+                    "strength": ("⚔ Сила", (255, 120, 80)),
+                    "stamina":  ("❤ Выносл.", (80, 220, 120)),
+                    "agility":  ("🌀 Ловкость", (80, 180, 255)),
+                    "luck":     ("🍀 Удача", (255, 220, 60)),
+                    "wisdom":   ("✨ Мудрость", (180, 120, 255)),
+                    "intellect":("🔮 Интеллект", (120, 200, 255)),
+                }
+                g_idx = 0
+                for stat_key, (stat_label, stat_col) in stat_names.items():
+                    val = p_gains.get(stat_key, 0)
+                    gx = col_x + 16 + (g_idx % 3) * 228
+                    gy = row_y + 54 + (g_idx // 3) * 70
+                    g_surf = self.small_font.render(f"{stat_label}  +{val}", True, stat_col)
+                    self.screen.blit(g_surf, (gx, gy))
+                    g_idx += 1
+                # New max HP
+                new_hp = p_gains.get("hp_bonus", 0)
+                hp_surf = self.small_font.render(f"❤ Новый макс. HP: {new_hp}", True, (80, 255, 120))
+                self.screen.blit(hp_surf, (col_x + 16, row_y + 185))
+
+            # Next boss preview
+            if self.boss_next_key and self.boss_next_key in self.boss_data:
+                nbd = self.boss_data[self.boss_next_key]
+                ntier = nbd["tier"]
+                ntc = TIER_COLORS[ntier]
+                preview_y = gain_y + 245 if len(self.boss_level_gains) <= 2 else gain_y + 490
+                prev_panel = pygame.Rect(260, preview_y, 1400, 80)
+                pygame.draw.rect(self.screen, (30, 20, 40), prev_panel, border_radius=12)
+                pygame.draw.rect(self.screen, ntc, prev_panel, 2, border_radius=12)
+                next_lbl = self.font.render("Следующий:", True, (160, 160, 180))
+                self.screen.blit(next_lbl, (280, preview_y + 14))
+                next_name = self.medium_font.render(nbd["name"], True, ntc)
+                self.screen.blit(next_name, (440, preview_y + 10))
+                tier_s = self.font.render(f"Tier {ntier}", True, ntc)
+                self.screen.blit(tier_s, (960, preview_y + 18))
+                # Scaled HP preview
+                diff_mult = {"easy": 0.60, "normal": 1.0, "hard": 1.55, "nightmare": 2.3}.get(self.difficulty, 1.0)
+                ps = {1: 1.0, 2: 1.50, 3: 2.0, 4: 2.4}.get(max(1, self.player_count), 1.0)
+                ls = 1.0 + self.boss_run_level * 0.12
+                pm = diff_mult * ps * ls
+                sca_hp = max(8, int(nbd["stamina"] * pm)) * 8
+                sca_str = max(5, int(nbd["strength"] * pm))
+                hp_lbl = self.small_font.render(f"HP≈{sca_hp}  Сила≈{sca_str}", True, (200, 200, 200))
+                self.screen.blit(hp_lbl, (1100, preview_y + 22))
+
+        # ── Buttons ───────────────────────────────────────────────────────────
+        if self.boss_run_victory:
+            self.boss_levelup_menu_button.rect = pygame.Rect(
+                WIDTH // 2 - 160, 820, 320, 80
+            )
+            self.boss_levelup_menu_button.text = "В меню (Победа!)"
+            self.boss_levelup_menu_button.draw(self.screen, self.medium_font)
+        else:
+            can_continue = bool(self.boss_next_key and self.boss_saved_players)
+            self.boss_levelup_continue_button.draw(self.screen, self.font, enabled=can_continue)
+            self.boss_levelup_menu_button.text = "Завершить забег"
+            self.boss_levelup_menu_button.rect = pygame.Rect(1010, 800, 300, 80)
+            self.boss_levelup_menu_button.draw(self.screen, self.font)
+
+    def handle_boss_levelup_events(self, events):
+        for event in events:
+            if self.boss_levelup_menu_button.clicked(event):
+                self.reset_to_menu()
+                return
+            if not self.boss_run_victory:
+                can_continue = bool(self.boss_next_key and self.boss_saved_players)
+                if self.boss_levelup_continue_button.clicked(event, enabled=can_continue):
+                    self.start_boss_continuation_battle()
+                    return
+
+    # ─────────────────────────────────────────────────────────────────────────
 
     def render_name_input(self):
         self.screen.fill(DARK)
