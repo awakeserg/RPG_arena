@@ -288,6 +288,18 @@ class ArenaGame:
                         "target": "self",
                         "desc": "На 2 своих хода окружает мага пламенем. Враги в ближнем бою наносят на 20% меньше урона и с шансом 30% загораются. Магия через стену бьёт в 1.5 раза сильнее.",
                     },
+                    {
+                        "id": "flame_lance",
+                        "name": "Копьё пламени",
+                        "target": "enemy",
+                        "desc": "Наносит 125% от интеллекта. 35% шанс наложить сильный ожог.",
+                    },
+                    {
+                        "id": "cinder_weapon",
+                        "name": "Жаровня клинка",
+                        "target": "self",
+                        "desc": "Заряжает оружие огнём на 2 своих хода и немного исцеляет мага.",
+                    },
                 ],
                 "exalted": [
                     {
@@ -301,6 +313,18 @@ class ArenaGame:
                         "name": "Феникс",
                         "target": "self",
                         "desc": "70% шанс полностью восстановить HP, 15% шанс сгореть дотла и проиграть, 15% — ничего не происходит.",
+                    },
+                    {
+                        "id": "meteor",
+                        "name": "Метеор",
+                        "target": "enemy",
+                        "desc": "Основная цель получает 180% от интеллекта. Остальные с шансом 60% получают 70% от интеллекта.",
+                    },
+                    {
+                        "id": "inferno_heart",
+                        "name": "Сердце инферно",
+                        "target": "self",
+                        "desc": "Восстанавливает 200% интеллекта HP, снимает горение и поднимает стену огня на 2 хода.",
                     },
                 ],
             },
@@ -319,6 +343,18 @@ class ArenaGame:
                         "target": "enemy",
                         "desc": "Наносит урон, равный интеллекту. 20% шанс заморозить цель на 1 ход.",
                     },
+                    {
+                        "id": "frost_nova",
+                        "name": "Морозная волна",
+                        "target": "enemy",
+                        "desc": "Наносит 90% от интеллекта и с шансом 35% замораживает цель.",
+                    },
+                    {
+                        "id": "cleansing_rain",
+                        "name": "Очищающий дождь",
+                        "target": "self",
+                        "desc": "Лечит на 80% интеллекта и снимает кровотечение и горение.",
+                    },
                 ],
                 "exalted": [
                     {
@@ -332,6 +368,18 @@ class ArenaGame:
                         "name": "Ледяное копьё",
                         "target": "enemy",
                         "desc": "Наносит двойной урон от интеллекта. 20% шанс заморозить. Если цель уже заморожена, повторная заморозка раскалывает её насмерть.",
+                    },
+                    {
+                        "id": "tsunami",
+                        "name": "Цунами",
+                        "target": "enemy",
+                        "desc": "Основная цель получает 130% от интеллекта, остальные — по 80%.",
+                    },
+                    {
+                        "id": "mirror_tide",
+                        "name": "Зеркальный прилив",
+                        "target": "self",
+                        "desc": "Полностью исцеляет мага и снимает негативные эффекты с высокой вероятностью.",
                     },
                 ],
             },
@@ -350,6 +398,18 @@ class ArenaGame:
                         "target": "enemy",
                         "desc": "Шипы из земли наносят урон, равный интеллекту. 30% шанс дополнительно вызвать кровотечение на 3 хода по 40% урона или ошеломить цель на 1 ход.",
                     },
+                    {
+                        "id": "granite_spear",
+                        "name": "Гранитное копьё",
+                        "target": "enemy",
+                        "desc": "Наносит 120% от интеллекта. 30% шанс обезоружить цель.",
+                    },
+                    {
+                        "id": "sand_bind",
+                        "name": "Песчаные путы",
+                        "target": "enemy",
+                        "desc": "Наносит 90% от интеллекта и с шансом 40% оглушает цель.",
+                    },
                 ],
                 "exalted": [
                     {
@@ -363,6 +423,18 @@ class ArenaGame:
                         "name": "Землетрясение",
                         "target": "enemy",
                         "desc": "Все, кроме адептов Пути земли, получают 70% от интеллекта. Основная цель оглушается с шансом 50%, остальные — с шансом 30%.",
+                    },
+                    {
+                        "id": "obsidian_prison",
+                        "name": "Обсидиановая тюрьма",
+                        "target": "enemy",
+                        "desc": "Наносит 190% от интеллекта и сковывает суть цели на 1 ход.",
+                    },
+                    {
+                        "id": "mountain_vow",
+                        "name": "Клятва горы",
+                        "target": "self",
+                        "desc": "Исцеляет на величину интеллекта и накладывает каменную кожу на 2 хода.",
                     },
                 ],
             },
@@ -381,6 +453,18 @@ class ArenaGame:
                         "target": "self",
                         "desc": "Действует в текущем и ещё в 2 следующих своих ходах. Повышает шанс уклонения на 30% и делает мага трудноуловимым для врагов.",
                     },
+                    {
+                        "id": "cyclone_cut",
+                        "name": "Циклонный рез",
+                        "target": "enemy",
+                        "desc": "Наносит 115% от интеллекта и может вызвать кровотечение.",
+                    },
+                    {
+                        "id": "gale_step",
+                        "name": "Шаг бури",
+                        "target": "self",
+                        "desc": "Даёт +20% временного уклонения до следующего своего хода.",
+                    },
                 ],
                 "exalted": [
                     {
@@ -394,6 +478,18 @@ class ArenaGame:
                         "name": "Ураганный фронт",
                         "target": "enemy",
                         "desc": "Все остальные бойцы получают 90% от интеллекта мага. Главная цель обезоруживается с шансом 80%, остальные пострадавшие — с шансом 40%.",
+                    },
+                    {
+                        "id": "tempest_eye",
+                        "name": "Око шторма",
+                        "target": "enemy",
+                        "desc": "Наносит 150% от интеллекта цели и 70% всем прочим врагам.",
+                    },
+                    {
+                        "id": "sky_grace",
+                        "name": "Небесная милость",
+                        "target": "self",
+                        "desc": "Лечит мага и накладывает попутный ветер на 3 своих хода.",
                     },
                 ],
             },
@@ -412,6 +508,18 @@ class ArenaGame:
                         "target": "enemy",
                         "desc": "Наносит 110% от интеллекта, исцеляет мага на половину нанесённого урона. 35% шанс проклясть цель: её урон и интеллект падают на 25% на 2 хода.",
                     },
+                    {
+                        "id": "grave_bolt",
+                        "name": "Могильный разряд",
+                        "target": "enemy",
+                        "desc": "Наносит 120% от интеллекта и лечит мага на 30% нанесённого урона.",
+                    },
+                    {
+                        "id": "night_feast",
+                        "name": "Ночная трапеза",
+                        "target": "self",
+                        "desc": "Лечит на величину интеллекта и накладывает покров мрака.",
+                    },
                 ],
                 "exalted": [
                     {
@@ -425,6 +533,18 @@ class ArenaGame:
                         "name": "Имя Бездны",
                         "target": "enemy",
                         "desc": "Наносит 160% от интеллекта. Если цель падает до 35% HP или ниже, Бездна мгновенно забирает её. Иначе накладывается тяжёлое кровотечение.",
+                    },
+                    {
+                        "id": "eclipse",
+                        "name": "Затмение",
+                        "target": "enemy",
+                        "desc": "Наносит 190% от интеллекта. Может оглушить и проклясть цель.",
+                    },
+                    {
+                        "id": "void_dirge",
+                        "name": "Погребальная песнь",
+                        "target": "enemy",
+                        "desc": "Наносит 150% от интеллекта, сковывает суть цели и вызывает кровотечение.",
                     },
                 ],
             },
@@ -443,6 +563,18 @@ class ArenaGame:
                         "target": "self",
                         "desc": "С шансом 65% немедленно открывает возвышенную магию в этот же ход. Следующее заклинание мага усиливается в 1.5 раза.",
                     },
+                    {
+                        "id": "fracture_mark",
+                        "name": "Метка трещины",
+                        "target": "enemy",
+                        "desc": "Наносит 80% от интеллекта и накладывает два случайных искажения.",
+                    },
+                    {
+                        "id": "warped_shell",
+                        "name": "Искажённый панцирь",
+                        "target": "self",
+                        "desc": "Даёт +25% временного уклонения и усиливает следующее заклинание в 1.5 раза.",
+                    },
                 ],
                 "exalted": [
                     {
@@ -456,6 +588,18 @@ class ArenaGame:
                         "name": "Касание непознаваемого",
                         "target": "enemy",
                         "desc": "Наносит 160% от интеллекта плюс по 100% за каждый эффект на цели, затем снимает их. Если эффектов нет, навешивает сразу два случайных искажения.",
+                    },
+                    {
+                        "id": "paradox_bloom",
+                        "name": "Парадокс-цветок",
+                        "target": "enemy",
+                        "desc": "Наносит 150% от интеллекта цели и 80% всем остальным, иногда накладывая случайные искажения.",
+                    },
+                    {
+                        "id": "erase_boundary",
+                        "name": "Стереть границу",
+                        "target": "enemy",
+                        "desc": "Наносит 200% от интеллекта и может одновременно оглушить и обезоружить цель.",
                     },
                 ],
             },
@@ -659,8 +803,10 @@ class ArenaGame:
             UIButton("🛡 Стойка", 1095, 800, 190, 110),     # [5] defensive stance
         ]
         self.spell_buttons = [
-            UIButton("", 1360, 738, 330, 80),
-            UIButton("", 1360, 830, 330, 80),
+            UIButton("", 1360, 732, 330, 58),
+            UIButton("", 1360, 798, 330, 58),
+            UIButton("", 1360, 864, 330, 58),
+            UIButton("", 1360, 930, 330, 58),
         ]
         self.loot_choice_open = False
         self.loot_choice_items = []
@@ -731,7 +877,7 @@ class ArenaGame:
         self.settings_btn_rect = pygame.Rect(WIDTH - 98, HEIGHT - 98 - 82, 72, 72)
         self.settings_resolutions = [(1280, 720), (1600, 900), (1920, 1080)]
         self.settings_fullscreen = True
-        self.help_tabs = ["Правила", "Характеристики", "Эффекты", "Классы", "Магия", "Арены и лут"]
+        self.help_tabs = ["Правила", "Характеристики", "Эффекты", "Классы", "Магия", "Арены и лут", "Боссы"]
         self.help_active_tab = self.help_tabs[0]
         self.help_tab_rects = []
         self.help_close_rect = None
@@ -4755,16 +4901,18 @@ class ArenaGame:
             ("body", "Цель боя — остаться последним живым бойцом на арене. Как только в живых остаётся один персонаж, бой немедленно заканчивается."),
             ("body", "Порядок ходов теперь определяется случайно только один раз в начале боя. Получившийся порядок записывается в боевой лог строкой с кубиком."),
             ("subtitle", "Что можно сделать в свой ход"),
-            ("bullet", "Атака — обычный удар по выбранной цели. Даёт +10% к шансу критического удара на этот выпад."),
-            ("bullet", "Осторожно — более аккуратная атака. После неё персонаж получает +10% временного уклонения до начала своего следующего хода."),
-            ("bullet", "Навык — классовая активная способность. Почти у всех откат 2 своих хода: 2 → 1 → 0."),
+            ("bullet", "Атака — обычный удар по выбранной цели. Даёт +10% к шансу критического удара на этот выпад. Обычно тратит 1 действие."),
+            ("bullet", "Осторожно — более аккуратная атака. После неё персонаж получает +10% временного уклонения до начала своего следующего хода. Обычно тратит 1 действие."),
+            ("bullet", "Навык — классовая активная способность. Почти у всех откат 2 своих хода: 2 → 1 → 0. Использование завершает ход полностью."),
             ("bullet", "Лут — попытка найти предмет. Базовый шанс: 50% + удача. Если персонаж обезоружен, шанс ниже на 20%."),
-            ("bullet", "Колдовать — открыть обычную магию своего пути. У обычной магии откат 2 своих хода. Возвышенная магия идёт отдельно и этим откатом не блокируется."),
+            ("bullet", "Колдовать — открыть обычную магию своего пути. У обычной магии откат 2 своих хода. Возвышенная магия идёт отдельно и этим откатом не блокируется. Использование завершает ход полностью."),
+            ("bullet", "Защитная стойка — завершает ход, но снижает входящий урон на 35% до следующего собственного хода."),
             ("bullet", "Орк вместо магии использует ликантропию: форма медведя или волка на 3 своих хода, затем авто-возврат и откат 2 хода."),
+            ("bullet", "У героя обычно 2 действия за ход: простые атаки тратят 1 действие, а навык, магия, стойка и часть особых действий завершают ход целиком."),
             ("subtitle", "Базовые формулы"),
             ("bullet", "HP = выносливость × 8."),
             ("bullet", "Физический урон = сила."),
-            ("bullet", "Уклонение = ловкость × 2%."),
+            ("bullet", "Уклонение = ловкость × 2%, но итоговый шанс ограничен 95%."),
             ("bullet", "Критический шанс = удача × 2%. Крит обычно удваивает урон."),
             ("bullet", "Прозрение = мудрость × 2%. После обычного заклинания может сразу открыться возвышенная магия."),
             ("bullet", "Отражение магии = мудрость %. Отражается только вражеское целевое заклинание; отскок может пойти обратно несколько раз."),
@@ -4772,6 +4920,7 @@ class ArenaGame:
             ("bullet", "При уклонении есть 15% шанс парирования: атакующий получает ответный урон, равный половине своего урона."),
             ("bullet", "Если у цели меньше 15 HP, у обычной физической атаки есть 20% шанс мгновенно добить цель фаталити."),
             ("bullet", "Успешный удар может навесить особые эффекты класса, пути магии или предметов."),
+            ("bullet", "Если живой враг на поле остался только один, обычные атакующие действия автоматически выберут его целью."),
             ("note", "Подсказка: в боевом логе после конца каждого хода теперь рисуется длинная горизонтальная черта. Всё, что ниже неё, относится уже к новому ходу."),
         ]
         sections["Правила"] = rules
@@ -4794,6 +4943,7 @@ class ArenaGame:
             ("bullet", "Интеллектуальный: +10 интеллекта = сильнее любое заклинание."),
             ("subtitle", "Полезные замечания"),
             ("body", "Каменная кожа и покров мрака уменьшают входящий урон уже после всех расчётов. Обезоруживание режет урон вдвое, а отрубленная рука уменьшает его навсегда до конца боя."),
+            ("body", "Итоговые проценты уклонения и крита в бою ограничиваются сверху: уклонение до 95%, крит до 100%."),
         ]
         sections["Характеристики"] = stats
 
@@ -4867,11 +5017,38 @@ class ArenaGame:
             arenas.append(("bullet", f"{item['name']} ({tag}) — {item['desc']}"))
         arenas.extend([
             ("body", "Плут при удачном поиске находит сразу две вещи и выбирает одну. Вредные предметы он умеет направлять в противника."),
+            ("body", "На экране имени можно брать уже созданных героев из списка сохранённых, создавать нового по тому же имени или удалять старого героя."),
             ("subtitle", "Чтение лога"),
             ("bullet", "Яркая горизонтальная линия во всю ширину журнала означает конец предыдущего хода."),
             ("bullet", "Строки выше линии относятся к уже завершённому ходу, а записи ниже — к текущему развитию боя."),
         ])
         sections["Арены и лут"] = arenas
+
+        bosses = [
+            ("title", "Режим боссов"),
+            ("body", "В главном меню можно включить режим «Бой с Боссом». В этом режиме максимум 3 героя, а все игроки сражаются как союзники против одного общего врага."),
+            ("subtitle", "Прогрессия забега"),
+            ("bullet", "Боссы разделены на 4 тира. В каждом тире по 2 разных босса."),
+            ("bullet", "После победы над боссом группа получает +1 уровень забега, усиление характеристик и переходит к следующему случайному боссу текущего тира."),
+            ("bullet", "Когда оба босса тира побеждены, открывается следующий тир. После зачистки всех 4 тиров забег считается пройденным."),
+            ("subtitle", "Сложности"),
+            ("bullet", "Легко — заметно ослабленные боссы. Подходит для одиночного прохождения Tier 1."),
+            ("bullet", "Нормально — базовый режим."),
+            ("bullet", "Сложно — усиленные боссы с большим давлением по урону и живучести."),
+            ("bullet", "Кошмар — максимально усиленные боссы."),
+            ("subtitle", "Масштабирование и выживание"),
+            ("bullet", "Параметры босса скейлятся от сложности, количества игроков и прогресса забега."),
+            ("bullet", "Если герой падает в бою с боссом, он может автоматически воскреснуть один раз за бой, но если к моменту победы остаётся мёртвым — уровень за босса не получает."),
+            ("bullet", "Когда у команды остаётся только одна возможная вражеская цель, атакующие действия автоматически берут её в прицел."),
+            ("subtitle", "Боссы по тиру"),
+        ]
+        for boss_key, boss_data in sorted(self.boss_data.items(), key=lambda item: (item[1]["tier"], item[1]["name"])):
+            bosses.extend([
+                ("note", f"Tier {boss_data['tier']} — {boss_data['name']}"),
+                ("body", boss_data.get("desc", "")),
+                ("bullet", f"Способность: {boss_data.get('special_name', '—')} — {boss_data.get('special_desc', '')}"),
+            ])
+        sections["Боссы"] = bosses
 
         return sections.get(tab_name, [("title", tab_name)])
 
@@ -4935,8 +5112,13 @@ class ArenaGame:
         self.help_tab_rects = []
         tab_x = panel_rect.x + 24
         tab_y = panel_rect.y + 126
+        tab_row_h = 56
+        tab_max_right = panel_rect.right - 90
         for tab_name in self.help_tabs:
             tab_w = max(150, self.small_font.size(tab_name)[0] + 34)
+            if tab_x + tab_w > tab_max_right:
+                tab_x = panel_rect.x + 24
+                tab_y += tab_row_h
             tab_rect = pygame.Rect(tab_x, tab_y, tab_w, 44)
             active = tab_name == self.help_active_tab
             tab_color = (104, 128, 168) if active else (62, 70, 92)
@@ -4948,7 +5130,8 @@ class ArenaGame:
             self.help_tab_rects.append((tab_name, tab_rect))
             tab_x += tab_w + 12
 
-        content_rect = pygame.Rect(panel_rect.x + 26, panel_rect.y + 188, panel_rect.width - 68, panel_rect.height - 220)
+        content_top = tab_y + 62
+        content_rect = pygame.Rect(panel_rect.x + 26, content_top, panel_rect.width - 68, panel_rect.bottom - content_top - 32)
         pygame.draw.rect(self.screen, (24, 24, 34), content_rect, border_radius=18)
         pygame.draw.rect(self.screen, (110, 120, 145), content_rect, 2, border_radius=18)
 
@@ -5341,6 +5524,35 @@ class ArenaGame:
             player.soul_curse_turns > 0,
             self.has_essence_lock(player),
         ])
+
+    def clear_negative_effects(self, player):
+        removed = []
+        if player.bleeding > 0:
+            player.bleeding = 0
+            player.bleed_damage = 0
+            removed.append("кровотечение")
+        if player.burning > 0:
+            player.burning = 0
+            player.burn_damage = 0
+            removed.append("горение")
+        if player.frozen_turns > 0:
+            player.frozen_turns = 0
+            removed.append("заморозка")
+        if player.stunned > 0:
+            player.stunned = 0
+            removed.append("оглушение")
+        if player.disarmed_turns > 0:
+            player.disarmed_turns = 0
+            removed.append("обезоруживание")
+        if player.essence_locked_turns > 0:
+            player.essence_locked_turns = 0
+            removed.append("сковывание сути")
+        if player.soul_curse_turns > 0:
+            player.soul_curse_turns = 0
+            player.damage = player.soul_curse_damage_base
+            player.intellect = player.soul_curse_intellect_base
+            removed.append("проклятие души")
+        return removed
 
     def apply_essence_lock(self, target, turns=1):
         target.essence_locked_turns = max(target.essence_locked_turns, turns)
@@ -7100,6 +7312,23 @@ class ArenaGame:
             actual_target = player
             hit_success = True
             messages.append(self.make_log_entry(f"🔥 {player.name} воздвигает вокруг себя стену огня на 2 хода.", category="magic_fire_normal"))
+        elif spell_id == "flame_lance":
+            if self.try_spell_dodge(player, target, messages, "Копьё пламени"):
+                return messages, False, target
+            dmg, crit_hit = self.get_spell_damage_and_crit(player, 1.25)
+            actual_dmg = self.apply_damage(target, dmg)
+            crit_str = " (КРИТ)" if crit_hit else ""
+            messages.append(self.make_log_entry(f"🔥 {player.name} пронзает {target.name} копьём пламени на {actual_dmg}{crit_str} урона.", category="magic_fire_normal"))
+            if random.randint(1, 100) <= 35 and self.apply_burning(target, max(1, actual_dmg // 2)):
+                messages.append(self.make_log_entry(f"🔥 Пламя въедается в {target.name} и усиливает горение.", category="magic_fire_normal"))
+            hit_success = True
+        elif spell_id == "cinder_weapon":
+            actual_target = player
+            player.weapon_enchanted_turns = max(player.weapon_enchanted_turns, 2)
+            healed = min(max(1, player.intellect // 2), max(0, player.max_hp - player.hp))
+            player.hp = min(player.max_hp, player.hp + max(1, player.intellect // 2))
+            hit_success = True
+            messages.append(self.make_log_entry(f"🔥 {player.name} окутывает оружие жаром на 2 хода и восстанавливает {healed} HP.", category="magic_fire_normal"))
         elif spell_id == "stone_skin":
             actual_target = player
             player.stone_skin_turns = 2
@@ -7121,6 +7350,26 @@ class ArenaGame:
                 else:
                     if self.apply_stun(target, 1):
                         messages.append(self.make_log_entry(f"◼ {target.name} скован камнем и пропустит следующий ход!", category="magic_earth_normal"))
+            hit_success = True
+        elif spell_id == "granite_spear":
+            if self.try_spell_dodge(player, target, messages, "Гранитное копьё"):
+                return messages, False, target
+            dmg, crit_hit = self.get_spell_damage_and_crit(player, 1.2)
+            actual_dmg = self.apply_damage(target, dmg)
+            crit_str = " (КРИТ)" if crit_hit else ""
+            messages.append(self.make_log_entry(f"🪨 {player.name} метает гранитное копьё в {target.name}: {actual_dmg}{crit_str} урона.", category="magic_earth_normal"))
+            if random.randint(1, 100) <= 30 and self.apply_disarm(target, 1):
+                messages.append(self.make_log_entry(f"🪨 Удар выбивает оружие из рук {target.name}.", category="magic_earth_normal"))
+            hit_success = True
+        elif spell_id == "sand_bind":
+            if self.try_spell_dodge(player, target, messages, "Песчаные путы"):
+                return messages, False, target
+            dmg, crit_hit = self.get_spell_damage_and_crit(player, 0.9)
+            actual_dmg = self.apply_damage(target, dmg)
+            crit_str = " (КРИТ)" if crit_hit else ""
+            messages.append(self.make_log_entry(f"🟫 {player.name} оплетает {target.name} песчаными путами: {actual_dmg}{crit_str} урона.", category="magic_earth_normal"))
+            if random.randint(1, 100) <= 40 and self.apply_stun(target, 1):
+                messages.append(self.make_log_entry(f"🟫 {target.name} вязнет в песке и теряет ход.", category="magic_earth_normal"))
             hit_success = True
         elif spell_id == "supernova":
             if self.try_spell_dodge(player, target, messages, "Сверхновая"):
@@ -7149,6 +7398,31 @@ class ArenaGame:
                 messages.append(self.make_log_entry(f"🔥 {player.name} не удерживает пламя Феникса и сгорает дотла!", category="magic_fire_exalted"))
             else:
                 messages.append(self.make_log_entry(f"✨ Пламя Феникса не отвечает {player.name}.", category="magic_fire_exalted"))
+        elif spell_id == "meteor":
+            if self.try_spell_dodge(player, target, messages, "Метеор"):
+                return messages, False, target
+            dmg, crit_hit = self.get_spell_damage_and_crit(player, 1.8)
+            actual_dmg = self.apply_damage(target, dmg)
+            crit_str = " (КРИТ)" if crit_hit else ""
+            messages.append(self.make_log_entry(f"☄ {player.name} обрушивает метеор на {target.name}: {actual_dmg}{crit_str} урона!", category="magic_fire_exalted"))
+            for other in [p for p in self.players if p.hp > 0 and p not in (player, target)]:
+                if random.randint(1, 100) <= 60:
+                    if self.try_spell_dodge(player, other, messages, "осколков метеора"):
+                        continue
+                    splash = self.apply_damage(other, self.get_spell_damage(player, 0.7))
+                    messages.append(self.make_log_entry(f"☄ Осколки метеора задевают {other.name}: -{splash} HP", category="magic_fire_exalted"))
+            hit_success = True
+        elif spell_id == "inferno_heart":
+            actual_target = player
+            heal_val = self.get_spell_damage(player, 2.0)
+            healed = min(heal_val, max(0, player.max_hp - player.hp))
+            player.hp = min(player.max_hp, player.hp + heal_val)
+            player.burning = 0
+            player.burn_damage = 0
+            player.fire_wall_turns = 2
+            player.fire_wall_fresh = True
+            hit_success = True
+            messages.append(self.make_log_entry(f"☀ {player.name} раскрывает Сердце инферно: +{healed} HP, горение снято, стена огня поднята.", category="magic_fire_exalted"))
         elif spell_id == "heal":
             actual_target = player
             heal_amount = player.intellect
@@ -7172,6 +7446,26 @@ class ArenaGame:
             if random.randint(1, 100) <= 20:
                 if self.apply_freeze(target, 1):
                     messages.append(self.make_log_entry(f"🧊 {target.name} заморожен на 1 ход!", category="magic_water_normal"))
+        elif spell_id == "frost_nova":
+            if self.try_spell_dodge(player, target, messages, "Морозная волна"):
+                return messages, False, target
+            dmg, crit_hit = self.get_spell_damage_and_crit(player, 0.9)
+            actual_dmg = self.apply_damage(target, dmg)
+            crit_str = " (КРИТ)" if crit_hit else ""
+            messages.append(self.make_log_entry(f"🌨 {player.name} выпускает морозную волну и наносит {actual_dmg}{crit_str} урона.", category="magic_water_normal"))
+            if random.randint(1, 100) <= 35 and self.apply_freeze(target, 1):
+                messages.append(self.make_log_entry(f"🌨 {target.name} покрывается льдом и пропустит ход.", category="magic_water_normal"))
+            hit_success = True
+        elif spell_id == "cleansing_rain":
+            actual_target = player
+            heal_val = self.get_spell_damage(player, 0.8)
+            restored = min(heal_val, max(0, player.max_hp - player.hp))
+            player.hp = min(player.max_hp, player.hp + heal_val)
+            removed = self.clear_negative_effects(player)
+            messages.append(self.make_log_entry(f"💧 {player.name} призывает очищающий дождь и восстанавливает {restored} HP.", category="magic_water_normal"))
+            if removed:
+                messages.append(self.make_log_entry(f"💧 Сняты эффекты: {', '.join(removed)}.", category="magic_water_normal"))
+            hit_success = restored > 0 or bool(removed)
         elif spell_id == "water_essence":
             actual_target = player
             if random.randint(1, 100) <= 80:
@@ -7208,6 +7502,28 @@ class ArenaGame:
             elif freeze_proc:
                 if self.apply_freeze(target, 1):
                     messages.append(self.make_log_entry(f"🧊 {target.name} заморожен на 1 ход!", category="magic_water_exalted"))
+        elif spell_id == "tsunami":
+            if self.try_spell_dodge(player, target, messages, "Цунами"):
+                return messages, False, target
+            dmg, crit_hit = self.get_spell_damage_and_crit(player, 1.3)
+            actual_dmg = self.apply_damage(target, dmg)
+            crit_str = " (КРИТ)" if crit_hit else ""
+            messages.append(self.make_log_entry(f"🌊 {player.name} обрушивает цунами на {target.name}: {actual_dmg}{crit_str} урона.", category="magic_water_exalted"))
+            for other in [p for p in self.players if p.hp > 0 and p not in (player, target)]:
+                if self.try_spell_dodge(player, other, messages, "края цунами"):
+                    continue
+                splash = self.apply_damage(other, self.get_spell_damage(player, 0.8))
+                messages.append(self.make_log_entry(f"🌊 Волна сбивает {other.name}: -{splash} HP", category="magic_water_exalted"))
+            hit_success = True
+        elif spell_id == "mirror_tide":
+            actual_target = player
+            restored = max(0, player.max_hp - player.hp)
+            player.hp = player.max_hp
+            removed = self.clear_negative_effects(player)
+            messages.append(self.make_log_entry(f"🌊 {player.name} поднимает зеркальный прилив и полностью исцеляется на {restored} HP.", category="magic_water_exalted"))
+            if removed:
+                messages.append(self.make_log_entry(f"🌊 Прилив смывает: {', '.join(removed)}.", category="magic_water_exalted"))
+            hit_success = True
         elif spell_id == "earth_blast":
             if self.try_spell_dodge(player, target, messages, "Взрыв земли"):
                 return messages, False, target
@@ -7237,6 +7553,23 @@ class ArenaGame:
                     stun_chance = 50 if other == target else 30
                     if random.randint(1, 100) <= stun_chance and self.apply_stun(other, 1):
                         messages.append(self.make_log_entry(f"◼ {other.name} ошеломлён толчками и пропустит ход!", category="magic_earth_exalted"))
+        elif spell_id == "obsidian_prison":
+            if self.try_spell_dodge(player, target, messages, "Обсидиановая тюрьма"):
+                return messages, False, target
+            dmg, crit_hit = self.get_spell_damage_and_crit(player, 1.9)
+            actual_dmg = self.apply_damage(target, dmg)
+            crit_str = " (КРИТ)" if crit_hit else ""
+            self.apply_essence_lock(target, 1)
+            messages.append(self.make_log_entry(f"◼ {player.name} заключает {target.name} в обсидиановую тюрьму: {actual_dmg}{crit_str} урона и сковывание сути.", category="magic_earth_exalted"))
+            hit_success = True
+        elif spell_id == "mountain_vow":
+            actual_target = player
+            restored = min(player.intellect, max(0, player.max_hp - player.hp))
+            player.hp = min(player.max_hp, player.hp + player.intellect)
+            player.stone_skin_turns = 2
+            player.stone_skin_fresh = True
+            messages.append(self.make_log_entry(f"⛰ {player.name} даёт Клятву горы: +{restored} HP и каменная кожа на 2 хода.", category="magic_earth_exalted"))
+            hit_success = True
         elif spell_id == "wind_blades":
             if self.try_spell_dodge(player, target, messages, "Лезвия ветра"):
                 return messages, False, target
@@ -7257,6 +7590,22 @@ class ArenaGame:
             player.tailwind_fresh = True
             hit_success = True
             messages.append(self.make_log_entry(f"✦ {player.name} призывает попутный ветер и получает +30% к уклонению на текущий и ещё 2 следующих своих хода.", category="magic_air_normal"))
+        elif spell_id == "cyclone_cut":
+            if self.try_spell_dodge(player, target, messages, "Циклонный рез"):
+                return messages, False, target
+            dmg, crit_hit = self.get_spell_damage_and_crit(player, 1.15)
+            actual_dmg = self.apply_damage(target, dmg)
+            crit_str = " (КРИТ)" if crit_hit else ""
+            messages.append(self.make_log_entry(f"✦ {player.name} рассекает {target.name} циклонным резом: {actual_dmg}{crit_str} урона.", category="magic_air_normal"))
+            bleed_damage = max(1, int(actual_dmg * 0.35))
+            if random.randint(1, 100) <= 30 and self.apply_bleeding(target, 3, bleed_damage):
+                messages.append(self.make_log_entry(f"✦ Вихрь оставляет кровоточащие порезы на {target.name}.", category="magic_air_normal"))
+            hit_success = True
+        elif spell_id == "gale_step":
+            actual_target = player
+            player.temp_dodge += 20
+            messages.append(self.make_log_entry(f"✦ {player.name} делает шаг бури и получает +20% временного уклонения.", category="magic_air_normal"))
+            hit_success = True
         elif spell_id == "sky_thunder":
             if self.try_spell_dodge(player, target, messages, "Небесная молния"):
                 return messages, False, target
@@ -7287,6 +7636,29 @@ class ArenaGame:
                 disarm_chance = 80 if other == target else 40
                 if random.randint(1, 100) <= disarm_chance and self.apply_disarm(other, 1):
                     messages.append(self.make_log_entry(f"✦ Порыв выбивает оружие из рук {other.name}!", category="magic_air_exalted"))
+        elif spell_id == "tempest_eye":
+            if self.try_spell_dodge(player, target, messages, "Око шторма"):
+                return messages, False, target
+            dmg, crit_hit = self.get_spell_damage_and_crit(player, 1.5)
+            actual_dmg = self.apply_damage(target, dmg)
+            crit_str = " (КРИТ)" if crit_hit else ""
+            messages.append(self.make_log_entry(f"✦ {player.name} раскрывает Око шторма: {actual_dmg}{crit_str} урона {target.name}.", category="magic_air_exalted"))
+            for other in [p for p in self.players if p.hp > 0 and p not in (player, target)]:
+                if self.try_spell_dodge(player, other, messages, "внешнего круга шторма"):
+                    continue
+                splash = self.apply_damage(other, self.get_spell_damage(player, 0.7))
+                messages.append(self.make_log_entry(f"✦ Боковые потоки хлещут {other.name}: -{splash} HP", category="magic_air_exalted"))
+            hit_success = True
+        elif spell_id == "sky_grace":
+            actual_target = player
+            healed = min(max(1, player.intellect // 2), max(0, player.max_hp - player.hp))
+            player.hp = min(player.max_hp, player.hp + max(1, player.intellect // 2))
+            if player.tailwind_turns <= 0:
+                player.dodge += 30
+            player.tailwind_turns = max(player.tailwind_turns, 3)
+            player.tailwind_fresh = True
+            messages.append(self.make_log_entry(f"✦ {player.name} получает Небесную милость: +{healed} HP и попутный ветер на 3 хода.", category="magic_air_exalted"))
+            hit_success = True
         elif spell_id == "shadow_shroud":
             actual_target = player
             if player.shadow_shroud_turns <= 0:
@@ -7307,6 +7679,26 @@ class ArenaGame:
             if random.randint(1, 100) <= 35:
                 self.apply_soul_curse(target, 2)
                 messages.append(self.make_log_entry(f"☽ Душа {target.name} скована проклятием: урон и интеллект снижены на 25% на 2 хода.", category="magic_dark_normal"))
+            hit_success = True
+        elif spell_id == "grave_bolt":
+            if self.try_spell_dodge(player, target, messages, "Могильный разряд"):
+                return messages, False, target
+            dmg, crit_hit = self.get_spell_damage_and_crit(player, 1.2)
+            actual_dmg = self.apply_damage(target, dmg)
+            healed = min(max(1, actual_dmg // 3), max(0, player.max_hp - player.hp))
+            player.hp = min(player.max_hp, player.hp + max(1, actual_dmg // 3))
+            crit_str = " (КРИТ)" if crit_hit else ""
+            messages.append(self.make_log_entry(f"☽ {player.name} поражает {target.name} могильным разрядом на {actual_dmg}{crit_str} урона и крадёт {healed} HP.", category="magic_dark_normal"))
+            hit_success = True
+        elif spell_id == "night_feast":
+            actual_target = player
+            restored = min(player.intellect, max(0, player.max_hp - player.hp))
+            player.hp = min(player.max_hp, player.hp + player.intellect)
+            if player.shadow_shroud_turns <= 0:
+                player.dodge += 25
+            player.shadow_shroud_turns = 2
+            player.shadow_shroud_fresh = True
+            messages.append(self.make_log_entry(f"☽ {player.name} устраивает ночную трапезу: +{restored} HP и покров мрака.", category="magic_dark_normal"))
             hit_success = True
         elif spell_id == "black_sun":
             if self.try_spell_dodge(player, target, messages, "Чёрное солнце"):
@@ -7339,6 +7731,29 @@ class ArenaGame:
                 bleed = max(1, int(actual_dmg * 0.5))
                 if self.apply_bleeding(target, 3, bleed):
                     messages.append(self.make_log_entry(f"♥ Бездна рвёт сущность {target.name}: кровотечение на 3 хода по {bleed} урона.", category="magic_dark_exalted"))
+        elif spell_id == "eclipse":
+            if self.try_spell_dodge(player, target, messages, "Затмение"):
+                return messages, False, target
+            dmg, crit_hit = self.get_spell_damage_and_crit(player, 1.9)
+            actual_dmg = self.apply_damage(target, dmg)
+            crit_str = " (КРИТ)" if crit_hit else ""
+            messages.append(self.make_log_entry(f"☽ {player.name} насылает затмение на {target.name}: {actual_dmg}{crit_str} урона.", category="magic_dark_exalted"))
+            if random.randint(1, 100) <= 40 and self.apply_stun(target, 1):
+                messages.append(self.make_log_entry(f"☽ Тьма затмения оглушает {target.name}.", category="magic_dark_exalted"))
+            if random.randint(1, 100) <= 40 and self.apply_soul_curse(target, 2):
+                messages.append(self.make_log_entry(f"☽ {target.name} оказывается под проклятием души.", category="magic_dark_exalted"))
+            hit_success = True
+        elif spell_id == "void_dirge":
+            if self.try_spell_dodge(player, target, messages, "Погребальная песнь"):
+                return messages, False, target
+            dmg, crit_hit = self.get_spell_damage_and_crit(player, 1.5)
+            actual_dmg = self.apply_damage(target, dmg)
+            crit_str = " (КРИТ)" if crit_hit else ""
+            self.apply_essence_lock(target, 1)
+            bleed = max(1, int(actual_dmg * 0.3))
+            self.apply_bleeding(target, 3, bleed)
+            messages.append(self.make_log_entry(f"☽ {player.name} поёт погребальную песнь: {actual_dmg}{crit_str} урона, сковывание сути и кровотечение у {target.name}.", category="magic_dark_exalted"))
+            hit_success = True
         elif spell_id == "impossible_angle":
             if self.try_spell_dodge(player, target, messages, "Невозможный угол"):
                 return messages, False, target
@@ -7368,6 +7783,33 @@ class ArenaGame:
                 messages.append(self.make_log_entry(f"※ {player.name} слышит шёпот извне. Возвышенная магия открыта прямо сейчас, а следующее заклинание усилено в 1.5 раза.", category="magic_void_normal"))
             else:
                 messages.append(self.make_log_entry(f"※ Шёпот извне ускользает от {player.name}, и реальность не раскрывается.", category="magic_void_normal"))
+        elif spell_id == "fracture_mark":
+            if self.try_spell_dodge(player, target, messages, "Метка трещины"):
+                return messages, False, target
+            dmg, crit_hit = self.get_spell_damage_and_crit(player, 0.8)
+            actual_dmg = self.apply_damage(target, dmg)
+            crit_str = " (КРИТ)" if crit_hit else ""
+            messages.append(self.make_log_entry(f"※ {player.name} оставляет на {target.name} Метку трещины: {actual_dmg}{crit_str} урона.", category="magic_void_normal"))
+            extra_pool = ["stun", "freeze", "disarm", "bleed", "burn"]
+            random.shuffle(extra_pool)
+            for extra in extra_pool[:2]:
+                if extra == "stun":
+                    self.apply_stun(target, 1)
+                elif extra == "freeze":
+                    self.apply_freeze(target, 1)
+                elif extra == "disarm":
+                    self.apply_disarm(target, 1)
+                elif extra == "bleed":
+                    self.apply_bleeding(target, 3, max(1, actual_dmg // 3))
+                elif extra == "burn":
+                    self.apply_burning(target, max(1, actual_dmg // 3))
+            hit_success = True
+        elif spell_id == "warped_shell":
+            actual_target = player
+            player.temp_dodge += 25
+            player.unfathomable_next = True
+            messages.append(self.make_log_entry(f"※ {player.name} искажает свою оболочку: +25% временного уклонения и усиление следующего заклинания.", category="magic_void_normal"))
+            hit_success = True
         elif spell_id == "doorless_gate":
             if self.try_spell_dodge(player, target, messages, "Врата без двери"):
                 return messages, False, target
@@ -7437,6 +7879,37 @@ class ArenaGame:
                             messages.append(self.make_log_entry(f"♥ На теле {target.name} раскрываются невозможные раны: {bleed} урона 3 хода.", category="magic_void_exalted"))
                     elif extra == "burn" and self.apply_burning(target, max(1, actual_dmg // 3)):
                         messages.append(self.make_log_entry(f"※ Чужой огонь вгрызается в {target.name}.", category="magic_void_exalted"))
+        elif spell_id == "paradox_bloom":
+            if self.try_spell_dodge(player, target, messages, "Парадокс-цветок"):
+                return messages, False, target
+            dmg, crit_hit = self.get_spell_damage_and_crit(player, 1.5)
+            actual_dmg = self.apply_damage(target, dmg)
+            crit_str = " (КРИТ)" if crit_hit else ""
+            messages.append(self.make_log_entry(f"※ {player.name} раскрывает Парадокс-цветок на {target.name}: {actual_dmg}{crit_str} урона.", category="magic_void_exalted"))
+            for other in [p for p in self.players if p.hp > 0 and p not in (player, target)]:
+                if self.try_spell_dodge(player, other, messages, "парадоксального лепестка"):
+                    continue
+                splash = self.apply_damage(other, self.get_spell_damage(player, 0.8))
+                messages.append(self.make_log_entry(f"※ Лепестки парадокса режут {other.name}: -{splash} HP", category="magic_void_exalted"))
+                if random.randint(1, 100) <= 25:
+                    random.choice([
+                        lambda: self.apply_stun(other, 1),
+                        lambda: self.apply_freeze(other, 1),
+                        lambda: self.apply_disarm(other, 1),
+                    ])()
+            hit_success = True
+        elif spell_id == "erase_boundary":
+            if self.try_spell_dodge(player, target, messages, "Стереть границу"):
+                return messages, False, target
+            dmg, crit_hit = self.get_spell_damage_and_crit(player, 2.0)
+            actual_dmg = self.apply_damage(target, dmg)
+            crit_str = " (КРИТ)" if crit_hit else ""
+            messages.append(self.make_log_entry(f"※ {player.name} стирает границу реальности и наносит {actual_dmg}{crit_str} урона {target.name}.", category="magic_void_exalted"))
+            if random.randint(1, 100) <= 40:
+                self.apply_stun(target, 1)
+            if random.randint(1, 100) <= 40:
+                self.apply_disarm(target, 1)
+            hit_success = True
 
         if player.unfathomable_next and spell_id != "outer_whisper":
             player.unfathomable_next = False
@@ -9779,22 +10252,6 @@ class ArenaGame:
                 pygame.draw.rect(self.screen, ac_col, bg_r, 2, border_radius=8)
                 self.screen.blit(ac_surf, ac_rect)
 
-            # ── Путь / Ликантропия под 5-й кнопкой ───────────────────────────
-            btn4_rect = self.battle_buttons[4].rect
-            if self.is_orc(current_player):
-                _mb_label = "Ликантропия"
-                _mb_color = OCHRE
-            elif current_player.magic_path:
-                _mb_label = current_player.magic_path
-                _mb_color = self.get_magic_path_color(current_player.magic_path)
-            else:
-                _mb_label = ""
-                _mb_color = GRAY
-            if _mb_label:
-                _mb_surf = self.log_font.render(_mb_label, True, _mb_color)
-                self.screen.blit(_mb_surf, _mb_surf.get_rect(
-                    centerx=btn4_rect.centerx, y=btn4_rect.bottom + 4))
-
             if self.form_menu_open:
                 title_surface = self.font.render("Ликантропия", True, OCHRE)
                 self.screen.blit(title_surface, (1408, 702))
@@ -9811,14 +10268,14 @@ class ArenaGame:
                         color = hover_color if button.rect.collidepoint(mouse) and not is_disabled else base_color
                         pygame.draw.rect(self.screen, color, button.rect, border_radius=14)
                         pygame.draw.rect(self.screen, (230, 180, 70), button.rect, 2, border_radius=14)
-                        txt = self.font.render(button.text, True, WHITE)
+                        txt = self.small_font.render(button.text, True, WHITE)
                         self.screen.blit(txt, txt.get_rect(center=button.rect.center))
                         if button.rect.collidepoint(mouse):
                             hovered_form = option
                 if hovered_form:
                     wrapped = self.wrap_text(hovered_form["desc"], self.small_font, 340)
                     box_h = min(len(wrapped), 5) * 22 + 18
-                    box_rect = pygame.Rect(1338, 920, 360, box_h)
+                    box_rect = pygame.Rect(1338, 994, 360, box_h)
                     tooltip_surf = pygame.Surface((box_rect.width, box_rect.height), pygame.SRCALPHA)
                     tooltip_surf.fill((25, 25, 45, 210))
                     self.screen.blit(tooltip_surf, (box_rect.x, box_rect.y))
@@ -9840,7 +10297,7 @@ class ArenaGame:
                         color = hover_color if button.rect.collidepoint(mouse) else base_color
                         pygame.draw.rect(self.screen, color, button.rect, border_radius=14)
                         pygame.draw.rect(self.screen, (230, 220, 170), button.rect, 2, border_radius=14)
-                        txt = self.font.render(button.text, True, WHITE)
+                        txt = self.small_font.render(button.text, True, WHITE)
                         self.screen.blit(txt, txt.get_rect(center=button.rect.center))
                         if button.rect.collidepoint(mouse):
                             hovered_item = item
@@ -9849,11 +10306,11 @@ class ArenaGame:
                 if negative_target:
                     note_text = f"Негативные находки полетят в {negative_target.name}"
                 note_surface = self.small_font.render(note_text, True, (220, 220, 220))
-                self.screen.blit(note_surface, (1338, 918))
+                self.screen.blit(note_surface, (1338, 980))
                 if hovered_item:
                     wrapped = self.wrap_text(hovered_item["desc"], self.small_font, 340)
                     box_h = min(len(wrapped), 5) * 22 + 18
-                    box_rect = pygame.Rect(1338, 920, 360, box_h)
+                    box_rect = pygame.Rect(1338, 994, 360, box_h)
                     tooltip_surf = pygame.Surface((box_rect.width, box_rect.height), pygame.SRCALPHA)
                     tooltip_surf.fill((25, 25, 45, 210))
                     self.screen.blit(tooltip_surf, (box_rect.x, box_rect.y))
@@ -9871,13 +10328,13 @@ class ArenaGame:
                 for index, button in enumerate(self.spell_buttons):
                     if index < len(spells):
                         button.text = spells[index]["name"]
-                        self.draw_spell_button(button, self.font, self.players[self.current_turn].magic_path, self.spell_tier)
+                        self.draw_spell_button(button, self.small_font, self.players[self.current_turn].magic_path, self.spell_tier)
                         if button.rect.collidepoint(pygame.mouse.get_pos()):
                             hovered_spell = spells[index]
                 if hovered_spell:
                     wrapped = self.wrap_text(hovered_spell["desc"], self.small_font, 340)
                     box_h = min(len(wrapped), 5) * 22 + 18
-                    box_rect = pygame.Rect(1338, 920, 360, box_h)
+                    box_rect = pygame.Rect(1338, 994, 360, box_h)
                     tooltip_surf = pygame.Surface((box_rect.width, box_rect.height), pygame.SRCALPHA)
                     tooltip_surf.fill((25, 25, 45, 210))
                     self.screen.blit(tooltip_surf, (box_rect.x, box_rect.y))
