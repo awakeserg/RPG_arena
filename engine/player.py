@@ -9,6 +9,7 @@ class Player:
 
         self.strength=10
         self.stamina=10
+        self.vitality=0
         self.agility=10
         self.luck=10
         self.wisdom=10
@@ -22,6 +23,7 @@ class Player:
         self.damage=0
         self.dodge=0
         self.crit=0
+        self.tenacity=0
 
         self.temp_dodge=0
         self.arena_buff=False
@@ -76,16 +78,19 @@ class Player:
         self.lycan_saved_crit=0
 
         self.magic_path=""
+        self.selected_normal_spells = []
+        self.selected_exalted_spells = []
 
 
     def calc(self):
 
-        self.max_hp=self.stamina*8
+        self.tenacity=min(80, self.stamina*0.5)
+        self.max_hp=self.stamina*4 + self.vitality*10
         self.hp=self.max_hp
 
         self.damage=self.strength
-        self.dodge=min(95,self.agility*2)
-        self.crit=min(100,self.luck*2)
+        self.dodge=min(80,self.agility*2)
+        self.crit=min(80,self.luck*2)
 
 
     def show(self):
@@ -95,6 +100,7 @@ class Player:
         print("HP:",self.hp,"/",self.max_hp)
         print("Урон:",self.damage)
         print("Уклон:",self.dodge,"%")
+        print("Стойкость:",self.tenacity,"%")
         print("Крит:",self.crit,"%")
         print("Мудрость:",self.wisdom)
         print("Интеллект:",self.intellect)

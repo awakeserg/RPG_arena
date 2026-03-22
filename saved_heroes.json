@@ -1,1 +1,56 @@
-[]
+[
+  {
+    "name": "Ггнн",
+    "class": "Орк",
+    "magic_path": null,
+    "stats": [
+      "Удачливый",
+      "Ловкий"
+    ]
+  },
+  {
+    "name": "Лор",
+    "class": "Боевой маг",
+    "magic_path": "Путь воздуха",
+    "stats": [
+      "Живучий",
+      "Ловкий"
+    ],
+    "selected_normal_spells": [
+      "wind_blades",
+      "tailwind",
+      "cyclone_cut"
+    ],
+    "selected_exalted_spells": [
+      "tempest_eye",
+      "storm_front"
+    ]
+  },
+  {
+    "name": "Ппро",
+    "class": "Эльф",
+    "magic_path": "Путь воды",
+    "stats": [
+      "Ловкий",
+      "Живучий"
+    ]
+  },
+  {
+    "name": "Про",
+    "class": "Шаман",
+    "magic_path": "Путь земли",
+    "stats": [
+      "Ловкий",
+      "Живучий"
+    ]
+  },
+  {
+    "name": "Ролд",
+    "class": "Ассасин",
+    "magic_path": "Тёмный путь",
+    "stats": [
+      "Удачливый",
+      "Ловкий"
+    ]
+  }
+]
